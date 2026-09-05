@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  useRouterState,
+} from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import * as React from 'react'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
@@ -60,10 +65,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex min-h-dvh flex-col">
         <div className="flex-1">{children}</div>
-        <Footer />
+        <SiteFooter />
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
     </html>
   )
+}
+
+function SiteFooter() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/auth')) {
+    return null
+  }
+  return <Footer />
 }
