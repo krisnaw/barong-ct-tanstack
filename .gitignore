@@ -17,7 +17,9 @@ yarn.lock
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright-cli/
 .tanstack
+dist/
 
 # wrangler files
 .wrangler
