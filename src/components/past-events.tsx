@@ -11,7 +11,7 @@ export function PastEvents() {
     >
       <div className="mb-10 flex flex-col gap-4 lg:mb-12 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-primary uppercase">
+          <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-foreground uppercase">
             <span aria-hidden className="h-px w-8 bg-primary" />
             Melali
           </p>
@@ -43,7 +43,7 @@ function EventCard({ event }: { event: PastEvent }) {
   return (
     <Link
       className={cn(
-        'group relative flex min-h-[28rem] flex-col justify-end overflow-hidden rounded-2xl bg-foreground text-white outline-none',
+        'group relative flex min-h-[28rem] flex-col justify-end overflow-hidden rounded-none bg-foreground text-white outline-none',
         'ring-offset-background transition-[transform,box-shadow] duration-300',
         'hover:shadow-lg focus-visible:ring-3 focus-visible:ring-primary/70',
         'motion-reduce:transition-none',
@@ -62,7 +62,6 @@ function EventCard({ event }: { event: PastEvent }) {
         width={1800}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/55 to-foreground/15" />
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/35 to-transparent" />
 
       <span
         aria-hidden
@@ -74,7 +73,7 @@ function EventCard({ event }: { event: PastEvent }) {
       <div className="relative z-10 flex flex-col gap-5 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
           {event.featured ? (
-            <span className="rounded-md bg-primary px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.16em] text-primary-foreground uppercase">
+            <span className="rounded-full bg-white px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.16em] text-foreground uppercase">
               Latest
             </span>
           ) : null}
@@ -94,19 +93,19 @@ function EventCard({ event }: { event: PastEvent }) {
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-[0.65rem] tracking-[0.16em] text-primary uppercase">
+            <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
               Distance
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.distance}</dd>
           </div>
           <div>
-            <dt className="text-[0.65rem] tracking-[0.16em] text-primary uppercase">
+            <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
               Start
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.location}</dd>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <dt className="text-[0.65rem] tracking-[0.16em] text-primary uppercase">
+            <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
               Field
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.highlight}</dd>

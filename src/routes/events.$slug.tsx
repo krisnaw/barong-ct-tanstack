@@ -1,5 +1,7 @@
-import { createFileRoute, Link, notFound } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
+import { EventRecap } from '~/components/event-recap'
 import { getPastEvent } from '~/data/events'
+import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/events/$slug')({
   loader: ({ params }) => {
@@ -9,29 +11,23 @@ export const Route = createFileRoute('/events/$slug')({
     }
     return event
   },
-  component: EventDetailPlaceholder,
+  head: ({ loaderData }) => ({
+    meta: loaderData
+      ? seo({
+          title: `${loaderData.name} | Barong Cycling Team`,
+          description: loaderData.summary,
+          image: `${loaderData.image}&w=1200&q=80`,
+        })
+      : undefined,
+  }),
+  component: EventDetailPage,
 })
 
-function EventDetailPlaceholder() {
+function EventDetailPage() {
   const event = Route.useLoaderData()
-
   return (
-    <main className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
-      <p className="text-xs font-medium tracking-[0.22em] text-primary uppercase">
-        Event recap
-      </p>
-      <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
-        {event.name}
-      </h1>
-      <p className="mt-4 text-muted-foreground">
-        Full recap is coming soon. {event.date} · {event.location}
-      </p>
-      <Link
-        className="mt-8 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-        to="/"
-      >
-        Back to home
-      </Link>
+    <main>
+      <EventRecap event={event} />
     </main>
   )
 }
