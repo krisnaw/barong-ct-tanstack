@@ -84,7 +84,7 @@ export function Hero() {
           </a>
         </header>
 
-        <div className="flex flex-1 flex-col justify-end px-5 pb-6 sm:px-8 lg:px-12 lg:pb-8">
+        <div className="flex flex-1 flex-col justify-start px-5 pt-20 pb-6 sm:px-8 sm:pt-16 lg:justify-end lg:px-12 lg:pt-0 lg:pb-8">
           <p className="mb-5 flex items-center gap-2 text-xs font-medium tracking-[0.22em] text-white/70 uppercase sm:text-sm">
             <MapPinIcon aria-hidden className="size-3.5 text-primary" weight="bold" />
             Denpasar, Bali
