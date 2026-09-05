@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, MapPinIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
-import type { PastEvent } from '~/data/events'
+import type { PastEvent } from '~/data/recaps'
 import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
@@ -43,7 +43,7 @@ function EventHero({ event }: { event: PastEvent }) {
             to="/"
           >
             <ArrowLeftIcon aria-hidden className="size-3.5" weight="bold" />
-            All events
+            Melali
           </Link>
           <p className="text-xs font-medium tracking-[0.22em] text-white/60 uppercase">
             Event recap

@@ -1,10 +1,7 @@
-"use client"
+import { SignOutIcon, CaretUpDownIcon } from '@phosphor-icons/react'
+import { Link } from '@tanstack/react-router'
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "~/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,14 +10,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
+} from '~/components/ui/dropdown-menu'
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "~/components/ui/sidebar"
-import { CaretUpDownIcon, SparkleIcon, CheckCircleIcon, CreditCardIcon, BellIcon, SignOutIcon } from "@phosphor-icons/react"
+} from '~/components/ui/sidebar'
 
 export function NavUser({
   user,
@@ -43,7 +39,7 @@ export function NavUser({
           >
             <Avatar>
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarFallback>BA</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -53,7 +49,7 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
@@ -62,7 +58,7 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar>
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>CN</AvatarFallback>
+                    <AvatarFallback>BA</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
@@ -72,35 +68,8 @@ export function NavUser({
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <SparkleIcon
-                />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CheckCircleIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <SignOutIcon
-              />
+            <DropdownMenuItem render={<Link to="/auth/login" />}>
+              <SignOutIcon />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

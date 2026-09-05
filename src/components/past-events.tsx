@@ -1,6 +1,6 @@
 import { ArrowUpRightIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
-import { pastEvents, type PastEvent } from '~/data/events'
+import { pastEvents, type PastEvent } from '~/data/recaps'
 import { cn } from '~/lib/utils'
 
 export function PastEvents() {
@@ -49,7 +49,7 @@ function EventCard({ event }: { event: PastEvent }) {
         'motion-reduce:transition-none',
       )}
       params={{ slug: event.slug }}
-      to="/events/$slug"
+      to="/recaps/$slug"
     >
       <img
         alt={event.imageAlt}

@@ -1,21 +1,12 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
-  BookOpenIcon,
-  ChartPieIcon,
+  CalendarBlankIcon,
   CommandIcon,
-  CropIcon,
-  GearIcon,
-  LifebuoyIcon,
-  MapTrifoldIcon,
-  PaperPlaneTiltIcon,
-  RobotIcon,
-  TerminalIcon,
+  UsersIcon,
 } from '@phosphor-icons/react'
 
 import { NavMain } from '~/components/nav-main'
-import { NavProjects } from '~/components/nav-projects'
-import { NavSecondary } from '~/components/nav-secondary'
 import { NavUser } from '~/components/nav-user'
 import {
   Sidebar,
@@ -35,148 +26,18 @@ const data = {
   },
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: (
-        <TerminalIcon
-        />
-      ),
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
+      title: 'Events',
+      url: '/dashboard',
+      icon: <CalendarBlankIcon />,
     },
     {
-      title: "Models",
-      url: "#",
-      icon: (
-        <RobotIcon
-        />
-      ),
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: (
-        <BookOpenIcon
-        />
-      ),
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: (
-        <GearIcon
-        />
-      ),
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: (
-        <LifebuoyIcon
-        />
-      ),
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: (
-        <PaperPlaneTiltIcon
-        />
-      ),
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: (
-        <CropIcon
-        />
-      ),
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: (
-        <ChartPieIcon
-        />
-      ),
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: (
-        <MapTrifoldIcon
-        />
-      ),
+      title: 'Users',
+      url: '/dashboard',
+      icon: <UsersIcon />,
     },
   ],
 }
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
@@ -197,8 +58,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

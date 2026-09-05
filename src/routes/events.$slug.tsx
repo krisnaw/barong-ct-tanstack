@@ -1,11 +1,11 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { EventRecap } from '~/components/event-recap'
-import { getPastEvent } from '~/data/events'
+import { EventDetail } from '~/components/event-detail'
+import { getEvent } from '~/data/events'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/events/$slug')({
   loader: ({ params }) => {
-    const event = getPastEvent(params.slug)
+    const event = getEvent(params.slug)
     if (!event) {
       throw notFound()
     }
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/events/$slug')({
     meta: loaderData
       ? seo({
           title: `${loaderData.name} | Barong Cycling Team`,
-          description: loaderData.summary,
+          description: loaderData.blurb,
           image: `${loaderData.image}&w=1200&q=80`,
         })
       : undefined,
@@ -27,7 +27,7 @@ function EventDetailPage() {
   const event = Route.useLoaderData()
   return (
     <main>
-      <EventRecap event={event} />
+      <EventDetail event={event} />
     </main>
   )
 }

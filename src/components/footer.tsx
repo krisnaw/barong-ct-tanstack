@@ -27,8 +27,7 @@ export function Footer() {
             </Link>
             <Link
               className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
-              hash="events"
-              to="/"
+              to="/events"
             >
               Events
             </Link>

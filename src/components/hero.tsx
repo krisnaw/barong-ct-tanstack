@@ -1,4 +1,5 @@
 import { ArrowRightIcon, MapPinIcon } from '@phosphor-icons/react'
+import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
@@ -64,9 +65,9 @@ export function Hero() {
             <a className="transition-colors hover:text-white" href="#rides">
               Rides
             </a>
-            <a className="transition-colors hover:text-white" href="#events">
+            <Link className="transition-colors hover:text-white" to="/events">
               Events
-            </a>
+            </Link>
             <a className="transition-colors hover:text-white" href="#team">
               Team
             </a>
@@ -121,15 +122,15 @@ export function Hero() {
               Join a ride
               <ArrowRightIcon aria-hidden className="size-4" weight="bold" />
             </a>
-            <a
+            <Link
               className={cn(
                 buttonVariants({ variant: 'outline', size: 'lg' }),
                 'h-11 border-white/35 bg-transparent px-5 text-base text-white hover:bg-white/10 hover:text-white',
               )}
-              href="#events"
+              to="/events"
             >
               Past events
-            </a>
+            </Link>
           </div>
 
           <ul
