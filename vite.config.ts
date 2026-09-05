@@ -4,6 +4,8 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig({
   server: {
     port: 3000,
@@ -17,6 +19,10 @@ export default defineConfig({
       srcDirectory: 'src',
     }),
     viteReact(),
-    nitro(),
+    cloudflare({
+      viteEnvironment: {
+        name: "ssr"
+      }
+    }),
   ],
 })

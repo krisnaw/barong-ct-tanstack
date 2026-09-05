@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && tsc --noEmit",
-    "preview": "vite preview",
-    "start": "node .output/server/index.mjs"
+    "preview": "npm run build && wrangler dev",
+    "start": "node .output/server/index.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -27,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.54.4",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.5.4",
     "@types/react": "^19.0.8",
@@ -36,6 +39,7 @@
     "nitro": "^3.0.260311-beta",
     "tailwindcss": "^4.2.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.0.14"
+    "vite": "^8.0.14",
+    "wrangler": "^4.129.0"
   }
 }

@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prod-barong-ct",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-09-03",
+  "observability": {
+    "enabled": true
+  }
+}
