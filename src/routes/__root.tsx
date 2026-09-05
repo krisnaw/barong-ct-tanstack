@@ -10,6 +10,7 @@ import * as React from 'react'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { Footer } from '~/components/footer'
 import { NotFound } from '~/components/NotFound'
+import { PublicNav } from '~/components/public-nav'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
 
@@ -64,6 +65,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="flex min-h-dvh flex-col">
+        <SiteNav />
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <TanStackRouterDevtools position="bottom-right" />
@@ -73,10 +75,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
+function isAppShellRoute(pathname: string) {
+  return pathname.startsWith('/dashboard') || pathname.startsWith('/auth')
+}
+
+function SiteNav() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  if (isAppShellRoute(pathname)) return null
+  return <PublicNav />
+}
+
 function SiteFooter() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/auth')) {
-    return null
-  }
+  if (isAppShellRoute(pathname)) return null
   return <Footer />
 }

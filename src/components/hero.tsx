@@ -26,7 +26,7 @@ const rides = [
 
 export function Hero() {
   return (
-    <section className="relative isolate min-h-dvh overflow-x-clip bg-foreground text-white">
+    <section className="relative isolate min-h-[calc(100dvh-4.25rem)] overflow-x-clip bg-foreground text-white">
       <div className="absolute inset-x-0 top-0 z-20 h-px bg-white/30" />
 
       <img
@@ -44,47 +44,8 @@ export function Hero() {
       <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/70 to-foreground/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/25 to-foreground/40" />
 
-      <div className="relative z-10 flex min-h-dvh flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-6 px-5 pt-6 pb-2 sm:px-8 lg:px-12">
-          <a
-            className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-white/50"
-            href="/"
-          >
-            <span className="grid size-8 place-items-center rounded-full bg-white font-heading text-sm font-semibold tracking-tight text-foreground">
-              B
-            </span>
-            <span className="font-heading text-sm font-medium tracking-wide uppercase">
-              Barong
-            </span>
-          </a>
-
-          <nav
-            aria-label="Primary"
-            className="hidden items-center gap-7 text-sm text-white/75 md:flex"
-          >
-            <a className="transition-colors hover:text-white" href="#rides">
-              Rides
-            </a>
-            <Link className="transition-colors hover:text-white" to="/events">
-              Events
-            </Link>
-            <a className="transition-colors hover:text-white" href="#team">
-              Team
-            </a>
-          </nav>
-
-          <a
-            className={cn(
-              buttonVariants({ size: 'sm' }),
-              'bg-white text-foreground hover:bg-white/90',
-            )}
-            href="#rides"
-          >
-            Join a ride
-          </a>
-        </header>
-
-        <div className="mt-24 flex flex-1 flex-col justify-start px-5 pb-6 sm:mt-16 sm:px-8 lg:mt-auto lg:justify-end lg:px-12 lg:pb-8">
+      <div className="relative z-10 flex min-h-[calc(100dvh-4.25rem)] flex-col">
+        <div className="mt-10 flex flex-1 flex-col justify-start px-5 pb-6 sm:mt-12 sm:px-8 lg:mt-auto lg:justify-end lg:px-12 lg:pb-8">
           <p className="mb-5 flex items-center gap-2 text-xs font-medium tracking-[0.22em] text-white/70 uppercase sm:text-sm">
             <MapPinIcon aria-hidden className="size-3.5 text-white" weight="bold" />
             Denpasar, Bali
@@ -129,7 +90,7 @@ export function Hero() {
               )}
               to="/events"
             >
-              Past events
+              Events
             </Link>
           </div>
 

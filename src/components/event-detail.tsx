@@ -1,5 +1,4 @@
 import {
-  ArrowLeftIcon,
   CalendarBlankIcon,
   MapPinIcon,
   PathIcon,
@@ -7,7 +6,7 @@ import {
 } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import type { ClubEvent, EventStatus } from '~/data/events'
-import { Button, buttonVariants } from '~/components/ui/button'
+import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
 const statusLabel: Record<EventStatus, string> = {
@@ -21,29 +20,6 @@ export function EventDetail({ event }: { event: ClubEvent }) {
 
   return (
     <article>
-      <header className="flex items-center justify-between gap-6 border-b border-border px-5 py-5 sm:px-8 lg:px-12">
-        <Link
-          className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          to="/"
-        >
-          <span className="grid size-8 place-items-center rounded-full bg-foreground font-heading text-sm font-semibold tracking-tight text-background">
-            B
-          </span>
-          <span className="font-heading text-sm font-medium tracking-wide uppercase">
-            Barong
-          </span>
-        </Link>
-        <Link
-          className={cn(
-            buttonVariants({ variant: 'outline', size: 'sm' }),
-          )}
-          to="/events"
-        >
-          <ArrowLeftIcon aria-hidden className="size-3.5" weight="bold" />
-          All events
-        </Link>
-      </header>
-
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.4fr_1fr] lg:gap-12 lg:px-12 lg:py-12">
         <div>
           <img
@@ -108,16 +84,34 @@ export function EventDetail({ event }: { event: ClubEvent }) {
           </p>
           <p className="mt-2 text-sm text-muted-foreground">{event.blurb}</p>
 
-          <Button className="mt-6 w-full" disabled={!canRegister} type="button">
-            {canRegister
-              ? 'Register'
-              : event.status === 'upcoming'
+          {canRegister ? (
+            <Link
+              className={cn(buttonVariants(), 'mt-6 w-full')}
+              params={{ slug: event.slug }}
+              search={{
+                step: event.registration === 'full' ? 'jersey' : 'profile',
+              }}
+              to="/events/$slug/register"
+            >
+              Register
+            </Link>
+          ) : (
+            <span
+              className={cn(
+                buttonVariants(),
+                'mt-6 w-full opacity-50 pointer-events-none',
+              )}
+            >
+              {event.status === 'upcoming'
                 ? 'Registration opens soon'
                 : 'Registration closed'}
-          </Button>
+            </span>
+          )}
           <p className="mt-3 text-center text-xs text-muted-foreground">
             {canRegister
-              ? 'You will sign in before completing registration.'
+              ? event.registration === 'full'
+                ? 'Next: jersey, route, profile, then payment.'
+                : 'Confirm your details to join the ride.'
               : 'Check back later or browse other open events.'}
           </p>
         </aside>

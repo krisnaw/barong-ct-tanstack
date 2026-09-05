@@ -1,7 +1,5 @@
-import { ArrowLeftIcon, MapPinIcon } from '@phosphor-icons/react'
-import { Link } from '@tanstack/react-router'
+import { MapPinIcon } from '@phosphor-icons/react'
 import type { PastEvent } from '~/data/recaps'
-import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
 export function EventRecap({ event }: { event: PastEvent }) {
@@ -33,25 +31,11 @@ function EventHero({ event }: { event: PastEvent }) {
       <div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/30 to-foreground/40" />
 
       <div className="relative z-10 flex min-h-[70vh] flex-col lg:min-h-[80vh]">
-        <div className="flex items-center justify-between gap-4 px-5 pt-6 sm:px-8 lg:px-12">
-          <Link
-            className={cn(
-              buttonVariants({ size: 'sm' }),
-              'bg-white text-foreground hover:bg-white/90',
-            )}
-            hash="events"
-            to="/"
-          >
-            <ArrowLeftIcon aria-hidden className="size-3.5" weight="bold" />
-            Melali
-          </Link>
+        <div className="mt-auto px-5 pb-10 pt-20 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
           <p className="text-xs font-medium tracking-[0.22em] text-white/60 uppercase">
             Event recap
           </p>
-        </div>
-
-        <div className="mt-auto px-5 pb-10 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium tracking-[0.2em] text-white/70 uppercase sm:text-sm">
+          <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium tracking-[0.2em] text-white/70 uppercase sm:text-sm">
             <span>{event.date}</span>
             <span className="text-white/35">·</span>
             <span className="inline-flex items-center gap-1.5">

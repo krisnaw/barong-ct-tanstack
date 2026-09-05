@@ -1,0 +1,13 @@
+import { Outlet, createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/events')({
+  component: EventsLayout,
+})
+
+function EventsLayout() {
+  return (
+    <main>
+      <Outlet />
+    </main>
+  )
+}

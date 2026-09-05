@@ -1,5 +1,4 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
-import { EventDetail } from '~/components/event-detail'
+import { Outlet, createFileRoute, notFound } from '@tanstack/react-router'
 import { getEvent } from '~/data/events'
 import { seo } from '~/utils/seo'
 
@@ -20,14 +19,9 @@ export const Route = createFileRoute('/events/$slug')({
         })
       : undefined,
   }),
-  component: EventDetailPage,
+  component: EventSlugLayout,
 })
 
-function EventDetailPage() {
-  const event = Route.useLoaderData()
-  return (
-    <main>
-      <EventDetail event={event} />
-    </main>
-  )
+function EventSlugLayout() {
+  return <Outlet />
 }
