@@ -18,9 +18,9 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       ...seo({
-        title:
-          'TanStack Start | Type-Safe, Client-First, Full-Stack React Framework',
-        description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
+        title: 'Barong Cycling Team | Ride Bali',
+        description:
+          'Denpasar peloton since 2016. Tuesday Quickie, Thursday Foreplay, Saturday Climax — keep the bunch together.',
       }),
     ],
     links: [
@@ -53,7 +53,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
