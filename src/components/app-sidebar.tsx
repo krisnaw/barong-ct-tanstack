@@ -27,12 +27,12 @@ const data = {
   navMain: [
     {
       title: 'Events',
-      url: '/dashboard',
+      url: '/dashboard/events',
       icon: <CalendarBlankIcon />,
     },
     {
       title: 'Users',
-      url: '/dashboard',
+      url: '/dashboard/users',
       icon: <UsersIcon />,
     },
   ],
@@ -44,7 +44,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/dashboard/events" />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <CommandIcon className="size-4" />
               </div>
