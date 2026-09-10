@@ -74,6 +74,15 @@ export function Hero() {
             >
               Events
             </Link>
+            <Link
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'lg' }),
+                'h-11 border-white/35 bg-transparent px-5 text-base text-white hover:bg-white/10 hover:text-white',
+              )}
+              to="/shop"
+            >
+              Shop
+            </Link>
           </div>
         </div>
       </div>

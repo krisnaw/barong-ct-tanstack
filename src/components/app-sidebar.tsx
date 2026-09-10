@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
   CommandIcon,
+  PackageIcon,
+  TShirtIcon,
   UsersIcon,
 } from '@phosphor-icons/react'
 
@@ -29,6 +31,16 @@ const data = {
       title: 'Events',
       url: '/dashboard/events',
       icon: <CalendarBlankIcon />,
+    },
+    {
+      title: 'Catalogue',
+      url: '/dashboard/catalogue',
+      icon: <TShirtIcon />,
+    },
+    {
+      title: 'Orders',
+      url: '/dashboard/orders',
+      icon: <PackageIcon />,
     },
     {
       title: 'Users',

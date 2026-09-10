@@ -31,6 +31,12 @@ export function Footer() {
             >
               Events
             </Link>
+            <Link
+              className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
+              to="/shop"
+            >
+              Shop
+            </Link>
             <a
               className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
               href="https://www.strava.com/clubs/barongcyclingteam"

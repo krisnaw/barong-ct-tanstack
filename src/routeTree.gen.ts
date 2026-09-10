@@ -12,16 +12,28 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as EventsRouteImport } from './routes/events'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
+import { Route as DashboardOrdersRouteImport } from './routes/dashboard/orders'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
 import { Route as RecapsSlugRouteImport } from './routes/recaps.$slug'
+import { Route as ShopIndexRouteImport } from './routes/shop.index'
+import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
+import { Route as ShopCartRouteImport } from './routes/shop.cart'
+import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
+import { Route as DashboardCatalogueIndexRouteImport } from './routes/dashboard/catalogue.index'
+import { Route as DashboardCatalogueSlugRouteImport } from './routes/dashboard/catalogue.$slug'
+import { Route as DashboardCatalogueNewRouteImport } from './routes/dashboard/catalogue.new'
 import { Route as DashboardEventsIndexRouteImport } from './routes/dashboard/events.index'
 import { Route as DashboardEventsSlugRouteImport } from './routes/dashboard/events.$slug'
 import { Route as DashboardEventsNewRouteImport } from './routes/dashboard/events.new'
+import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders.index'
+import { Route as DashboardOrdersIdRouteImport } from './routes/dashboard/orders.$id'
 import { Route as EventsSlugIndexRouteImport } from './routes/events.$slug.index'
 import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.register'
 
@@ -40,6 +52,11 @@ const EventsRoute = EventsRouteImport.update({
   path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -50,9 +67,19 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardCatalogueRoute = DashboardCatalogueRouteImport.update({
+  id: '/catalogue',
+  path: '/catalogue',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardEventsRoute = DashboardEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardOrdersRoute = DashboardOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardUsersRoute = DashboardUsersRouteImport.update({
@@ -75,6 +102,41 @@ const RecapsSlugRoute = RecapsSlugRouteImport.update({
   path: '/recaps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopIndexRoute = ShopIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShopRoute,
+} as any)
+const ShopSlugRoute = ShopSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ShopRoute,
+} as any)
+const ShopCartRoute = ShopCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => ShopRoute,
+} as any)
+const ShopCheckoutRoute = ShopCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => ShopRoute,
+} as any)
+const DashboardCatalogueIndexRoute = DashboardCatalogueIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardCatalogueRoute,
+} as any)
+const DashboardCatalogueSlugRoute = DashboardCatalogueSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => DashboardCatalogueRoute,
+} as any)
+const DashboardCatalogueNewRoute = DashboardCatalogueNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DashboardCatalogueRoute,
+} as any)
 const DashboardEventsIndexRoute = DashboardEventsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -89,6 +151,16 @@ const DashboardEventsNewRoute = DashboardEventsNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => DashboardEventsRoute,
+} as any)
+const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardOrdersRoute,
+} as any)
+const DashboardOrdersIdRoute = DashboardOrdersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => DashboardOrdersRoute,
 } as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/',
@@ -105,17 +177,29 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/events': typeof EventsRouteWithChildren
+  '/shop': typeof ShopRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
+  '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
+  '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/events/$slug': typeof EventsSlugRouteWithChildren
   '/recaps/$slug': typeof RecapsSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/shop/cart': typeof ShopCartRoute
+  '/shop/checkout': typeof ShopCheckoutRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/shop/': typeof ShopIndexRoute
+  '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
+  '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
+  '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
 }
 export interface FileRoutesByTo {
@@ -123,12 +207,21 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/recaps/$slug': typeof RecapsSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/shop/cart': typeof ShopCartRoute
+  '/shop/checkout': typeof ShopCheckoutRoute
   '/dashboard': typeof DashboardIndexRoute
   '/events': typeof EventsIndexRoute
+  '/shop': typeof ShopIndexRoute
+  '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
+  '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/dashboard/catalogue': typeof DashboardCatalogueIndexRoute
   '/dashboard/events': typeof DashboardEventsIndexRoute
+  '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
 }
 export interface FileRoutesById {
@@ -136,17 +229,29 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/events': typeof EventsRouteWithChildren
+  '/shop': typeof ShopRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
+  '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
+  '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/events/$slug': typeof EventsSlugRouteWithChildren
   '/recaps/$slug': typeof RecapsSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/shop/cart': typeof ShopCartRoute
+  '/shop/checkout': typeof ShopCheckoutRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/shop/': typeof ShopIndexRoute
+  '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
+  '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
+  '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
 }
 export interface FileRouteTypes {
@@ -155,17 +260,29 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/events'
+    | '/shop'
     | '/auth/login'
+    | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/orders'
     | '/dashboard/users'
     | '/events/$slug'
     | '/recaps/$slug'
+    | '/shop/$slug'
+    | '/shop/cart'
+    | '/shop/checkout'
     | '/dashboard/'
     | '/events/'
+    | '/shop/'
+    | '/dashboard/catalogue/$slug'
+    | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
+    | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/dashboard/catalogue/'
     | '/dashboard/events/'
+    | '/dashboard/orders/'
     | '/events/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -173,29 +290,50 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/dashboard/users'
     | '/recaps/$slug'
+    | '/shop/$slug'
+    | '/shop/cart'
+    | '/shop/checkout'
     | '/dashboard'
     | '/events'
+    | '/shop'
+    | '/dashboard/catalogue/$slug'
+    | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
+    | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/orders'
     | '/events/$slug'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/events'
+    | '/shop'
     | '/auth/login'
+    | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/orders'
     | '/dashboard/users'
     | '/events/$slug'
     | '/recaps/$slug'
+    | '/shop/$slug'
+    | '/shop/cart'
+    | '/shop/checkout'
     | '/dashboard/'
     | '/events/'
+    | '/shop/'
+    | '/dashboard/catalogue/$slug'
+    | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
+    | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/dashboard/catalogue/'
     | '/dashboard/events/'
+    | '/dashboard/orders/'
     | '/events/$slug/'
   fileRoutesById: FileRoutesById
 }
@@ -203,6 +341,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   EventsRoute: typeof EventsRouteWithChildren
+  ShopRoute: typeof ShopRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
   RecapsSlugRoute: typeof RecapsSlugRoute
 }
@@ -230,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -244,11 +390,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/catalogue': {
+      id: '/dashboard/catalogue'
+      path: '/catalogue'
+      fullPath: '/dashboard/catalogue'
+      preLoaderRoute: typeof DashboardCatalogueRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/events': {
       id: '/dashboard/events'
       path: '/events'
       fullPath: '/dashboard/events'
       preLoaderRoute: typeof DashboardEventsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/orders': {
+      id: '/dashboard/orders'
+      path: '/orders'
+      fullPath: '/dashboard/orders'
+      preLoaderRoute: typeof DashboardOrdersRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/users': {
@@ -279,6 +439,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecapsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop/': {
+      id: '/shop/'
+      path: '/'
+      fullPath: '/shop/'
+      preLoaderRoute: typeof ShopIndexRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/shop/$slug': {
+      id: '/shop/$slug'
+      path: '/$slug'
+      fullPath: '/shop/$slug'
+      preLoaderRoute: typeof ShopSlugRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/shop/cart': {
+      id: '/shop/cart'
+      path: '/cart'
+      fullPath: '/shop/cart'
+      preLoaderRoute: typeof ShopCartRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/shop/checkout': {
+      id: '/shop/checkout'
+      path: '/checkout'
+      fullPath: '/shop/checkout'
+      preLoaderRoute: typeof ShopCheckoutRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/dashboard/catalogue/': {
+      id: '/dashboard/catalogue/'
+      path: '/'
+      fullPath: '/dashboard/catalogue/'
+      preLoaderRoute: typeof DashboardCatalogueIndexRouteImport
+      parentRoute: typeof DashboardCatalogueRoute
+    }
+    '/dashboard/catalogue/$slug': {
+      id: '/dashboard/catalogue/$slug'
+      path: '/$slug'
+      fullPath: '/dashboard/catalogue/$slug'
+      preLoaderRoute: typeof DashboardCatalogueSlugRouteImport
+      parentRoute: typeof DashboardCatalogueRoute
+    }
+    '/dashboard/catalogue/new': {
+      id: '/dashboard/catalogue/new'
+      path: '/new'
+      fullPath: '/dashboard/catalogue/new'
+      preLoaderRoute: typeof DashboardCatalogueNewRouteImport
+      parentRoute: typeof DashboardCatalogueRoute
+    }
     '/dashboard/events/': {
       id: '/dashboard/events/'
       path: '/'
@@ -300,6 +509,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEventsNewRouteImport
       parentRoute: typeof DashboardEventsRoute
     }
+    '/dashboard/orders/': {
+      id: '/dashboard/orders/'
+      path: '/'
+      fullPath: '/dashboard/orders/'
+      preLoaderRoute: typeof DashboardOrdersIndexRouteImport
+      parentRoute: typeof DashboardOrdersRoute
+    }
+    '/dashboard/orders/$id': {
+      id: '/dashboard/orders/$id'
+      path: '/$id'
+      fullPath: '/dashboard/orders/$id'
+      preLoaderRoute: typeof DashboardOrdersIdRouteImport
+      parentRoute: typeof DashboardOrdersRoute
+    }
     '/events/$slug/': {
       id: '/events/$slug/'
       path: '/'
@@ -317,6 +540,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardCatalogueRouteChildren {
+  DashboardCatalogueSlugRoute: typeof DashboardCatalogueSlugRoute
+  DashboardCatalogueNewRoute: typeof DashboardCatalogueNewRoute
+  DashboardCatalogueIndexRoute: typeof DashboardCatalogueIndexRoute
+}
+
+const DashboardCatalogueRouteChildren: DashboardCatalogueRouteChildren = {
+  DashboardCatalogueSlugRoute: DashboardCatalogueSlugRoute,
+  DashboardCatalogueNewRoute: DashboardCatalogueNewRoute,
+  DashboardCatalogueIndexRoute: DashboardCatalogueIndexRoute,
+}
+
+const DashboardCatalogueRouteWithChildren =
+  DashboardCatalogueRoute._addFileChildren(DashboardCatalogueRouteChildren)
+
 interface DashboardEventsRouteChildren {
   DashboardEventsSlugRoute: typeof DashboardEventsSlugRoute
   DashboardEventsNewRoute: typeof DashboardEventsNewRoute
@@ -333,14 +571,32 @@ const DashboardEventsRouteWithChildren = DashboardEventsRoute._addFileChildren(
   DashboardEventsRouteChildren,
 )
 
+interface DashboardOrdersRouteChildren {
+  DashboardOrdersIdRoute: typeof DashboardOrdersIdRoute
+  DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
+}
+
+const DashboardOrdersRouteChildren: DashboardOrdersRouteChildren = {
+  DashboardOrdersIdRoute: DashboardOrdersIdRoute,
+  DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
+}
+
+const DashboardOrdersRouteWithChildren = DashboardOrdersRoute._addFileChildren(
+  DashboardOrdersRouteChildren,
+)
+
 interface DashboardRouteRouteChildren {
+  DashboardCatalogueRoute: typeof DashboardCatalogueRouteWithChildren
   DashboardEventsRoute: typeof DashboardEventsRouteWithChildren
+  DashboardOrdersRoute: typeof DashboardOrdersRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardCatalogueRoute: DashboardCatalogueRouteWithChildren,
   DashboardEventsRoute: DashboardEventsRouteWithChildren,
+  DashboardOrdersRoute: DashboardOrdersRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
@@ -376,10 +632,27 @@ const EventsRouteChildren: EventsRouteChildren = {
 const EventsRouteWithChildren =
   EventsRoute._addFileChildren(EventsRouteChildren)
 
+interface ShopRouteChildren {
+  ShopSlugRoute: typeof ShopSlugRoute
+  ShopCartRoute: typeof ShopCartRoute
+  ShopCheckoutRoute: typeof ShopCheckoutRoute
+  ShopIndexRoute: typeof ShopIndexRoute
+}
+
+const ShopRouteChildren: ShopRouteChildren = {
+  ShopSlugRoute: ShopSlugRoute,
+  ShopCartRoute: ShopCartRoute,
+  ShopCheckoutRoute: ShopCheckoutRoute,
+  ShopIndexRoute: ShopIndexRoute,
+}
+
+const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   EventsRoute: EventsRouteWithChildren,
+  ShopRoute: ShopRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
   RecapsSlugRoute: RecapsSlugRoute,
 }

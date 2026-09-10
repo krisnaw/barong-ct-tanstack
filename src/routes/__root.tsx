@@ -11,6 +11,7 @@ import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { Footer } from '~/components/footer'
 import { NotFound } from '~/components/NotFound'
 import { PublicNav } from '~/components/public-nav'
+import { CartProvider } from '~/lib/cart'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
 
@@ -65,9 +66,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="flex min-h-dvh flex-col">
-        <SiteNav />
-        <div className="flex-1">{children}</div>
-        <SiteFooter />
+        <CartProvider>
+          <SiteNav />
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+        </CartProvider>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
@@ -76,7 +79,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function isAppShellRoute(pathname: string) {
-  return pathname.startsWith('/dashboard') || pathname.startsWith('/auth')
+  return (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/shop/checkout')
+  )
 }
 
 function SiteNav() {
