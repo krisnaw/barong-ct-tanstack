@@ -77,6 +77,7 @@ export function SignUpForm({
               onChange={(event) => setName(event.target.value)}
               placeholder="Rider name"
               value={name}
+              required
             />
           </Field>
           <Field>
