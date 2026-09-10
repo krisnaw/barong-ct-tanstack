@@ -7,6 +7,16 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "EMAIL_PROVIDER": "cloudflare",
+    "EMAIL_FROM": "noreply@barongcycling.com",
+    "EMAIL_FROM_NAME": "Barong Cycling Team"
+  },
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -18,6 +28,22 @@
   "env": {
     "staging": {
       "name": "staging-barong-ct",
+      "routes": [
+        {
+          "pattern": "staging.barongcycling.com",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "EMAIL_PROVIDER": "resend",
+        "EMAIL_FROM": "noreply@barongcycling.com",
+        "EMAIL_FROM_NAME": "Barong Cycling Team"
+      },
+      "send_email": [
+        {
+          "name": "EMAIL"
+        }
+      ],
       "d1_databases": [
         {
           "binding": "DB",
