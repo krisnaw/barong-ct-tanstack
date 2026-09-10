@@ -28,8 +28,8 @@ const orderStatusStyles: Record<OrderStatus, string> = {
 
 const sections = [
   { to: '/account', label: 'Profile', exact: true },
-  { to: '/account/address', label: 'Address' },
-  { to: '/account/orders', label: 'Orders' },
+  { to: '/account/address', label: 'Address', exact: false },
+  { to: '/account/orders', label: 'Orders', exact: false },
 ] as const
 
 export function AccountLayout() {
