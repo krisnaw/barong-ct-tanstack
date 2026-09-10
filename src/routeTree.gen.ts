@@ -30,6 +30,7 @@ import { Route as ShopIndexRouteImport } from './routes/shop.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as ShopCartRouteImport } from './routes/shop.cart'
 import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardCatalogueIndexRouteImport } from './routes/dashboard/catalogue.index'
 import { Route as DashboardCatalogueSlugRouteImport } from './routes/dashboard/catalogue.$slug'
 import { Route as DashboardCatalogueNewRouteImport } from './routes/dashboard/catalogue.new'
@@ -146,6 +147,11 @@ const ShopCheckoutRoute = ShopCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => ShopRoute,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardCatalogueIndexRoute = DashboardCatalogueIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/events': typeof EventsIndexRoute
   '/shop': typeof ShopIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/api/auth/$'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/events'
     | '/shop'
+    | '/api/auth/$'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/api/auth/$'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -391,6 +403,7 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
   RecapsSlugRoute: typeof RecapsSlugRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -541,6 +554,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/shop/checkout'
       preLoaderRoute: typeof ShopCheckoutRouteImport
       parentRoute: typeof ShopRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/catalogue/': {
       id: '/dashboard/catalogue/'
@@ -746,6 +766,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
   RecapsSlugRoute: RecapsSlugRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

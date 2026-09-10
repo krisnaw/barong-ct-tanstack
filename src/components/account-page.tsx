@@ -33,7 +33,7 @@ const sections = [
 ] as const
 
 export function AccountLayout() {
-  const { profile, signedIn, ready, signIn, signOut } = useAccount()
+  const { profile, signedIn, ready, signOut } = useAccount()
 
   if (!ready) {
     return (
@@ -46,7 +46,22 @@ export function AccountLayout() {
   }
 
   if (!signedIn || !profile) {
-    return <AccountSignIn onSignIn={signIn} />
+    return (
+      <section className="px-5 py-10 sm:px-8 sm:py-12 lg:px-12">
+        <p className="text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
+          Account
+        </p>
+        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+          Sign in
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sign in to manage kit size, delivery details, and orders.
+        </p>
+        <Link className={cn(buttonVariants(), 'mt-6')} to="/auth/login">
+          Sign in
+        </Link>
+      </section>
+    )
   }
 
   return (
@@ -150,72 +165,11 @@ function isSectionActive(
   return pathname === section.to
 }
 
-function AccountSignIn({ onSignIn }: { onSignIn: (email: string) => void }) {
-  const [email, setEmail] = React.useState('')
-  const [error, setError] = React.useState('')
-
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!email.includes('@')) {
-      setError('Enter a valid email')
-      return
-    }
-    setError('')
-    onSignIn(email)
-  }
-
-  return (
-    <section className="px-5 py-10 sm:px-8 sm:py-12 lg:px-12">
-      <div className="mx-auto max-w-md">
-        <p className="text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
-          Account
-        </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-          Sign in
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          New here? We’ll open an account for this email so you can save kit
-          size and delivery details.
-        </p>
-
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          <AccountField
-            autoComplete="email"
-            error={error}
-            id="account-email"
-            label="Email"
-            onChange={(value) => {
-              setEmail(value)
-              setError('')
-            }}
-            type="email"
-            value={email}
-          />
-          <Button className="w-full" size="lg" type="submit">
-            Continue
-          </Button>
-        </form>
-
-        <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
-          Demo — try{' '}
-          <button
-            className="underline underline-offset-4 hover:text-foreground"
-            onClick={() => onSignIn('made.wirawan@email.com')}
-            type="button"
-          >
-            made.wirawan@email.com
-          </button>{' '}
-          to see a rider with past orders.
-        </p>
-      </div>
-    </section>
-  )
-}
-
 export function AccountProfilePanel() {
   const { profile, updateProfile } = useAccount()
   const [draft, setDraft] = React.useState(() => profile ?? emptyDraft())
   const [saved, setSaved] = React.useState(false)
+  const [pending, setPending] = React.useState(false)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
 
   React.useEffect(() => {
@@ -232,26 +186,31 @@ export function AccountProfilePanel() {
     setSaved(false)
   }
 
-  function handleSave(event: React.FormEvent) {
+  async function handleSave(event: React.FormEvent) {
     event.preventDefault()
     const next: Record<string, string> = {}
     if (!draft.firstName.trim()) next.firstName = 'Enter a first name'
     if (!draft.lastName.trim()) next.lastName = 'Enter a last name'
-    if (!draft.email.includes('@')) next.email = 'Enter a valid email'
     if (!draft.phone.trim()) next.phone = 'Enter a phone number'
     if (Object.keys(next).length > 0) {
       setErrors(next)
       return
     }
     setErrors({})
-    updateProfile({
-      firstName: draft.firstName,
-      lastName: draft.lastName,
-      email: draft.email,
-      phone: draft.phone,
-      jerseySize: draft.jerseySize,
-    })
-    setSaved(true)
+    setPending(true)
+    try {
+      await updateProfile({
+        firstName: draft.firstName,
+        lastName: draft.lastName,
+        phone: draft.phone,
+        jerseySize: draft.jerseySize,
+      })
+      setSaved(true)
+    } catch {
+      setErrors({ form: 'Could not save profile' })
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -281,10 +240,9 @@ export function AccountProfilePanel() {
         />
         <AccountField
           autoComplete="email"
-          error={errors.email}
           id="email"
           label="Email"
-          onChange={(value) => setField('email', value)}
+          readOnly
           type="email"
           value={draft.email}
         />
@@ -327,7 +285,11 @@ export function AccountProfilePanel() {
         })}
       </div>
 
-      <SaveBar saved={saved} />
+      {errors.form ? (
+        <p className="mt-4 text-sm text-destructive">{errors.form}</p>
+      ) : null}
+
+      <SaveBar pending={pending} saved={saved} />
     </form>
   )
 }
@@ -336,6 +298,7 @@ export function AccountAddressPanel() {
   const { profile, updateProfile } = useAccount()
   const [draft, setDraft] = React.useState(() => profile ?? emptyDraft())
   const [saved, setSaved] = React.useState(false)
+  const [pending, setPending] = React.useState(false)
 
   React.useEffect(() => {
     if (profile) setDraft(profile)
@@ -351,16 +314,21 @@ export function AccountAddressPanel() {
     setSaved(false)
   }
 
-  function handleSave(event: React.FormEvent) {
+  async function handleSave(event: React.FormEvent) {
     event.preventDefault()
-    updateProfile({
-      address: draft.address,
-      apartment: draft.apartment,
-      city: draft.city,
-      province: draft.province,
-      postal: draft.postal,
-    })
-    setSaved(true)
+    setPending(true)
+    try {
+      await updateProfile({
+        address: draft.address,
+        apartment: draft.apartment,
+        city: draft.city,
+        province: draft.province,
+        postal: draft.postal,
+      })
+      setSaved(true)
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -413,7 +381,7 @@ export function AccountAddressPanel() {
           />
         </div>
       </div>
-      <SaveBar saved={saved} />
+      <SaveBar pending={pending} saved={saved} />
     </form>
   )
 }
@@ -465,11 +433,11 @@ export function AccountOrdersPanel() {
   )
 }
 
-function SaveBar({ saved }: { saved: boolean }) {
+function SaveBar({ pending, saved }: { pending?: boolean; saved: boolean }) {
   return (
     <div className="mt-8 flex flex-wrap items-center gap-4">
-      <Button size="lg" type="submit">
-        Save
+      <Button disabled={pending} size="lg" type="submit">
+        {pending ? 'Saving…' : 'Save'}
       </Button>
       {saved ? (
         <p className="inline-flex items-center gap-1.5 text-sm">
@@ -567,14 +535,16 @@ function AccountField({
   type = 'text',
   autoComplete,
   error,
+  readOnly,
 }: {
   id: string
   label: string
   value: string
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
   type?: string
   autoComplete?: string
   error?: string
+  readOnly?: boolean
 }) {
   return (
     <div>
@@ -588,11 +558,19 @@ function AccountField({
         aria-invalid={Boolean(error)}
         autoComplete={autoComplete}
         className={cn(
-          'mt-1.5 h-11 w-full border bg-background px-3 text-sm outline-none transition-shadow focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+          'mt-1.5 h-11 w-full border px-3 text-sm outline-none transition-shadow focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+          readOnly
+            ? 'cursor-default bg-muted text-muted-foreground'
+            : 'bg-background',
           error ? 'border-destructive' : 'border-border',
         )}
         id={id}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={
+          readOnly || !onChange
+            ? undefined
+            : (event) => onChange(event.target.value)
+        }
+        readOnly={readOnly}
         type={type}
         value={value}
       />

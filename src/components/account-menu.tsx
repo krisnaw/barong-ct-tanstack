@@ -97,7 +97,7 @@ export function AccountMenu() {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link to="/account" />}>
+            <DropdownMenuItem render={<Link to="/auth/login" />}>
               <SignInIcon />
               Sign in
             </DropdownMenuItem>

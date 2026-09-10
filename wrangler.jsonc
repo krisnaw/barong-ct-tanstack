@@ -3,7 +3,29 @@
   "name": "prod-barong-ct",
   "main": "@tanstack/react-start/server-entry",
   "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "barong-ct",
+      "database_id": "e3ba49c7-b98f-4260-b33b-65d89bc007bd",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "staging-barong-ct",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "barong-ct-staging",
+          "database_id": "909971a1-a2be-44ec-9781-0495273c565a",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
   }
 }

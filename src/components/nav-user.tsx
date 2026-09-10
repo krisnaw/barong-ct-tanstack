@@ -1,5 +1,5 @@
 import { SignOutIcon, CaretUpDownIcon } from '@phosphor-icons/react'
-import { Link } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '~/components/ui/sidebar'
+import { authClient } from '~/lib/auth-client'
 
 export function NavUser({
   user,
@@ -28,6 +29,13 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
+
+  async function signOut() {
+    await authClient.signOut()
+    void navigate({ to: '/auth/login' })
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -68,7 +76,7 @@ export function NavUser({
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link to="/auth/login" />}>
+            <DropdownMenuItem onClick={() => void signOut()}>
               <SignOutIcon />
               Log out
             </DropdownMenuItem>
