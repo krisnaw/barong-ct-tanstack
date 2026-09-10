@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '~/lib/auth-client'
-
-const ADDRESS_STORAGE_KEY = 'barong-shop-account-address'
+import {
+  getMyProfile,
+  upsertMyProfile,
+} from '~/lib/profile.functions'
 
 export const ACCOUNT_PROVINCES = [
   'Bali',
@@ -13,30 +15,17 @@ export const ACCOUNT_PROVINCES = [
   'Yogyakarta',
 ] as const
 
-type AddressFields = {
-  address: string
-  apartment: string
-  city: string
-  province: string
-  postal: string
-}
-
 export type AccountProfile = {
   firstName: string
   lastName: string
   email: string
   phone: string
   jerseySize: string
-} & AddressFields
-
-type AuthUser = {
-  id: string
-  name: string
-  email: string
-  firstName?: string | null
-  lastName?: string | null
-  phone?: string | null
-  jerseySize?: string | null
+  address: string
+  apartment: string
+  city: string
+  province: string
+  postal: string
 }
 
 type AccountContextValue = {
@@ -49,67 +38,18 @@ type AccountContextValue = {
 
 const AccountContext = React.createContext<AccountContextValue | null>(null)
 
-const ADDRESS_KEYS = [
-  'address',
-  'apartment',
-  'city',
-  'province',
-  'postal',
-] as const
-
-function emptyAddress(): AddressFields {
+function emptyProfile(email = ''): AccountProfile {
   return {
+    firstName: '',
+    lastName: '',
+    email,
+    phone: '',
+    jerseySize: 'M',
     address: '',
     apartment: '',
     city: '',
     province: 'Bali',
     postal: '',
-  }
-}
-
-function splitName(name: string) {
-  const trimmed = name.trim()
-  if (!trimmed) return { firstName: '', lastName: '' }
-  const [firstName, ...rest] = trimmed.split(/\s+/)
-  return { firstName: firstName ?? '', lastName: rest.join(' ') }
-}
-
-function readAddress(userId: string): AddressFields {
-  if (typeof window === 'undefined') return emptyAddress()
-  try {
-    const raw = window.localStorage.getItem(ADDRESS_STORAGE_KEY)
-    if (!raw) return emptyAddress()
-    const parsed = JSON.parse(raw) as Record<string, Partial<AddressFields>>
-    const stored = parsed[userId]
-    if (!stored || typeof stored !== 'object') return emptyAddress()
-    return { ...emptyAddress(), ...stored }
-  } catch {
-    return emptyAddress()
-  }
-}
-
-function writeAddress(userId: string, address: AddressFields) {
-  try {
-    const raw = window.localStorage.getItem(ADDRESS_STORAGE_KEY)
-    const all = raw
-      ? (JSON.parse(raw) as Record<string, AddressFields>)
-      : {}
-    all[userId] = address
-    window.localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(all))
-  } catch {
-    // Ignore quota / private-mode failures.
-  }
-}
-
-function profileFromUser(user: AuthUser, address: AddressFields): AccountProfile {
-  const split = splitName(user.name)
-  return {
-    firstName: user.firstName?.trim() || split.firstName,
-    lastName: user.lastName?.trim() || split.lastName,
-    email: user.email,
-    phone: user.phone ?? '',
-    jerseySize: user.jerseySize || 'M',
-    ...address,
   }
 }
 
@@ -133,22 +73,52 @@ export function accountInitials(profile: AccountProfile) {
 export function AccountProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const { data: session, isPending } = authClient.useSession()
-  const [address, setAddress] = React.useState<AddressFields>(emptyAddress)
+  const [profile, setProfile] = React.useState<AccountProfile | null>(null)
+  const [profileReady, setProfileReady] = React.useState(false)
   const user = session?.user
   const userId = user?.id
 
   React.useEffect(() => {
+    let cancelled = false
+
     if (!userId) {
-      setAddress(emptyAddress())
+      setProfile(null)
+      setProfileReady(!isPending)
       return
     }
-    setAddress(readAddress(userId))
-  }, [userId])
 
-  const profile = user ? profileFromUser(user, address) : null
+    setProfileReady(false)
+    void getMyProfile()
+      .then((row) => {
+        if (cancelled) return
+        setProfile({
+          firstName: row.firstName,
+          lastName: row.lastName,
+          email: row.email,
+          phone: row.phone,
+          jerseySize: row.jerseySize,
+          address: row.address,
+          apartment: row.apartment,
+          city: row.city,
+          province: row.province,
+          postal: row.postal,
+        })
+        setProfileReady(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setProfile(emptyProfile(user?.email ?? ''))
+        setProfileReady(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, user?.email, isPending])
 
   const signOut = React.useCallback(() => {
     void authClient.signOut().then(() => {
+      setProfile(null)
       void navigate({ to: '/' })
     })
   }, [navigate])
@@ -156,62 +126,33 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = React.useCallback(
     async (patch: Partial<AccountProfile>) => {
       if (!user) return
-
-      const addressPatch: Partial<AddressFields> = {}
-      let hasAddress = false
-      for (const key of ADDRESS_KEYS) {
-        if (patch[key] !== undefined) {
-          addressPatch[key] = patch[key]
-          hasAddress = true
-        }
-      }
-      if (hasAddress) {
-        const next = { ...address, ...addressPatch }
-        setAddress(next)
-        writeAddress(user.id, next)
-      }
-
-      const firstName =
-        patch.firstName !== undefined
-          ? patch.firstName.trim()
-          : (user.firstName?.trim() || splitName(user.name).firstName)
-      const lastName =
-        patch.lastName !== undefined
-          ? patch.lastName.trim()
-          : (user.lastName?.trim() || splitName(user.name).lastName)
-      const userPatch: {
-        firstName?: string
-        lastName?: string
-        phone?: string
-        jerseySize?: string
-        name?: string
-      } = {}
-
-      if (patch.firstName !== undefined) userPatch.firstName = firstName
-      if (patch.lastName !== undefined) userPatch.lastName = lastName
-      if (patch.phone !== undefined) userPatch.phone = patch.phone.trim()
-      if (patch.jerseySize !== undefined) userPatch.jerseySize = patch.jerseySize
-
-      if (Object.keys(userPatch).length === 0) return
-
-      userPatch.name = `${firstName} ${lastName}`.trim() || user.name
-      const { error } = await authClient.updateUser(userPatch)
-      if (error) {
-        throw new Error(error.message || 'Could not save profile')
-      }
+      const next = await upsertMyProfile({ data: patch })
+      setProfile({
+        firstName: next.firstName,
+        lastName: next.lastName,
+        email: next.email,
+        phone: next.phone,
+        jerseySize: next.jerseySize,
+        address: next.address,
+        apartment: next.apartment,
+        city: next.city,
+        province: next.province,
+        postal: next.postal,
+      })
+      await authClient.getSession()
     },
-    [user, address],
+    [user],
   )
 
   const value = React.useMemo(
     () => ({
       profile,
       signedIn: Boolean(user),
-      ready: !isPending,
+      ready: !isPending && profileReady,
       signOut,
       updateProfile,
     }),
-    [profile, user, isPending, signOut, updateProfile],
+    [profile, user, isPending, profileReady, signOut, updateProfile],
   )
 
   return (

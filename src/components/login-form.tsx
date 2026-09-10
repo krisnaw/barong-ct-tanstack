@@ -31,15 +31,12 @@ export function LoginForm({
     setPending(true)
 
     const displayName = name.trim() || email.split('@')[0] || 'Rider'
-    const [firstName, ...rest] = displayName.split(/\s+/)
     const { error: authError } =
       mode === 'signup'
         ? await authClient.signUp.email({
             name: displayName,
             email,
             password,
-            firstName: firstName ?? displayName,
-            lastName: rest.join(' '),
           })
         : await authClient.signIn.email({
             email,

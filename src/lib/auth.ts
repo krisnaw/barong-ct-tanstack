@@ -13,31 +13,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  user: {
-    additionalFields: {
-      firstName: {
-        type: 'string',
-        required: false,
-        input: true,
-      },
-      lastName: {
-        type: 'string',
-        required: false,
-        input: true,
-      },
-      phone: {
-        type: 'string',
-        required: false,
-        input: true,
-      },
-      jerseySize: {
-        type: 'string',
-        required: false,
-        defaultValue: 'M',
-        input: true,
-      },
-    },
-  },
   trustedOrigins: ['http://localhost:*', 'https://localhost:*'],
   plugins: [admin(), tanstackStartCookies()],
 })

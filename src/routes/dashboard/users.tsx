@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import { inArray } from 'drizzle-orm'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,6 +11,8 @@ import {
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { auth } from '~/lib/auth'
+import { userProfile } from '~/lib/auth-schema'
+import { db } from '~/lib/db'
 import { seo } from '~/utils/seo'
 
 const listUsers = createServerFn({ method: 'GET' }).handler(async () => {
@@ -23,24 +26,37 @@ const listUsers = createServerFn({ method: 'GET' }).handler(async () => {
     headers,
   })
 
+  const ids = result.users.map((row) => row.id)
+  const profiles =
+    ids.length > 0
+      ? await db
+          .select({
+            userId: userProfile.userId,
+            firstName: userProfile.firstName,
+            lastName: userProfile.lastName,
+            jerseySize: userProfile.jerseySize,
+          })
+          .from(userProfile)
+          .where(inArray(userProfile.userId, ids))
+      : []
+
+  const profileByUserId = new Map(
+    profiles.map((row) => [row.userId, row] as const),
+  )
+
   return {
     total: result.total,
     users: result.users.map((row) => {
-      const firstName =
-        typeof row.firstName === 'string' ? row.firstName.trim() : ''
-      const lastName =
-        typeof row.lastName === 'string' ? row.lastName.trim() : ''
-      const fromParts = `${firstName} ${lastName}`.trim()
+      const profile = profileByUserId.get(row.id)
+      const fromParts =
+        `${profile?.firstName ?? ''} ${profile?.lastName ?? ''}`.trim()
       return {
         id: row.id,
         name: fromParts || row.name.trim() || row.email,
         email: row.email,
         role: row.role || 'user',
         banned: Boolean(row.banned),
-        jerseySize:
-          typeof row.jerseySize === 'string' && row.jerseySize
-            ? row.jerseySize
-            : 'M',
+        jerseySize: profile?.jerseySize || 'M',
       }
     }),
   }
