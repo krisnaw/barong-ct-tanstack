@@ -18,6 +18,7 @@ import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as AccountAddressRouteImport } from './routes/account.address'
 import { Route as AccountOrdersRouteImport } from './routes/account.orders'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
@@ -85,6 +86,11 @@ const AccountOrdersRoute = AccountOrdersRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/auth/signup',
+  path: '/auth/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/account/address': typeof AccountAddressRoute
   '/account/orders': typeof AccountOrdersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/account/address': typeof AccountAddressRoute
   '/account/orders': typeof AccountOrdersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/account/address': typeof AccountAddressRoute
   '/account/orders': typeof AccountOrdersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/account/address'
     | '/account/orders'
     | '/auth/login'
+    | '/auth/signup'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/account/address'
     | '/account/orders'
     | '/auth/login'
+    | '/auth/signup'
     | '/dashboard/users'
     | '/recaps/$slug'
     | '/shop/$slug'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/account/address'
     | '/account/orders'
     | '/auth/login'
+    | '/auth/signup'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
@@ -402,6 +414,7 @@ export interface RootRouteChildren {
   EventsRoute: typeof EventsRouteWithChildren
   ShopRoute: typeof ShopRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
   RecapsSlugRoute: typeof RecapsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -469,6 +482,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/auth/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -765,6 +785,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsRoute: EventsRouteWithChildren,
   ShopRoute: ShopRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
+  AuthSignupRoute: AuthSignupRoute,
   RecapsSlugRoute: RecapsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

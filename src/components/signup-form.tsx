@@ -13,11 +13,12 @@ import {
 import { Input } from '~/components/ui/input'
 import { authClient } from '~/lib/auth-client'
 
-export function LoginForm({
+export function SignUpForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
+  const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
@@ -28,7 +29,9 @@ export function LoginForm({
     setError(null)
     setPending(true)
 
-    const { error: authError } = await authClient.signIn.email({
+    const displayName = name.trim() || email.split('@')[0] || 'Rider'
+    const { error: authError } = await authClient.signUp.email({
+      name: displayName,
       email,
       password,
     })
@@ -36,7 +39,7 @@ export function LoginForm({
     setPending(false)
 
     if (authError) {
-      setError(authError.message || 'Could not sign in.')
+      setError(authError.message || 'Could not create account.')
       return
     }
 
@@ -57,18 +60,28 @@ export function LoginForm({
               </div>
               <span className="sr-only">Barong Cycling Team</span>
             </Link>
-            <h1 className="text-xl font-bold">Welcome to Barong CT</h1>
+            <h1 className="text-xl font-bold">Create your account</h1>
             <FieldDescription>
-              Don&apos;t have an account?{' '}
-              <Link className="underline" to="/auth/signup">
-                Sign up
+              Already have an account?{' '}
+              <Link className="underline" to="/auth/login">
+                Sign in
               </Link>
             </FieldDescription>
           </div>
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="name">Name</FieldLabel>
             <Input
               autoFocus
+              id="name"
+              name="name"
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Rider name"
+              value={name}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <Input
               id="email"
               name="email"
               onChange={(event) => setEmail(event.target.value)}
@@ -95,7 +108,7 @@ export function LoginForm({
           ) : null}
           <Field>
             <Button disabled={pending} type="submit">
-              {pending ? 'Please wait…' : 'Login'}
+              {pending ? 'Please wait…' : 'Create account'}
             </Button>
           </Field>
         </FieldGroup>
