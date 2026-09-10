@@ -31,6 +31,14 @@ export function Footer() {
             >
               Events
             </Link>
+            <a
+              className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
+              href="https://www.strava.com/clubs/barongcyclingteam"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Strava
+            </a>
           </nav>
           <p className="text-sm text-white/45">© 2026 Barong Cycling Team</p>
         </div>

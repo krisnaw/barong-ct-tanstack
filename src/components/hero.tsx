@@ -6,24 +6,6 @@ import { cn } from '~/lib/utils'
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop'
 
-const rides = [
-  {
-    day: 'Tue',
-    name: 'Quickie',
-    detail: '50–60 km. Pace on, finish in Ubud.',
-  },
-  {
-    day: 'Thu',
-    name: 'Foreplay',
-    detail: 'Social ride. The bunch stays together.',
-  },
-  {
-    day: 'Sat',
-    name: 'Climax',
-    detail: '100 km, 1,000 m+. Kintamani or Jatiluwih.',
-  },
-] as const
-
 export function Hero() {
   return (
     <section className="relative isolate min-h-[calc(100dvh-4.25rem)] overflow-x-clip bg-foreground text-white">
@@ -93,28 +75,6 @@ export function Hero() {
               Events
             </Link>
           </div>
-
-          <ul
-            className="mt-10 grid scroll-mt-6 gap-px overflow-hidden rounded-xl border border-white/15 bg-white/10 sm:grid-cols-3"
-            id="rides"
-          >
-            {rides.map((ride) => (
-              <li
-                className="bg-foreground/45 px-5 py-4 backdrop-blur-md sm:px-6"
-                key={ride.day}
-              >
-                <p className="text-[0.65rem] font-medium tracking-[0.2em] text-white/55 uppercase">
-                  {ride.day}
-                </p>
-                <p className="mt-1 font-heading text-lg font-medium tracking-tight">
-                  {ride.name}
-                </p>
-                <p className="mt-1 text-sm leading-snug text-white/65">
-                  {ride.detail}
-                </p>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>
