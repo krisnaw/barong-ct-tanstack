@@ -11,6 +11,7 @@ import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { Footer } from '~/components/footer'
 import { NotFound } from '~/components/NotFound'
 import { PublicNav } from '~/components/public-nav'
+import { AccountProvider } from '~/lib/account'
 import { CartProvider } from '~/lib/cart'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
@@ -67,9 +68,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex min-h-dvh flex-col">
         <CartProvider>
-          <SiteNav />
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
+          <AccountProvider>
+            <SiteNav />
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </AccountProvider>
         </CartProvider>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />

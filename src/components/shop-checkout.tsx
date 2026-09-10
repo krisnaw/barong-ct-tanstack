@@ -14,6 +14,7 @@ import {
   type ShopProduct,
 } from '~/data/shop'
 import type { ShopOrder } from '~/data/orders'
+import { useAccount } from '~/lib/account'
 import { useCart, type CartItem } from '~/lib/cart'
 import { addPlacedOrder } from '~/lib/orders'
 import { cn } from '~/lib/utils'
@@ -100,6 +101,7 @@ function parseDiscount(code: string): Discount | null {
 export function ShopCheckout() {
   const navigate = useNavigate()
   const { items, clear, ready } = useCart()
+  const { profile, signedIn, ready: accountReady } = useAccount()
   const lines = useCartLines(items)
   const [order, setOrder] = React.useState<PlacedOrder | null>(null)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
@@ -140,6 +142,19 @@ export function ShopCheckout() {
       void navigate({ to: '/shop/cart' })
     }
   }, [ready, items.length, order, navigate])
+
+  React.useEffect(() => {
+    if (!accountReady || !signedIn || !profile) return
+    setEmail(profile.email)
+    setFirstName(profile.firstName)
+    setLastName(profile.lastName)
+    setPhone(profile.phone)
+    setAddress(profile.address)
+    setApartment(profile.apartment)
+    setCity(profile.city)
+    if (profile.province) setProvince(profile.province)
+    setPostal(profile.postal)
+  }, [accountReady, signedIn, profile])
 
   function applyDiscount(event: React.FormEvent) {
     event.preventDefault()

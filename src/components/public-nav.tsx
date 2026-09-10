@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ShoppingBagIcon } from '@phosphor-icons/react'
+import { AccountMenu } from '~/components/account-menu'
 import { useCartCount } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 
@@ -44,29 +45,32 @@ export function PublicNav() {
           >
             Shop
           </Link>
-          <Link
-            aria-label={
-              ready && count > 0
-                ? `Bag, ${count} ${count === 1 ? 'item' : 'items'}`
-                : 'Bag'
-            }
-            className={cn(
-              'relative text-muted-foreground transition-colors hover:text-foreground',
-              onCart && 'text-foreground',
-            )}
-            to="/shop/cart"
-          >
-            <ShoppingBagIcon
-              aria-hidden
-              className="size-5"
-              weight={onCart || (ready && count > 0) ? 'fill' : 'regular'}
-            />
-            {ready && count > 0 ? (
-              <span className="absolute -top-1.5 -right-2 grid min-w-4 place-items-center rounded-full bg-foreground px-1 text-[0.65rem] leading-4 font-medium text-background tabular-nums">
-                {count}
-              </span>
-            ) : null}
-          </Link>
+          <div className="flex items-center gap-5">
+            <Link
+              aria-label={
+                ready && count > 0
+                  ? `Bag, ${count} ${count === 1 ? 'item' : 'items'}`
+                  : 'Bag'
+              }
+              className={cn(
+                'relative text-muted-foreground transition-colors hover:text-foreground',
+                onCart && 'text-foreground',
+              )}
+              to="/shop/cart"
+            >
+              <ShoppingBagIcon
+                aria-hidden
+                className="size-5"
+                weight={onCart || (ready && count > 0) ? 'fill' : 'regular'}
+              />
+              {ready && count > 0 ? (
+                <span className="absolute -top-1.5 -right-2 grid min-w-4 place-items-center rounded-full bg-foreground px-1 text-[0.65rem] leading-4 font-medium text-background tabular-nums">
+                  {count}
+                </span>
+              ) : null}
+            </Link>
+            <AccountMenu />
+          </div>
         </nav>
       </div>
     </header>

@@ -16,16 +16,22 @@ import {
   shopImageSrc,
   type ShopProduct,
 } from '~/data/shop'
+import { useAccount } from '~/lib/account'
 import { useCart } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 
 export function ShopProductDetail({ product }: { product: ShopProduct }) {
   const { addItem } = useCart()
+  const { profile, signedIn } = useAccount()
   const [size, setSize] = React.useState('')
   const [added, setAdded] = React.useState(false)
   const [activeImage, setActiveImage] = React.useState(0)
   const gallery = product.images.length > 0 ? product.images : [product.image]
   const currentImage = gallery[activeImage] ?? product.image
+  const savedSize =
+    signedIn && profile?.jerseySize && product.sizes.includes(profile.jerseySize)
+      ? profile.jerseySize
+      : ''
 
   function handleAdd() {
     if (!size) return
@@ -34,10 +40,15 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
   }
 
   React.useEffect(() => {
-    setSize('')
     setAdded(false)
     setActiveImage(0)
+    setSize(savedSize)
   }, [product.slug])
+
+  React.useEffect(() => {
+    if (!savedSize) return
+    setSize((current) => current || savedSize)
+  }, [savedSize])
 
   return (
     <article>
