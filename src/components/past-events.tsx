@@ -13,14 +13,14 @@ export function PastEvents() {
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-foreground uppercase">
             <span aria-hidden className="h-px w-8 bg-primary" />
-            Melali
+            Events
           </p>
           <h2 className="mt-4 font-heading text-[clamp(2rem,4.5vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
-            Two years of wandering Bali by bike.
+            Same start. New map each year.
           </h2>
         </div>
         <p className="max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Barong Melali is the club’s annual jalan-jalan — not a race. Same
+          Barong Melali is the club’s annual jalan-jalan, not a race. Same
           start at UC Batubulan, a new map each year.
         </p>
       </div>
