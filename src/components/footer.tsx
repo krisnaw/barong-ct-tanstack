@@ -1,6 +1,9 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslations } from '~/lib/i18n'
 
 export function Footer() {
+  const t = useTranslations()
+
   return (
     <footer className="border-t border-white/10 bg-foreground text-white">
       <div className="flex flex-col items-center gap-5 px-5 py-10 text-center sm:px-8 lg:px-12 lg:py-12">
@@ -14,25 +17,28 @@ export function Footer() {
           />
         </p>
 
-        <nav aria-label="Footer" className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/70">
+        <nav
+          aria-label={t.footer.nav}
+          className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/70"
+        >
           <Link
             className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
             hash="rides"
             to="/"
           >
-            Rides
+            {t.footer.rides}
           </Link>
           <Link
             className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
             to="/events"
           >
-            Events
+            {t.footer.events}
           </Link>
           <Link
             className="rounded-sm outline-none transition-colors hover:text-white focus-visible:ring-3 focus-visible:ring-white/50"
             to="/shop"
           >
-            Shop
+            {t.footer.shop}
           </Link>
         </nav>
       </div>

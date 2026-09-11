@@ -1,0 +1,96 @@
+import type { Messages } from '~/lib/i18n/types'
+
+export const en: Messages = {
+  nav: {
+    primary: 'Primary',
+    mobile: 'Mobile',
+    events: 'Events',
+    shop: 'Shop',
+    menu: 'Menu',
+    openMenu: 'Open menu',
+    bag: 'Bag',
+    bagWithCount: 'Bag, {count} {items}',
+    bagItem: 'item',
+    bagItems: 'items',
+  },
+  footer: {
+    nav: 'Footer',
+    rides: 'Rides',
+    events: 'Events',
+    shop: 'Shop',
+  },
+  lang: {
+    label: 'Language',
+    english: 'English',
+    indonesia: 'Indonesia',
+  },
+  accountMenu: {
+    signIn: 'Sign in',
+    sign: 'Sign',
+    account: 'Account',
+    profile: 'Profile',
+    shippingAddress: 'Shipping Address',
+    orders: 'Orders',
+    signOut: 'Sign out',
+  },
+  verifyEmail: {
+    prompt: 'Please verify your email',
+    sentSuffix: ', check your inbox.',
+    resend: 'Resend email',
+    sending: 'Sending…',
+    emailSent: 'Email sent',
+    resendError: 'Could not resend email.',
+  },
+  hero: {
+    location: 'Denpasar, Bali',
+    est: 'Est. 2016',
+    tagline: 'Keep the bunch together.',
+    body: 'A Denpasar peloton that still shows up three times a week, rice terraces, volcano climbs, and a teammate waiting on the next corner.',
+    joinRide: 'Join a ride',
+    events: 'Events',
+    shop: 'Shop',
+    imageAlt:
+      'Road cyclists packed in a peloton on an open country road',
+  },
+  rides: {
+    eyebrow: 'Regular Rides',
+    title: 'Tuesday. Thursday. Saturday.',
+    body: 'Welcome to Barong Cycling Team, Bali’s largest and most consistent road and gravel community, proudly riding together since 2016. We explore the island’s landscapes and culture. Join a weekly ride. Follow Strava and Instagram for meet points, Saturday’s Climax pin, and ride updates.',
+    followStrava: 'Follow on Strava',
+    followIg: 'Follow on Instagram',
+    meet: 'Meet',
+    time: 'Time',
+    timeValue: '6:15 AM',
+    items: [
+      {
+        day: 'Tuesday',
+        name: 'Quickie',
+        meet: 'Mantra Gate',
+        detail: 'Midweek pace-on. Finish in Ubud.',
+      },
+      {
+        day: 'Thursday',
+        name: 'Foreplay',
+        meet: 'Lumintang Park',
+        detail: 'Social ride. The bunch stays together.',
+      },
+      {
+        day: 'Saturday',
+        name: 'Climax',
+        meet: 'Posted Friday evening',
+        detail:
+          'The weekly long ride. Location announced on Strava every Friday.',
+      },
+    ],
+  },
+  events: {
+    eyebrow: 'Events',
+    title: 'Same start. New map each year.',
+    body: 'Barong Melali is the club’s annual jalan-jalan, not a race. Same start at UC Batubulan, a new map each year.',
+    latest: 'Latest',
+    distance: 'Distance',
+    start: 'Start',
+    field: 'Field',
+    viewRecap: 'View recap',
+  },
+}

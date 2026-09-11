@@ -1,0 +1,96 @@
+import type { Messages } from '~/lib/i18n/types'
+
+export const id: Messages = {
+  nav: {
+    primary: 'Utama',
+    mobile: 'Seluler',
+    events: 'Acara',
+    shop: 'Toko',
+    menu: 'Menu',
+    openMenu: 'Buka menu',
+    bag: 'Tas',
+    bagWithCount: 'Tas, {count} {items}',
+    bagItem: 'item',
+    bagItems: 'item',
+  },
+  footer: {
+    nav: 'Footer',
+    rides: 'Ride',
+    events: 'Acara',
+    shop: 'Toko',
+  },
+  lang: {
+    label: 'Bahasa',
+    english: 'English',
+    indonesia: 'Indonesia',
+  },
+  accountMenu: {
+    signIn: 'Masuk',
+    sign: 'Masuk',
+    account: 'Akun',
+    profile: 'Profil',
+    shippingAddress: 'Alamat Pengiriman',
+    orders: 'Pesanan',
+    signOut: 'Keluar',
+  },
+  verifyEmail: {
+    prompt: 'Harap verifikasi email Anda',
+    sentSuffix: ', cek kotak masuk Anda.',
+    resend: 'Kirim ulang email',
+    sending: 'Mengirim…',
+    emailSent: 'Email terkirim',
+    resendError: 'Tidak dapat mengirim ulang email.',
+  },
+  hero: {
+    location: 'Denpasar, Bali',
+    est: 'Sejak 2016',
+    tagline: 'Jaga bunch tetap bersama.',
+    body: 'Peloton Denpasar yang masih muncul tiga kali seminggu, sawah, tanjakan gunung, dan rekan yang menunggu di tikungan berikutnya.',
+    joinRide: 'Ikut ride',
+    events: 'Acara',
+    shop: 'Toko',
+    imageAlt:
+      'Pesepeda jalan raya dalam peloton di jalan pedesaan terbuka',
+  },
+  rides: {
+    eyebrow: 'Ride Rutin',
+    title: 'Selasa. Kamis. Sabtu.',
+    body: 'Selamat datang di Barong Cycling Team, komunitas road dan gravel terbesar dan paling konsisten di Bali, bangga bersepeda bersama sejak 2016. Kami menjelajahi lanskap dan budaya pulau ini. Ikut ride mingguan. Ikuti Strava dan Instagram untuk titik kumpul, pin Climax Sabtu, dan update ride.',
+    followStrava: 'Ikuti di Strava',
+    followIg: 'Ikuti di Instagram',
+    meet: 'Titik kumpul',
+    time: 'Waktu',
+    timeValue: '06.15',
+    items: [
+      {
+        day: 'Selasa',
+        name: 'Quickie',
+        meet: 'Mantra Gate',
+        detail: 'Ride midweek yang lebih kencang. Finish di Ubud.',
+      },
+      {
+        day: 'Kamis',
+        name: 'Foreplay',
+        meet: 'Taman Lumintang',
+        detail: 'Ride santai. Bunch tetap bersama.',
+      },
+      {
+        day: 'Sabtu',
+        name: 'Climax',
+        meet: 'Diumumkan Jumat malam',
+        detail:
+          'Ride panjang mingguan. Lokasi diumumkan di Strava setiap Jumat.',
+      },
+    ],
+  },
+  events: {
+    eyebrow: 'Acara',
+    title: 'Titik start sama. Peta baru tiap tahun.',
+    body: 'Barong Melali adalah jalan-jalan tahunan klub, bukan balapan. Start sama di UC Batubulan, peta baru setiap tahun.',
+    latest: 'Terbaru',
+    distance: 'Jarak',
+    start: 'Start',
+    field: 'Peserta',
+    viewRecap: 'Lihat recap',
+  },
+}

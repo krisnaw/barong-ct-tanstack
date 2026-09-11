@@ -15,6 +15,7 @@ import { Toaster } from '~/components/ui/toast'
 import { VerifyEmailBanner } from '~/components/verify-email-banner'
 import { AccountProvider } from '~/lib/account'
 import { CartProvider } from '~/lib/cart'
+import { LocaleProvider } from '~/lib/i18n'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
 
@@ -70,13 +71,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex min-h-dvh flex-col">
         <Toaster>
-          <CartProvider>
-            <AccountProvider>
-              <SiteNav />
-              <div className="flex-1">{children}</div>
-              <SiteFooter />
-            </AccountProvider>
-          </CartProvider>
+          <LocaleProvider>
+            <CartProvider>
+              <AccountProvider>
+                <SiteNav />
+                <div className="flex-1">{children}</div>
+                <SiteFooter />
+              </AccountProvider>
+            </CartProvider>
+          </LocaleProvider>
         </Toaster>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />

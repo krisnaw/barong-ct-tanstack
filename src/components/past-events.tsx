@@ -1,9 +1,12 @@
 import { ArrowUpRightIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { pastEvents, type PastEvent } from '~/data/recaps'
+import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
 export function PastEvents() {
+  const t = useTranslations()
+
   return (
     <section
       className="bg-background px-5 py-16 text-foreground sm:px-8 sm:py-20 lg:px-12 lg:py-24"
@@ -13,15 +16,14 @@ export function PastEvents() {
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-foreground uppercase">
             <span aria-hidden className="h-px w-8 bg-primary" />
-            Events
+            {t.events.eyebrow}
           </p>
           <h2 className="mt-4 font-heading text-[clamp(2rem,4.5vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
-            Same start. New map each year.
+            {t.events.title}
           </h2>
         </div>
         <p className="max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Barong Melali is the club’s annual jalan-jalan, not a race. Same
-          start at UC Batubulan, a new map each year.
+          {t.events.body}
         </p>
       </div>
 
@@ -40,6 +42,8 @@ export function PastEvents() {
 }
 
 function EventCard({ event }: { event: PastEvent }) {
+  const t = useTranslations()
+
   return (
     <Link
       className={cn(
@@ -56,7 +60,11 @@ function EventCard({ event }: { event: PastEvent }) {
         className="absolute inset-0 size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         decoding="async"
         height={1200}
-        sizes={event.featured ? '(min-width: 1024px) 60vw, 100vw' : '(min-width: 1024px) 40vw, 100vw'}
+        sizes={
+          event.featured
+            ? '(min-width: 1024px) 60vw, 100vw'
+            : '(min-width: 1024px) 40vw, 100vw'
+        }
         src={`${event.image}&w=1200&q=75`}
         srcSet={`${event.image}&w=800&q=70 800w, ${event.image}&w=1200&q=75 1200w, ${event.image}&w=1800&q=80 1800w`}
         width={1800}
@@ -74,7 +82,7 @@ function EventCard({ event }: { event: PastEvent }) {
         <div className="flex flex-wrap items-center gap-2">
           {event.featured ? (
             <span className="rounded-full bg-white px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.16em] text-foreground uppercase">
-              Latest
+              {t.events.latest}
             </span>
           ) : null}
           <span className="text-[0.65rem] font-medium tracking-[0.2em] text-white/70 uppercase">
@@ -94,26 +102,26 @@ function EventCard({ event }: { event: PastEvent }) {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
-              Distance
+              {t.events.distance}
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.distance}</dd>
           </div>
           <div>
             <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
-              Start
+              {t.events.start}
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.location}</dd>
           </div>
           <div className="col-span-2 sm:col-span-1">
             <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
-              Field
+              {t.events.field}
             </dt>
             <dd className="mt-1 font-heading font-medium">{event.highlight}</dd>
           </div>
         </dl>
 
         <p className="flex items-center gap-1.5 text-sm font-medium text-white">
-          View recap
+          {t.events.viewRecap}
           <ArrowUpRightIcon
             aria-hidden
             className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none"

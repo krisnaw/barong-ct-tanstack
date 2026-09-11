@@ -4,34 +4,16 @@ import {
   MapPinIcon,
 } from '@phosphor-icons/react'
 import { buttonVariants } from '~/components/ui/button'
+import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
 const STRAVA_CLUB = 'https://www.strava.com/clubs/barongcyclingteam'
 const INSTAGRAM =
   'https://www.instagram.com/barongcyclingteam/?hl=en'
 
-const rides = [
-  {
-    day: 'Tuesday',
-    name: 'Quickie',
-    meet: 'Mantra Gate',
-    detail: 'Midweek pace-on. Finish in Ubud.',
-  },
-  {
-    day: 'Thursday',
-    name: 'Foreplay',
-    meet: 'Lumintang Park',
-    detail: 'Social ride. The bunch stays together.',
-  },
-  {
-    day: 'Saturday',
-    name: 'Climax',
-    meet: 'Posted Friday evening',
-    detail: 'The weekly long ride — location announced on Strava every Friday.',
-  },
-] as const
-
 export function WeeklyRides() {
+  const t = useTranslations()
+
   return (
     <section
       className="scroll-mt-6 bg-muted px-5 py-16 text-foreground sm:px-8 sm:py-20 lg:px-12 lg:py-24"
@@ -41,23 +23,19 @@ export function WeeklyRides() {
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-foreground uppercase">
             <span aria-hidden className="h-px w-8 bg-primary" />
-            Regular Rides
+            {t.rides.eyebrow}
           </p>
           <h2 className="mt-4 font-heading text-[clamp(2rem,4.5vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
-            Tuesday. Thursday. Saturday.
+            {t.rides.title}
           </h2>
         </div>
         <div className="flex max-w-xl flex-col items-start gap-4">
           <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Welcome to Barong Cycling Team, Bali’s largest and most consistent
-            road and gravel community, proudly riding together since 2016. We
-            explore the island’s landscapes and culture. Join a weekly ride.
-            Follow Strava and Instagram for meet points, Saturday’s Climax pin,
-            and ride updates.
+            {t.rides.body}
           </p>
           <div className="flex items-center gap-1">
             <a
-              aria-label="Follow on Strava"
+              aria-label={t.rides.followStrava}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'lg' }),
                 'px-3',
@@ -75,7 +53,7 @@ export function WeeklyRides() {
               />
             </a>
             <a
-              aria-label="Follow on Instagram"
+              aria-label={t.rides.followIg}
               className={buttonVariants({ variant: 'ghost', size: 'icon-lg' })}
               href={INSTAGRAM}
               rel="noopener noreferrer"
@@ -88,8 +66,8 @@ export function WeeklyRides() {
       </div>
 
       <ul className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
-        {rides.map((ride) => (
-          <li className="bg-background p-6 sm:p-8" key={ride.day}>
+        {t.rides.items.map((ride) => (
+          <li className="bg-background p-6 sm:p-8" key={ride.name}>
             <p className="text-[0.65rem] font-medium tracking-[0.2em] text-muted-foreground uppercase">
               {ride.day}
             </p>
@@ -107,7 +85,7 @@ export function WeeklyRides() {
                   className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                   weight="bold"
                 />
-                <dt className="sr-only">Meet</dt>
+                <dt className="sr-only">{t.rides.meet}</dt>
                 <dd className="font-medium">{ride.meet}</dd>
               </div>
               <div className="flex items-center gap-2.5">
@@ -116,8 +94,8 @@ export function WeeklyRides() {
                   className="size-4 shrink-0 text-muted-foreground"
                   weight="bold"
                 />
-                <dt className="sr-only">Time</dt>
-                <dd>6:15 AM</dd>
+                <dt className="sr-only">{t.rides.time}</dt>
+                <dd>{t.rides.timeValue}</dd>
               </div>
             </dl>
           </li>

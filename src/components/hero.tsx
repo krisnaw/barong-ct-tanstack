@@ -1,18 +1,21 @@
 import { ArrowRightIcon, MapPinIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '~/components/ui/button'
+import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop'
 
 export function Hero() {
+  const t = useTranslations()
+
   return (
     <section className="relative isolate min-h-[calc(100dvh-4.25rem)] overflow-x-clip bg-foreground text-white">
       <div className="absolute inset-x-0 top-0 z-20 h-px bg-white/30" />
 
       <img
-        alt="Road cyclists packed in a peloton on an open country road"
+        alt={t.hero.imageAlt}
         className="absolute inset-0 size-full object-cover object-[72%_center]"
         decoding="async"
         fetchPriority="high"
@@ -30,9 +33,9 @@ export function Hero() {
         <div className="mt-10 flex flex-1 flex-col justify-start px-5 pb-6 sm:mt-12 sm:px-8 lg:mt-auto lg:justify-end lg:px-12 lg:pb-8">
           <p className="mb-5 flex items-center gap-2 text-xs font-medium tracking-[0.22em] text-white/70 uppercase sm:text-sm">
             <MapPinIcon aria-hidden className="size-3.5 text-white" weight="bold" />
-            Denpasar, Bali
+            {t.hero.location}
             <span className="text-white/40">·</span>
-            Est. 2016
+            {t.hero.est}
           </p>
 
           <h1 className="max-w-5xl">
@@ -44,14 +47,12 @@ export function Hero() {
               className="mt-4 block h-px w-16 bg-white sm:w-24"
             />
             <span className="mt-5 block max-w-xl font-heading text-[clamp(1.5rem,3.4vw,2.75rem)] leading-[1.05] font-medium tracking-[-0.03em] text-white/95">
-              Keep the bunch together.
+              {t.hero.tagline}
             </span>
           </h1>
 
           <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/75 sm:text-base">
-            A Denpasar peloton that still shows up three times a week — rice
-            terraces, volcano climbs, and a teammate waiting on the next
-            corner.
+            {t.hero.body}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -62,7 +63,7 @@ export function Hero() {
               )}
               href="#rides"
             >
-              Join a ride
+              {t.hero.joinRide}
               <ArrowRightIcon aria-hidden className="size-4" weight="bold" />
             </a>
             <Link
@@ -72,7 +73,7 @@ export function Hero() {
               )}
               to="/events"
             >
-              Events
+              {t.hero.events}
             </Link>
             <Link
               className={cn(
@@ -81,7 +82,7 @@ export function Hero() {
               )}
               to="/shop"
             >
-              Shop
+              {t.hero.shop}
             </Link>
           </div>
         </div>

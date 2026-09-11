@@ -11,6 +11,7 @@ import {
   accountInitials,
   useAccount,
 } from '~/lib/account'
+import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
@@ -24,6 +25,7 @@ import {
 } from '~/components/ui/dropdown-menu'
 
 export function AccountMenu() {
+  const t = useTranslations()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const onAccount = pathname === '/account' || pathname.startsWith('/account/')
   const onAuth = pathname === '/auth/login' || pathname.startsWith('/auth/')
@@ -32,15 +34,19 @@ export function AccountMenu() {
   if (!ready || !signedIn || !profile) {
     return (
       <Link
-        aria-label="Sign in"
+        aria-label={t.accountMenu.signIn}
         className={cn(
           'inline-flex items-center gap-1.5 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
           onAuth && 'font-medium text-foreground',
         )}
         to="/auth/login"
       >
-        <SignInIcon aria-hidden className="size-5" weight={onAuth ? 'fill' : 'regular'} />
-        <span className="text-sm">Sign</span>
+        <SignInIcon
+          aria-hidden
+          className="size-5"
+          weight={onAuth ? 'fill' : 'regular'}
+        />
+        <span className="text-sm">{t.accountMenu.sign}</span>
       </Link>
     )
   }
@@ -48,7 +54,7 @@ export function AccountMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={`Account, ${accountDisplayName(profile)}`}
+        aria-label={`${t.accountMenu.account}, ${accountDisplayName(profile)}`}
         className={cn(
           'inline-flex cursor-pointer text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:text-foreground',
           onAccount && 'text-foreground',
@@ -79,20 +85,20 @@ export function AccountMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to="/account" />}>
           <UserCircleIcon />
-          Profile
+          {t.accountMenu.profile}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/account/address" />}>
           <MapPinIcon />
-          Shipping Address
+          {t.accountMenu.shippingAddress}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/account/orders" />}>
           <PackageIcon />
-          Orders
+          {t.accountMenu.orders}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut} variant="destructive">
           <SignOutIcon />
-          Sign out
+          {t.accountMenu.signOut}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

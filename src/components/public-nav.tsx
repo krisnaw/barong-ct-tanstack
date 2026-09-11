@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ListIcon, ShoppingBagIcon } from '@phosphor-icons/react'
 import { AccountMenu } from '~/components/account-menu'
-import { LanguageToggle } from '~/components/language-toggle'
 import {
   Sheet,
   SheetContent,
@@ -11,9 +10,11 @@ import {
   SheetTrigger,
 } from '~/components/ui/sheet'
 import { useCartCount } from '~/lib/cart'
+import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
 export function PublicNav() {
+  const t = useTranslations()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const onEvents = pathname === '/events' || pathname.startsWith('/events/')
   const onShop = pathname === '/shop' || pathname.startsWith('/shop/')
@@ -26,6 +27,16 @@ export function PublicNav() {
       'text-muted-foreground transition-colors hover:text-foreground',
       active && 'font-medium text-foreground',
     )
+
+  const bagLabel =
+    ready && count > 0
+      ? t.nav.bagWithCount
+          .replace('{count}', String(count))
+          .replace(
+            '{items}',
+            count === 1 ? t.nav.bagItem : t.nav.bagItems,
+          )
+      : t.nav.bag
 
   return (
     <header className="border-b border-border bg-background">
@@ -45,25 +56,20 @@ export function PublicNav() {
 
         <div className="flex items-center gap-5">
           <nav
-            aria-label="Primary"
+            aria-label={t.nav.primary}
             className="hidden items-center gap-7 text-sm md:flex"
           >
             <Link className={linkClass(onEvents)} to="/events">
-              Events
+              {t.nav.events}
             </Link>
             <Link className={linkClass(onShop && !onCart)} to="/shop">
-              Shop
+              {t.nav.shop}
             </Link>
           </nav>
 
           <div className="flex items-center gap-4 sm:gap-5">
-            <LanguageToggle />
             <Link
-              aria-label={
-                ready && count > 0
-                  ? `Bag, ${count} ${count === 1 ? 'item' : 'items'}`
-                  : 'Bag'
-              }
+              aria-label={bagLabel}
               className={cn(
                 'relative text-muted-foreground transition-colors hover:text-foreground',
                 onCart && 'text-foreground',
@@ -85,17 +91,17 @@ export function PublicNav() {
 
             <Sheet onOpenChange={setMenuOpen} open={menuOpen}>
               <SheetTrigger
-                aria-label="Open menu"
+                aria-label={t.nav.openMenu}
                 className="inline-flex cursor-pointer text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
               >
                 <ListIcon aria-hidden className="size-5" weight="bold" />
               </SheetTrigger>
               <SheetContent className="gap-0 p-0" side="right">
                 <SheetHeader className="border-b border-border">
-                  <SheetTitle>Menu</SheetTitle>
+                  <SheetTitle>{t.nav.menu}</SheetTitle>
                 </SheetHeader>
                 <nav
-                  aria-label="Mobile"
+                  aria-label={t.nav.mobile}
                   className="flex flex-col gap-1 px-3 py-4 text-base"
                 >
                   <Link
@@ -106,7 +112,7 @@ export function PublicNav() {
                     onClick={() => setMenuOpen(false)}
                     to="/events"
                   >
-                    Events
+                    {t.nav.events}
                   </Link>
                   <Link
                     className={cn(
@@ -116,7 +122,7 @@ export function PublicNav() {
                     onClick={() => setMenuOpen(false)}
                     to="/shop"
                   >
-                    Shop
+                    {t.nav.shop}
                   </Link>
                 </nav>
               </SheetContent>

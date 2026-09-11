@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { authClient } from '~/lib/auth-client'
+import { useTranslations } from '~/lib/i18n'
 
 export function VerifyEmailBanner() {
+  const t = useTranslations()
   const { data: session, isPending } = authClient.useSession()
   const [status, setStatus] = React.useState<'idle' | 'sending' | 'sent' | 'error'>(
     'idle',
@@ -23,7 +25,7 @@ export function VerifyEmailBanner() {
 
     if (sendError) {
       setStatus('error')
-      setError(sendError.message || 'Could not resend email.')
+      setError(sendError.message || t.verifyEmail.resendError)
       return
     }
 
@@ -34,8 +36,8 @@ export function VerifyEmailBanner() {
     <div className="border-b border-amber-200 bg-amber-50 text-amber-950">
       <div className="flex flex-col gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
         <p>
-          Please verify your email
-          {status === 'sent' ? ' — check your inbox.' : '.'}
+          {t.verifyEmail.prompt}
+          {status === 'sent' ? t.verifyEmail.sentSuffix : '.'}
         </p>
         <div className="flex items-center gap-3">
           {error ? <span className="text-destructive">{error}</span> : null}
@@ -46,10 +48,10 @@ export function VerifyEmailBanner() {
             type="button"
           >
             {status === 'sending'
-              ? 'Sending…'
+              ? t.verifyEmail.sending
               : status === 'sent'
-                ? 'Email sent'
-                : 'Resend email'}
+                ? t.verifyEmail.emailSent
+                : t.verifyEmail.resend}
           </button>
         </div>
       </div>
