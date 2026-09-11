@@ -20,7 +20,7 @@
   "r2_buckets": [
     {
       "binding": "AVATARS",
-      "bucket_name": "barong-ct-avatars"
+      "bucket_name": "prod-barong-ct"
     }
   ],
   "d1_databases": [
@@ -53,7 +53,7 @@
       "r2_buckets": [
         {
           "binding": "AVATARS",
-          "bucket_name": "barong-ct-avatars-staging"
+          "bucket_name": "staging-barong-ct"
         }
       ],
       "d1_databases": [
