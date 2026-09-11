@@ -9,7 +9,7 @@
   },
   "vars": {
     "EMAIL_PROVIDER": "cloudflare",
-    "EMAIL_FROM": "noreply@barongcycling.com",
+    "EMAIL_FROM": "noreply@barongmelali.com",
     "EMAIL_FROM_NAME": "Barong Cycling Team"
   },
   "send_email": [
@@ -42,7 +42,7 @@
       ],
       "vars": {
         "EMAIL_PROVIDER": "resend",
-        "EMAIL_FROM": "noreply@barongcycling.com",
+        "EMAIL_FROM": "noreply@barongmelali.com",
         "EMAIL_FROM_NAME": "Barong Cycling Team"
       },
       "send_email": [
