@@ -94,6 +94,7 @@ export const getMyProfile = createServerFn({ method: 'GET' }).handler(
     return {
       email: session.user.email,
       name: session.user.name,
+      avatarUrl: session.user.image ?? '',
       ...mapRow(row, session.user.name),
     }
   },

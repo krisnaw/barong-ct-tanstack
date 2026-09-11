@@ -17,6 +17,12 @@
       "name": "EMAIL"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "AVATARS",
+      "bucket_name": "barong-ct-avatars"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -42,6 +48,12 @@
       "send_email": [
         {
           "name": "EMAIL"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "AVATARS",
+          "bucket_name": "barong-ct-avatars-staging"
         }
       ],
       "d1_databases": [

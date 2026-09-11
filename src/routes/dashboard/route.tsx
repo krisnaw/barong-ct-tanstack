@@ -10,6 +10,9 @@ export const Route = createFileRoute('/dashboard')({
     if (!session) {
       throw redirect({ to: '/auth/login' })
     }
+    if (!session.user.emailVerified) {
+      throw redirect({ to: '/account' })
+    }
     if (!hasAdminRole(session.user.role)) {
       throw redirect({ to: '/' })
     }

@@ -11,6 +11,8 @@ import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { Footer } from '~/components/footer'
 import { NotFound } from '~/components/NotFound'
 import { PublicNav } from '~/components/public-nav'
+import { Toaster } from '~/components/ui/toast'
+import { VerifyEmailBanner } from '~/components/verify-email-banner'
 import { AccountProvider } from '~/lib/account'
 import { CartProvider } from '~/lib/cart'
 import appCss from '~/styles/app.css?url'
@@ -67,13 +69,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="flex min-h-dvh flex-col">
-        <CartProvider>
-          <AccountProvider>
-            <SiteNav />
-            <div className="flex-1">{children}</div>
-            <SiteFooter />
-          </AccountProvider>
-        </CartProvider>
+        <Toaster>
+          <CartProvider>
+            <AccountProvider>
+              <SiteNav />
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
+            </AccountProvider>
+          </CartProvider>
+        </Toaster>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
@@ -92,7 +96,12 @@ function isAppShellRoute(pathname: string) {
 function SiteNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   if (isAppShellRoute(pathname)) return null
-  return <PublicNav />
+  return (
+    <>
+      <PublicNav />
+      <VerifyEmailBanner />
+    </>
+  )
 }
 
 function SiteFooter() {

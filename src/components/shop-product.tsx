@@ -19,6 +19,7 @@ import {
 import { useAccount } from '~/lib/account'
 import { useCart } from '~/lib/cart'
 import { cn } from '~/lib/utils'
+import { toast } from '~/components/ui/toast'
 
 export function ShopProductDetail({ product }: { product: ShopProduct }) {
   const { addItem } = useCart()
@@ -37,6 +38,11 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
     if (!size) return
     addItem(product.slug, size)
     setAdded(true)
+    toast.add({
+      type: 'success',
+      title: 'Added to bag',
+      description: `${product.name} · Size ${size}`,
+    })
   }
 
   React.useEffect(() => {

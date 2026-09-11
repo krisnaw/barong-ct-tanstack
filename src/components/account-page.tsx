@@ -10,11 +10,15 @@ import {
 } from '~/data/orders'
 import { formatShopPrice, jerseySizeGuide, shopImageSrc } from '~/data/shop'
 import {
+  ACCOUNT_BLOOD_TYPES,
+  ACCOUNT_GENDERS,
   ACCOUNT_PROVINCES,
   accountDisplayName,
+  accountInitials,
   useAccount,
   type AccountProfile,
 } from '~/lib/account'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useShopOrders } from '~/lib/orders'
 import { cn } from '~/lib/utils'
 
@@ -28,7 +32,7 @@ const orderStatusStyles: Record<OrderStatus, string> = {
 
 const sections = [
   { to: '/account', label: 'Profile', exact: true },
-  { to: '/account/address', label: 'Address', exact: false },
+  { to: '/account/address', label: 'Shipping Address', exact: false },
   { to: '/account/orders', label: 'Orders', exact: false },
 ] as const
 
@@ -166,11 +170,14 @@ function isSectionActive(
 }
 
 export function AccountProfilePanel() {
-  const { profile, updateProfile } = useAccount()
+  const { profile, updateProfile, uploadAvatarImage, clearAvatarImage } =
+    useAccount()
   const [draft, setDraft] = React.useState(() => profile ?? emptyDraft())
   const [saved, setSaved] = React.useState(false)
   const [pending, setPending] = React.useState(false)
+  const [avatarPending, setAvatarPending] = React.useState(false)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (profile) setDraft(profile)
@@ -184,6 +191,45 @@ export function AccountProfilePanel() {
   ) {
     setDraft((current) => ({ ...current, [key]: value }))
     setSaved(false)
+  }
+
+  async function onAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setErrors({ form: 'Use a JPG, PNG, or WebP image.' })
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors({ form: 'Image must be 2MB or smaller.' })
+      return
+    }
+
+    setErrors({})
+    setAvatarPending(true)
+    try {
+      const image = await uploadAvatarImage(file)
+      setDraft((current) => ({ ...current, avatarUrl: image }))
+    } catch {
+      setErrors({ form: 'Could not upload avatar.' })
+    } finally {
+      setAvatarPending(false)
+    }
+  }
+
+  async function clearAvatar() {
+    setErrors({})
+    setAvatarPending(true)
+    try {
+      await clearAvatarImage()
+      setDraft((current) => ({ ...current, avatarUrl: '' }))
+    } catch {
+      setErrors({ form: 'Could not remove avatar.' })
+    } finally {
+      setAvatarPending(false)
+    }
   }
 
   async function handleSave(event: React.FormEvent) {
@@ -203,6 +249,13 @@ export function AccountProfilePanel() {
         firstName: draft.firstName,
         lastName: draft.lastName,
         phone: draft.phone,
+        gender: draft.gender,
+        bloodType: draft.bloodType,
+        dateOfBirth: draft.dateOfBirth,
+        nationality: draft.nationality,
+        idNumber: draft.idNumber,
+        emergencyContactName: draft.emergencyContactName,
+        emergencyContactPhone: draft.emergencyContactPhone,
         jerseySize: draft.jerseySize,
       })
       setSaved(true)
@@ -221,7 +274,56 @@ export function AccountProfilePanel() {
       <p className="mt-1 text-sm text-muted-foreground">
         Used at checkout and when we WhatsApp about pickup.
       </p>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+
+      <div className="mt-6 flex items-center gap-4">
+        <Avatar className="size-20 after:rounded-full data-[size=default]:size-20">
+          {draft.avatarUrl ? (
+            <AvatarImage alt="" src={draft.avatarUrl} />
+          ) : null}
+          <AvatarFallback className="bg-foreground font-heading text-lg font-semibold text-background">
+            {accountInitials(draft)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            Avatar
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            JPG, PNG, or WebP up to 2MB.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => void onAvatarChange(event)}
+              ref={fileInputRef}
+              type="file"
+            />
+            <Button
+              disabled={avatarPending}
+              onClick={() => fileInputRef.current?.click()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {avatarPending ? 'Uploading…' : 'Change photo'}
+            </Button>
+            {draft.avatarUrl ? (
+              <Button
+                disabled={avatarPending}
+                onClick={() => void clearAvatar()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <AccountField
           autoComplete="given-name"
           error={errors.firstName}
@@ -258,7 +360,87 @@ export function AccountProfilePanel() {
       </div>
 
       <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
-        Club kit size
+        Rider details
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Helps with event registration and medical info on the road.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <AccountSelect
+          id="gender"
+          label="Gender"
+          onChange={(value) => setField('gender', value)}
+          value={draft.gender}
+        >
+          <option value="">Select</option>
+          {ACCOUNT_GENDERS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </AccountSelect>
+        <AccountSelect
+          id="bloodType"
+          label="Blood type"
+          onChange={(value) => setField('bloodType', value)}
+          value={draft.bloodType}
+        >
+          <option value="">Select</option>
+          {ACCOUNT_BLOOD_TYPES.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </AccountSelect>
+        <AccountField
+          autoComplete="bday"
+          id="dateOfBirth"
+          label="Date of birth"
+          onChange={(value) => setField('dateOfBirth', value)}
+          type="date"
+          value={draft.dateOfBirth}
+        />
+        <AccountField
+          autoComplete="country-name"
+          id="nationality"
+          label="Nationality"
+          onChange={(value) => setField('nationality', value)}
+          value={draft.nationality}
+        />
+        <AccountField
+          id="idNumber"
+          label="KTP or ID"
+          onChange={(value) => setField('idNumber', value)}
+          value={draft.idNumber}
+        />
+      </div>
+
+      <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
+        Emergency contact
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Who we should call if something happens on a ride.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <AccountField
+          autoComplete="name"
+          id="emergencyContactName"
+          label="Contact name"
+          onChange={(value) => setField('emergencyContactName', value)}
+          value={draft.emergencyContactName}
+        />
+        <AccountField
+          autoComplete="tel"
+          id="emergencyContactPhone"
+          label="Contact phone"
+          onChange={(value) => setField('emergencyContactPhone', value)}
+          type="tel"
+          value={draft.emergencyContactPhone}
+        />
+      </div>
+
+      <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
+        Preferred Jersey Size
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
         Race-fit. We’ll remember this when you add a jersey.
@@ -451,10 +633,18 @@ function SaveBar({ pending, saved }: { pending?: boolean; saved: boolean }) {
 
 function emptyDraft(): AccountProfile {
   return {
+    avatarUrl: '',
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    gender: '',
+    bloodType: '',
+    dateOfBirth: '',
+    nationality: '',
+    idNumber: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
     jerseySize: 'M',
     address: '',
     apartment: '',

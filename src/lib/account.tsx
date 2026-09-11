@@ -5,6 +5,7 @@ import {
   getMyProfile,
   upsertMyProfile,
 } from '~/lib/profile.functions'
+import { removeAvatar, uploadAvatar } from '~/lib/avatar.functions'
 
 export const ACCOUNT_PROVINCES = [
   'Bali',
@@ -15,11 +16,37 @@ export const ACCOUNT_PROVINCES = [
   'Yogyakarta',
 ] as const
 
+export const ACCOUNT_GENDERS = [
+  'Male',
+  'Female',
+  'Other',
+  'Prefer not to say',
+] as const
+
+export const ACCOUNT_BLOOD_TYPES = [
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'AB+',
+  'AB-',
+  'O+',
+  'O-',
+] as const
+
 export type AccountProfile = {
+  avatarUrl: string
   firstName: string
   lastName: string
   email: string
   phone: string
+  gender: string
+  bloodType: string
+  dateOfBirth: string
+  nationality: string
+  idNumber: string
+  emergencyContactName: string
+  emergencyContactPhone: string
   jerseySize: string
   address: string
   apartment: string
@@ -34,16 +61,26 @@ type AccountContextValue = {
   ready: boolean
   signOut: () => void
   updateProfile: (patch: Partial<AccountProfile>) => Promise<void>
+  uploadAvatarImage: (file: File) => Promise<string>
+  clearAvatarImage: () => Promise<void>
 }
 
 const AccountContext = React.createContext<AccountContextValue | null>(null)
 
 function emptyProfile(email = ''): AccountProfile {
   return {
+    avatarUrl: '',
     firstName: '',
     lastName: '',
     email,
     phone: '',
+    gender: '',
+    bloodType: '',
+    dateOfBirth: '',
+    nationality: '',
+    idNumber: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
     jerseySize: 'M',
     address: '',
     apartment: '',
@@ -92,6 +129,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       .then((row) => {
         if (cancelled) return
         setProfile({
+          ...emptyProfile(row.email),
+          avatarUrl: row.avatarUrl,
           firstName: row.firstName,
           lastName: row.lastName,
           email: row.email,
@@ -107,14 +146,17 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         if (cancelled) return
-        setProfile(emptyProfile(user?.email ?? ''))
+        setProfile({
+          ...emptyProfile(user?.email ?? ''),
+          avatarUrl: user?.image ?? '',
+        })
         setProfileReady(true)
       })
 
     return () => {
       cancelled = true
     }
-  }, [userId, user?.email, isPending])
+  }, [userId, user?.email, user?.image, isPending])
 
   const signOut = React.useCallback(() => {
     void authClient.signOut().then(() => {
@@ -127,7 +169,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     async (patch: Partial<AccountProfile>) => {
       if (!user) return
       const next = await upsertMyProfile({ data: patch })
-      setProfile({
+      setProfile((prev) => ({
+        ...emptyProfile(next.email),
+        ...prev,
         firstName: next.firstName,
         lastName: next.lastName,
         email: next.email,
@@ -138,11 +182,47 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         city: next.city,
         province: next.province,
         postal: next.postal,
-      })
+        gender: patch.gender ?? prev?.gender ?? '',
+        bloodType: patch.bloodType ?? prev?.bloodType ?? '',
+        dateOfBirth: patch.dateOfBirth ?? prev?.dateOfBirth ?? '',
+        nationality: patch.nationality ?? prev?.nationality ?? '',
+        idNumber: patch.idNumber ?? prev?.idNumber ?? '',
+        emergencyContactName:
+          patch.emergencyContactName ?? prev?.emergencyContactName ?? '',
+        emergencyContactPhone:
+          patch.emergencyContactPhone ?? prev?.emergencyContactPhone ?? '',
+        avatarUrl: prev?.avatarUrl ?? user.image ?? '',
+      }))
       await authClient.getSession()
     },
     [user],
   )
+
+  const uploadAvatarImage = React.useCallback(
+    async (file: File) => {
+      if (!user) throw new Error('Unauthorized')
+      const data = await readFileAsBase64(file)
+      const result = await uploadAvatar({
+        data: {
+          contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+          data,
+        },
+      })
+      setProfile((prev) =>
+        prev ? { ...prev, avatarUrl: result.image } : prev,
+      )
+      await authClient.getSession()
+      return result.image
+    },
+    [user],
+  )
+
+  const clearAvatarImage = React.useCallback(async () => {
+    if (!user) return
+    await removeAvatar()
+    setProfile((prev) => (prev ? { ...prev, avatarUrl: '' } : prev))
+    await authClient.getSession()
+  }, [user])
 
   const value = React.useMemo(
     () => ({
@@ -151,8 +231,19 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       ready: !isPending && profileReady,
       signOut,
       updateProfile,
+      uploadAvatarImage,
+      clearAvatarImage,
     }),
-    [profile, user, isPending, profileReady, signOut, updateProfile],
+    [
+      profile,
+      user,
+      isPending,
+      profileReady,
+      signOut,
+      updateProfile,
+      uploadAvatarImage,
+      clearAvatarImage,
+    ],
   )
 
   return (
@@ -166,4 +257,20 @@ export function useAccount() {
     throw new Error('useAccount must be used within AccountProvider')
   }
   return ctx
+}
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Could not read image'))
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') {
+        reject(new Error('Could not read image'))
+        return
+      }
+      resolve(result)
+    }
+    reader.readAsDataURL(file)
+  })
 }

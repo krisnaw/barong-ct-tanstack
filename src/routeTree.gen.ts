@@ -32,6 +32,7 @@ import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as ShopCartRouteImport } from './routes/shop.cart'
 import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAvatarsUserIdRouteImport } from './routes/api/avatars.$userId'
 import { Route as DashboardCatalogueIndexRouteImport } from './routes/dashboard/catalogue.index'
 import { Route as DashboardCatalogueSlugRouteImport } from './routes/dashboard/catalogue.$slug'
 import { Route as DashboardCatalogueNewRouteImport } from './routes/dashboard/catalogue.new'
@@ -158,6 +159,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAvatarsUserIdRoute = ApiAvatarsUserIdRouteImport.update({
+  id: '/api/avatars/$userId',
+  path: '/api/avatars/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardCatalogueIndexRoute = DashboardCatalogueIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/shop': typeof ShopIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/shop/'
     | '/api/auth/$'
+    | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/shop'
     | '/api/auth/$'
+    | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/shop/'
     | '/api/auth/$'
+    | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -417,6 +429,7 @@ export interface RootRouteChildren {
   AuthSignupRoute: typeof AuthSignupRoute
   RecapsSlugRoute: typeof RecapsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAvatarsUserIdRoute: typeof ApiAvatarsUserIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -580,6 +593,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/avatars/$userId': {
+      id: '/api/avatars/$userId'
+      path: '/api/avatars/$userId'
+      fullPath: '/api/avatars/$userId'
+      preLoaderRoute: typeof ApiAvatarsUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/catalogue/': {
@@ -788,6 +808,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignupRoute: AuthSignupRoute,
   RecapsSlugRoute: RecapsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAvatarsUserIdRoute: ApiAvatarsUserIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

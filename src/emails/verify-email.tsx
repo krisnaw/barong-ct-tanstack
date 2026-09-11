@@ -1,88 +1,144 @@
 import {
   Body,
   Button,
+  Column,
   Container,
   Head,
   Heading,
   Html,
+  Img,
+  Link,
   Preview,
+  Row,
+  Section,
+  Tailwind,
   Text,
 } from '@react-email/components'
+import { barebonesBoxedTailwindConfig } from '~/emails/theme'
+import { BarebonesFonts } from '~/emails/theme-fonts'
 
 type VerifyEmailProps = {
-  name: string
+  companyName?: string
+  logoUrl?: string
+  name?: string
   url: string
 }
 
-export function VerifyEmail({ name, url }: VerifyEmailProps) {
+const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong_logo.png'
+
+export function VerifyEmail({
+  companyName = 'Barong',
+  logoUrl = DEFAULT_LOGO_URL,
+  url,
+}: VerifyEmailProps) {
   return (
-    <Html>
-      <Head />
-      <Preview>Verify your Barong CT email</Preview>
-      <Body style={body}>
-        <Container style={container}>
-          <Heading style={heading}>Confirm your email</Heading>
-          <Text style={text}>Hi {name},</Text>
-          <Text style={text}>
-            Thanks for joining Barong Cycling Team. Click below to verify your
-            email address.
-          </Text>
-          <Button href={url} style={button}>
-            Verify email
-          </Button>
-          <Text style={muted}>
-            If you did not create this account, you can ignore this email.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+    <Tailwind config={barebonesBoxedTailwindConfig}>
+      <Html>
+        <Head>
+          <BarebonesFonts />
+        </Head>
+
+        <Body className="bg-bg-2 m-0 text-center font-sans">
+          <Preview>Confirm your email address</Preview>
+          <Container className="mobile:mt-0 mx-auto mt-8 w-full max-w-[640px]">
+            <Section>
+              <Section className="bg-bg mobile:px-2 px-6 py-4">
+                <Section className="mb-3 px-6">
+                  <Row>
+                    <Column
+                      align="left"
+                      className="w-1/2 py-[7px] text-left align-middle"
+                    >
+                      <Img
+                        alt={companyName}
+                        className="block"
+                        height={32}
+                        src={logoUrl}
+                        width={25}
+                      />
+                    </Column>
+                    <Column
+                      align="right"
+                      className="w-1/2 py-[7px] text-right align-middle"
+                    >
+                      <Text className="font-13 text-fg-3 m-0 text-right font-sans">
+                        {companyName}
+                      </Text>
+                    </Column>
+                  </Row>
+                </Section>
+
+                <Section className="bg-bg-2 mobile:px-6 mobile:py-12 rounded-[8px] px-[40px] py-[64px] text-center">
+                  <Section className="mb-3">
+                    <Img
+                      alt={companyName}
+                      className="mx-auto mb-5 block"
+                      height={72}
+                      src={logoUrl}
+                      width={56}
+                    />
+                    <Heading as="h1" className="font-28 text-fg m-0 font-sans">
+                      We&apos;re almost there!
+                    </Heading>
+                  </Section>
+
+                  <Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans">
+                    Thank you for signing up for {companyName}.
+                    <br />
+                    To verify your account, we just need to confirm your email
+                    address.
+                  </Text>
+
+                  <Section className="mb-6 text-center">
+                    <Button
+                      href={url}
+                      className="bg-fg font-16 text-fg-inverted inline-block rounded-lg px-7 py-4 text-center font-sans leading-6"
+                    >
+                      Confirm email
+                    </Button>
+                  </Section>
+
+                  <Text className="font-13 text-fg-3 mx-auto mt-8 mb-0 max-w-[400px] text-center font-sans">
+                    If you didn&apos;t request this,
+                    <br />
+                    please ignore this email.
+                  </Text>
+                </Section>
+
+                <Section className="bg-bg">
+                  <Row>
+                    <Column className="px-6 py-10 text-center">
+                      <Text className="font-13 text-fg-3 mx-auto mt-0 mb-8 max-w-[280px] text-center font-sans">
+                        Denpasar peloton since 2016. Keep the bunch together.
+                      </Text>
+
+                      <Text className="font-11 text-fg-3 mt-4 mb-5 text-center font-sans">
+                        Barong Cycling Team
+                        <br />
+                        Denpasar, Bali
+                      </Text>
+                      <Text className="font-11 text-fg-3 m-0 text-center font-sans">
+                        <Link href={url} className="text-fg-3">
+                          Manage account
+                        </Link>{' '}
+                        on {companyName}.
+                      </Text>
+                    </Column>
+                  </Row>
+                </Section>
+              </Section>
+            </Section>
+          </Container>
+        </Body>
+      </Html>
+    </Tailwind>
   )
 }
 
-const body = {
-  backgroundColor: '#f4f4f5',
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-}
-
-const container = {
-  backgroundColor: '#ffffff',
-  margin: '40px auto',
-  padding: '32px 24px',
-  maxWidth: '480px',
-}
-
-const heading = {
-  fontSize: '22px',
-  fontWeight: '700' as const,
-  color: '#18181b',
-  margin: '0 0 16px',
-}
-
-const text = {
-  fontSize: '15px',
-  lineHeight: '24px',
-  color: '#3f3f46',
-  margin: '0 0 12px',
-}
-
-const button = {
-  backgroundColor: '#18181b',
-  borderRadius: '6px',
-  color: '#ffffff',
-  display: 'inline-block',
-  fontSize: '15px',
-  fontWeight: '600' as const,
-  padding: '12px 20px',
-  textDecoration: 'none',
-  margin: '16px 0',
-}
-
-const muted = {
-  fontSize: '13px',
-  lineHeight: '20px',
-  color: '#71717a',
-  margin: '24px 0 0',
-}
+VerifyEmail.PreviewProps = {
+  companyName: 'Barong',
+  logoUrl: DEFAULT_LOGO_URL,
+  url: 'https://example.com/',
+} satisfies VerifyEmailProps
 
 export default VerifyEmail

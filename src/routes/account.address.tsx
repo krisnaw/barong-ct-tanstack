@@ -5,7 +5,7 @@ import { seo } from '~/utils/seo'
 export const Route = createFileRoute('/account/address')({
   head: () => ({
     meta: seo({
-      title: 'Address | Account | Barong Cycling Team',
+      title: 'Shipping Address | Account | Barong Cycling Team',
       description: 'Save a shipping address for Barong kit orders.',
     }),
   }),

@@ -4,13 +4,14 @@ export function Footer() {
   return (
     <footer className="border-t border-white/10 bg-foreground text-white">
       <div className="flex flex-col items-center gap-5 px-5 py-10 text-center sm:px-8 lg:px-12 lg:py-12">
-        <p className="flex items-center gap-2.5">
-          <span className="grid size-7 place-items-center rounded-full bg-white font-heading text-xs font-semibold text-foreground">
-            B
-          </span>
-          <span className="font-heading text-sm font-medium tracking-wide uppercase">
-            Barong Cycling Team
-          </span>
+        <p className="flex justify-center">
+          <img
+            alt="Barong Cycling Team"
+            className="h-14 w-auto"
+            height={56}
+            src="/barong_logo.png"
+            width={44}
+          />
         </p>
 
         <nav aria-label="Footer" className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/70">

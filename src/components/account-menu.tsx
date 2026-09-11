@@ -12,6 +12,7 @@ import {
   useAccount,
 } from '~/lib/account'
 import { cn } from '~/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +54,15 @@ export function AccountMenu() {
           onAccount && 'text-foreground',
         )}
       >
-        <span className="grid size-5 place-items-center rounded-full bg-foreground font-heading text-[0.55rem] font-semibold tracking-tight text-background">
-          {accountInitials(profile)}
+        <span className="inline-flex">
+          <Avatar className="size-5 after:rounded-full data-[size=default]:size-5">
+            {profile.avatarUrl ? (
+              <AvatarImage alt="" src={profile.avatarUrl} />
+            ) : null}
+            <AvatarFallback className="bg-foreground font-heading text-[0.55rem] font-semibold tracking-tight text-background">
+              {accountInitials(profile)}
+            </AvatarFallback>
+          </Avatar>
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56 w-56" sideOffset={8}>
@@ -75,7 +83,7 @@ export function AccountMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/account/address" />}>
           <MapPinIcon />
-          Address
+          Shipping Address
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/account/orders" />}>
           <PackageIcon />
