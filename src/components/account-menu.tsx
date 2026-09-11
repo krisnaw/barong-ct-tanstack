@@ -55,11 +55,11 @@ export function AccountMenu() {
         )}
       >
         <span className="inline-flex">
-          <Avatar className="size-5 after:rounded-full data-[size=default]:size-5">
+          <Avatar className="size-8 after:rounded-full data-[size=default]:size-8">
             {profile.avatarUrl ? (
               <AvatarImage alt="" src={profile.avatarUrl} />
             ) : null}
-            <AvatarFallback className="bg-foreground font-heading text-[0.55rem] font-semibold tracking-tight text-background">
+            <AvatarFallback className="bg-foreground font-heading text-xs font-semibold tracking-tight text-background">
               {accountInitials(profile)}
             </AvatarFallback>
           </Avatar>

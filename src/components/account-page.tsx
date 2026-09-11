@@ -19,6 +19,7 @@ import {
   type AccountProfile,
 } from '~/lib/account'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { toast } from '~/components/ui/toast'
 import { useShopOrders } from '~/lib/orders'
 import { cn } from '~/lib/utils'
 
@@ -173,7 +174,6 @@ export function AccountProfilePanel() {
   const { profile, updateProfile, uploadAvatarImage, clearAvatarImage } =
     useAccount()
   const [draft, setDraft] = React.useState(() => profile ?? emptyDraft())
-  const [saved, setSaved] = React.useState(false)
   const [pending, setPending] = React.useState(false)
   const [avatarPending, setAvatarPending] = React.useState(false)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
@@ -190,7 +190,6 @@ export function AccountProfilePanel() {
     value: AccountProfile[K],
   ) {
     setDraft((current) => ({ ...current, [key]: value }))
-    setSaved(false)
   }
 
   async function onAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -234,14 +233,6 @@ export function AccountProfilePanel() {
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault()
-    const next: Record<string, string> = {}
-    if (!draft.firstName.trim()) next.firstName = 'Enter a first name'
-    if (!draft.lastName.trim()) next.lastName = 'Enter a last name'
-    if (!draft.phone.trim()) next.phone = 'Enter a phone number'
-    if (Object.keys(next).length > 0) {
-      setErrors(next)
-      return
-    }
     setErrors({})
     setPending(true)
     try {
@@ -258,7 +249,10 @@ export function AccountProfilePanel() {
         emergencyContactPhone: draft.emergencyContactPhone,
         jerseySize: draft.jerseySize,
       })
-      setSaved(true)
+      toast.add({
+        type: 'success',
+        title: 'Profile saved',
+      })
     } catch {
       setErrors({ form: 'Could not save profile' })
     } finally {
@@ -326,18 +320,18 @@ export function AccountProfilePanel() {
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <AccountField
           autoComplete="given-name"
-          error={errors.firstName}
           id="firstName"
           label="First name"
           onChange={(value) => setField('firstName', value)}
+          required
           value={draft.firstName}
         />
         <AccountField
           autoComplete="family-name"
-          error={errors.lastName}
           id="lastName"
           label="Last name"
           onChange={(value) => setField('lastName', value)}
+          required
           value={draft.lastName}
         />
         <AccountField
@@ -350,7 +344,6 @@ export function AccountProfilePanel() {
         />
         <AccountField
           autoComplete="tel"
-          error={errors.phone}
           id="phone"
           label="Phone"
           onChange={(value) => setField('phone', value)}
@@ -471,7 +464,7 @@ export function AccountProfilePanel() {
         <p className="mt-4 text-sm text-destructive">{errors.form}</p>
       ) : null}
 
-      <SaveBar pending={pending} saved={saved} />
+      <SaveBar label="Save changes" pending={pending} />
     </form>
   )
 }
@@ -615,11 +608,19 @@ export function AccountOrdersPanel() {
   )
 }
 
-function SaveBar({ pending, saved }: { pending?: boolean; saved: boolean }) {
+function SaveBar({
+  pending,
+  saved,
+  label = 'Save',
+}: {
+  pending?: boolean
+  saved?: boolean
+  label?: string
+}) {
   return (
     <div className="mt-8 flex flex-wrap items-center gap-4">
       <Button disabled={pending} size="lg" type="submit">
-        {pending ? 'Saving…' : 'Save'}
+        {pending ? 'Saving…' : label}
       </Button>
       {saved ? (
         <p className="inline-flex items-center gap-1.5 text-sm">
@@ -726,6 +727,7 @@ function AccountField({
   autoComplete,
   error,
   readOnly,
+  required,
 }: {
   id: string
   label: string
@@ -735,6 +737,7 @@ function AccountField({
   autoComplete?: string
   error?: string
   readOnly?: boolean
+  required?: boolean
 }) {
   return (
     <div>
@@ -761,6 +764,7 @@ function AccountField({
             : (event) => onChange(event.target.value)
         }
         readOnly={readOnly}
+        required={required}
         type={type}
         value={value}
       />
