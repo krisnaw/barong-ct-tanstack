@@ -1,6 +1,15 @@
+import { useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { ShoppingBagIcon } from '@phosphor-icons/react'
+import { ListIcon, ShoppingBagIcon } from '@phosphor-icons/react'
 import { AccountMenu } from '~/components/account-menu'
+import { LanguageToggle } from '~/components/language-toggle'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
 import { useCartCount } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 
@@ -10,10 +19,17 @@ export function PublicNav() {
   const onShop = pathname === '/shop' || pathname.startsWith('/shop/')
   const onCart = pathname === '/shop/cart'
   const { count, ready } = useCartCount()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const linkClass = (active: boolean) =>
+    cn(
+      'text-muted-foreground transition-colors hover:text-foreground',
+      active && 'font-medium text-foreground',
+    )
 
   return (
     <header className="border-b border-border bg-background">
-      <div className="flex items-center justify-between gap-6 px-5 py-4 sm:px-8 lg:px-12">
+      <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
         <Link
           className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           to="/"
@@ -27,26 +43,21 @@ export function PublicNav() {
           />
         </Link>
 
-        <nav aria-label="Primary" className="flex items-center gap-7 text-sm">
-          <Link
-            className={cn(
-              'text-muted-foreground transition-colors hover:text-foreground',
-              onEvents && 'font-medium text-foreground',
-            )}
-            to="/events"
+        <div className="flex items-center gap-5">
+          <nav
+            aria-label="Primary"
+            className="hidden items-center gap-7 text-sm md:flex"
           >
-            Events
-          </Link>
-          <Link
-            className={cn(
-              'text-muted-foreground transition-colors hover:text-foreground',
-              onShop && !onCart && 'font-medium text-foreground',
-            )}
-            to="/shop"
-          >
-            Shop
-          </Link>
-          <div className="flex items-center gap-5">
+            <Link className={linkClass(onEvents)} to="/events">
+              Events
+            </Link>
+            <Link className={linkClass(onShop && !onCart)} to="/shop">
+              Shop
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-4 sm:gap-5">
+            <LanguageToggle />
             <Link
               aria-label={
                 ready && count > 0
@@ -71,8 +82,47 @@ export function PublicNav() {
               ) : null}
             </Link>
             <AccountMenu />
+
+            <Sheet onOpenChange={setMenuOpen} open={menuOpen}>
+              <SheetTrigger
+                aria-label="Open menu"
+                className="inline-flex cursor-pointer text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+              >
+                <ListIcon aria-hidden className="size-5" weight="bold" />
+              </SheetTrigger>
+              <SheetContent className="gap-0 p-0" side="right">
+                <SheetHeader className="border-b border-border">
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <nav
+                  aria-label="Mobile"
+                  className="flex flex-col gap-1 px-3 py-4 text-base"
+                >
+                  <Link
+                    className={cn(
+                      'rounded-md px-3 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
+                      linkClass(onEvents),
+                    )}
+                    onClick={() => setMenuOpen(false)}
+                    to="/events"
+                  >
+                    Events
+                  </Link>
+                  <Link
+                    className={cn(
+                      'rounded-md px-3 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
+                      linkClass(onShop && !onCart),
+                    )}
+                    onClick={() => setMenuOpen(false)}
+                    to="/shop"
+                  >
+                    Shop
+                  </Link>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
-        </nav>
+        </div>
       </div>
     </header>
   )

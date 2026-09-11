@@ -37,7 +37,7 @@ export function Hero() {
 
           <h1 className="max-w-5xl">
             <span className="block font-heading text-[clamp(4.25rem,16vw,10.5rem)] leading-[0.78] font-semibold tracking-[-0.07em]">
-              BARONG
+              BARONG CYCLING
             </span>
             <span
               aria-hidden

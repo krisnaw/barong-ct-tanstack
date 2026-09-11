@@ -1,9 +1,14 @@
-import { ArrowUpRightIcon, ClockIcon, MapPinIcon } from '@phosphor-icons/react'
-import { Link } from '@tanstack/react-router'
+import {
+  ClockIcon,
+  InstagramLogoIcon,
+  MapPinIcon,
+} from '@phosphor-icons/react'
 import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
 const STRAVA_CLUB = 'https://www.strava.com/clubs/barongcyclingteam'
+const INSTAGRAM =
+  'https://www.instagram.com/barongcyclingteam/?hl=en'
 
 const rides = [
   {
@@ -36,33 +41,51 @@ export function WeeklyRides() {
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-foreground uppercase">
             <span aria-hidden className="h-px w-8 bg-primary" />
-            Dedication
+            Regular Rides
           </p>
           <h2 className="mt-4 font-heading text-[clamp(2rem,4.5vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
             Tuesday. Thursday. Saturday.
           </h2>
         </div>
-        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Welcome to Barong Cycling Team — Bali’s largest and most consistent
-          road and gravel community, proudly riding together since 2016. We
-          explore the island’s landscapes and culture. Join a weekly ride.
-        </p>
+        <div className="flex max-w-xl flex-col items-start gap-4">
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Welcome to Barong Cycling Team, Bali’s largest and most consistent
+            road and gravel community, proudly riding together since 2016. We
+            explore the island’s landscapes and culture. Join a weekly ride.
+            Follow Strava and Instagram for meet points, Saturday’s Climax pin,
+            and ride updates.
+          </p>
+          <div className="flex items-center gap-1">
+            <a
+              aria-label="Follow on Strava"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'lg' }),
+                'px-3',
+              )}
+              href={STRAVA_CLUB}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <img
+                alt=""
+                className="h-5 w-auto"
+                height={20}
+                src="/Strava_Logo.svg"
+                width={95}
+              />
+            </a>
+            <a
+              aria-label="Follow on Instagram"
+              className={buttonVariants({ variant: 'ghost', size: 'icon-lg' })}
+              href={INSTAGRAM}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <InstagramLogoIcon aria-hidden className="size-5" weight="fill" />
+            </a>
+          </div>
+        </div>
       </div>
-
-      <p className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <span className="inline-flex items-center gap-2 font-medium text-foreground">
-          <ClockIcon aria-hidden className="size-4" weight="bold" />
-          Meet 6:15 AM
-        </span>
-        <span aria-hidden className="text-border">
-          ·
-        </span>
-        <span>Every week</span>
-        <span aria-hidden className="text-border">
-          ·
-        </span>
-        <span>Road and gravel</span>
-      </p>
 
       <ul className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
         {rides.map((ride) => (
@@ -100,31 +123,6 @@ export function WeeklyRides() {
           </li>
         ))}
       </ul>
-
-      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Follow Barong Cycling Team on Strava for Saturday’s Climax pin,
-          routes, and who showed up.{' '}
-          <Link
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-            to="/events"
-          >
-            Event calendar
-          </Link>
-        </p>
-        <a
-          className={cn(
-            buttonVariants({ size: 'lg' }),
-            'h-11 w-full shrink-0 px-5 text-base sm:w-auto',
-          )}
-          href={STRAVA_CLUB}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Follow on Strava
-          <ArrowUpRightIcon aria-hidden className="size-4" weight="bold" />
-        </a>
-      </div>
     </section>
   )
 }
