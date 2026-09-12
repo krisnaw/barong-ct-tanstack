@@ -6,7 +6,7 @@ export const Route = createFileRoute('/account/')({
   head: () => ({
     meta: seo({
       title: 'Profile | Account | Barong Cycling Team',
-      description: 'Update your Barong profile, phone, and club kit size.',
+      description: 'Update your Barong profile, event address, and club kit size.',
     }),
   }),
   component: AccountProfilePage,

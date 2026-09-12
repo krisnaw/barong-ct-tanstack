@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ShopCatalog } from '~/components/shop-catalog'
 import { seo } from '~/utils/seo'
+import { Route as ShopRoute } from './shop'
 
 export const Route = createFileRoute('/shop/')({
   head: () => ({
@@ -14,5 +15,6 @@ export const Route = createFileRoute('/shop/')({
 })
 
 function ShopPage() {
-  return <ShopCatalog />
+  const products = ShopRoute.useLoaderData()
+  return <ShopCatalog products={products} />
 }

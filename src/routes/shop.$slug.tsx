@@ -1,11 +1,11 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { ShopProductDetail } from '~/components/shop-product'
-import { getShopProduct } from '~/data/shop'
+import { getProductBySlug } from '~/lib/shop.functions'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/shop/$slug')({
-  loader: ({ params }) => {
-    const product = getShopProduct(params.slug)
+  loader: async ({ params }) => {
+    const product = await getProductBySlug({ data: { slug: params.slug } })
     if (!product) {
       throw notFound()
     }

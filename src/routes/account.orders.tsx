@@ -1,5 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { AccountOrdersPanel } from '~/components/account-page'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/account/orders')({
@@ -9,9 +8,9 @@ export const Route = createFileRoute('/account/orders')({
       description: 'Your Barong kit order history.',
     }),
   }),
-  component: AccountOrdersPage,
+  component: AccountOrdersLayout,
 })
 
-function AccountOrdersPage() {
-  return <AccountOrdersPanel />
+function AccountOrdersLayout() {
+  return <Outlet />
 }

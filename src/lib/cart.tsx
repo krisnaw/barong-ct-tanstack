@@ -1,4 +1,5 @@
 import * as React from 'react'
+import type { CustomMeasurements } from '~/data/shop'
 
 const STORAGE_KEY = 'barong-shop-cart'
 
@@ -6,28 +7,90 @@ export type CartItem = {
   slug: string
   size: string
   quantity: number
+  custom?: CustomMeasurements
 }
 
 type CartContextValue = {
   items: CartItem[]
-  addItem: (slug: string, size: string, quantity?: number) => void
-  setQuantity: (slug: string, size: string, quantity: number) => void
-  removeItem: (slug: string, size: string) => void
+  addItem: (
+    slug: string,
+    size: string,
+    quantity?: number,
+    custom?: CustomMeasurements,
+  ) => void
+  setQuantity: (
+    slug: string,
+    size: string,
+    quantity: number,
+    custom?: CustomMeasurements,
+  ) => void
+  removeItem: (
+    slug: string,
+    size: string,
+    custom?: CustomMeasurements,
+  ) => void
   clear: () => void
   ready: boolean
 }
 
 const CartContext = React.createContext<CartContextValue | null>(null)
 
+function sameCustom(
+  a: CustomMeasurements | undefined,
+  b: CustomMeasurements | undefined,
+) {
+  if (!a && !b) return true
+  if (!a || !b) return false
+  return (
+    a.chest === b.chest &&
+    a.sleeve === b.sleeve &&
+    a.frontZipper === b.frontZipper &&
+    a.back === b.back
+  )
+}
+
+export function sameCartLine(
+  item: CartItem,
+  slug: string,
+  size: string,
+  custom?: CustomMeasurements,
+) {
+  return (
+    item.slug === slug &&
+    item.size === size &&
+    sameCustom(item.custom, custom)
+  )
+}
+
+export function cartLineKey(item: CartItem) {
+  if (item.custom) {
+    return `${item.slug}:${item.size}:${item.custom.chest}:${item.custom.sleeve}:${item.custom.frontZipper}:${item.custom.back}`
+  }
+  return `${item.slug}:${item.size}`
+}
+
+function isCustomMeasurements(value: unknown): value is CustomMeasurements {
+  if (!value || typeof value !== 'object') return false
+  const custom = value as CustomMeasurements
+  return (
+    typeof custom.chest === 'string' &&
+    typeof custom.sleeve === 'string' &&
+    typeof custom.frontZipper === 'string' &&
+    typeof custom.back === 'string'
+  )
+}
+
 function isCartItem(value: unknown): value is CartItem {
   if (!value || typeof value !== 'object') return false
   const item = value as CartItem
-  return (
+  const base =
     typeof item.slug === 'string' &&
     typeof item.size === 'string' &&
     typeof item.quantity === 'number' &&
     item.quantity > 0
-  )
+  if (!base) return false
+  if (item.custom === undefined) return true
+  return isCustomMeasurements(item.custom)
 }
 
 function readCart(): CartItem[] {
@@ -58,13 +121,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, ready])
 
   const addItem = React.useCallback(
-    (slug: string, size: string, quantity = 1) => {
+    (
+      slug: string,
+      size: string,
+      quantity = 1,
+      custom?: CustomMeasurements,
+    ) => {
       setItems((current) => {
-        const index = current.findIndex(
-          (item) => item.slug === slug && item.size === size,
+        const index = current.findIndex((item) =>
+          sameCartLine(item, slug, size, custom),
         )
         if (index === -1) {
-          return [...current, { slug, size, quantity }]
+          return [
+            ...current,
+            custom
+              ? { slug, size, quantity, custom }
+              : { slug, size, quantity },
+          ]
         }
         return current.map((item, i) =>
           i === index ? { ...item, quantity: item.quantity + quantity } : item,
@@ -75,15 +148,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   )
 
   const setQuantity = React.useCallback(
-    (slug: string, size: string, quantity: number) => {
+    (
+      slug: string,
+      size: string,
+      quantity: number,
+      custom?: CustomMeasurements,
+    ) => {
       setItems((current) => {
         if (quantity <= 0) {
           return current.filter(
-            (item) => !(item.slug === slug && item.size === size),
+            (item) => !sameCartLine(item, slug, size, custom),
           )
         }
         return current.map((item) =>
-          item.slug === slug && item.size === size
+          sameCartLine(item, slug, size, custom)
             ? { ...item, quantity }
             : item,
         )
@@ -92,11 +170,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [],
   )
 
-  const removeItem = React.useCallback((slug: string, size: string) => {
-    setItems((current) =>
-      current.filter((item) => !(item.slug === slug && item.size === size)),
-    )
-  }, [])
+  const removeItem = React.useCallback(
+    (slug: string, size: string, custom?: CustomMeasurements) => {
+      setItems((current) =>
+        current.filter((item) => !sameCartLine(item, slug, size, custom)),
+      )
+    },
+    [],
+  )
 
   const clear = React.useCallback(() => setItems([]), [])
 
@@ -118,6 +199,8 @@ export function useCart() {
 
 export function useCartCount() {
   const { items, ready } = useCart()
-  const count = items.reduce((sum, item) => sum + item.quantity, 0)
-  return { count, ready }
+  return {
+    count: items.reduce((sum, item) => sum + item.quantity, 0),
+    ready,
+  }
 }

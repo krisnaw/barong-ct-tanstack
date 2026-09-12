@@ -19,6 +19,8 @@ import {
 import { Input } from '~/components/ui/input'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import { toast } from '~/components/ui/toast'
+import { createProduct } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 
@@ -41,8 +43,16 @@ function DashboardCreateProductPage() {
   const [fabric, setFabric] = React.useState('')
   const [image, setImage] = React.useState('')
   const [imageAlt, setImageAlt] = React.useState('')
-  const [sizes, setSizes] = React.useState<string[]>([...jerseySizeGuide.sizes])
   const [description, setDescription] = React.useState('')
+  const [featuresText, setFeaturesText] = React.useState('')
+  const [preOrder, setPreOrder] = React.useState(true)
+  const [active, setActive] = React.useState(true)
+  const [sizes, setSizes] = React.useState<string[]>([...jerseySizeGuide.sizes])
+  const [stockBySize, setStockBySize] = React.useState<Record<string, string>>(
+    () =>
+      Object.fromEntries(jerseySizeGuide.sizes.map((size) => [size, '0'])),
+  )
+  const [saving, setSaving] = React.useState(false)
 
   function toggleSize(size: string) {
     setSizes((current) =>
@@ -52,10 +62,60 @@ function DashboardCreateProductPage() {
     )
   }
 
-  function onSubmit(event: React.FormEvent) {
+  async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
-    // Stub only — wire persistence later.
-    void navigate({ to: '/dashboard/catalogue' })
+    const parsedPrice = Number(price)
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      toast.add({ type: 'error', title: 'Enter a valid price' })
+      return
+    }
+    if (sizes.length === 0) {
+      toast.add({ type: 'error', title: 'Select at least one size' })
+      return
+    }
+
+    setSaving(true)
+    try {
+      const features = featuresText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+      const product = await createProduct({
+        data: {
+          name,
+          color,
+          colorHex,
+          price: parsedPrice,
+          fabric,
+          description,
+          image,
+          images: image ? [image] : [],
+          imageAlt,
+          features,
+          preOrder,
+          active,
+          sizes: sizes.map((size) => ({
+            size,
+            stock: preOrder
+              ? 0
+              : Math.max(0, Number.parseInt(stockBySize[size] || '0', 10) || 0),
+          })),
+        },
+      })
+      toast.add({ type: 'success', title: 'Product created' })
+      void navigate({
+        to: '/dashboard/catalogue/$slug',
+        params: { slug: product.slug },
+      })
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: 'Could not create product',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -89,7 +149,8 @@ function DashboardCreateProductPage() {
             Add product
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Draft a jersey for the shop. Saving is stubbed for now.
+            Most kits are pre-order. Custom size is offered automatically on
+            pre-order products.
           </p>
         </div>
 
@@ -165,6 +226,25 @@ function DashboardCreateProductPage() {
               </Field>
             </div>
 
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  checked={preOrder}
+                  onChange={(e) => setPreOrder(e.target.checked)}
+                  type="checkbox"
+                />
+                Pre-order (Custom size enabled)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                  type="checkbox"
+                />
+                Active on public shop
+              </label>
+            </div>
+
             <Field>
               <FieldLabel>Sizes</FieldLabel>
               <div className="flex flex-wrap gap-2">
@@ -188,6 +268,42 @@ function DashboardCreateProductPage() {
                 Race-fit chart. Leave a size off if it is not cut yet.
               </FieldDescription>
             </Field>
+
+            {!preOrder ? (
+              <Field>
+                <FieldLabel>Stock per size</FieldLabel>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {sizes.map((size) => (
+                    <div key={size}>
+                      <label
+                        className="mb-1 block text-xs text-muted-foreground"
+                        htmlFor={`stock-${size}`}
+                      >
+                        {size}
+                      </label>
+                      <Input
+                        id={`stock-${size}`}
+                        inputMode="numeric"
+                        min={0}
+                        onChange={(e) =>
+                          setStockBySize((current) => ({
+                            ...current,
+                            [size]: e.target.value,
+                          }))
+                        }
+                        type="number"
+                        value={stockBySize[size] ?? '0'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Field>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Pre-order products skip stock checks. Size stock can still be
+                tracked later from the product page.
+              </p>
+            )}
 
             <Field>
               <FieldLabel htmlFor="image">Image URL</FieldLabel>
@@ -223,6 +339,17 @@ function DashboardCreateProductPage() {
                 value={description}
               />
             </Field>
+
+            <Field>
+              <FieldLabel htmlFor="features">Features (one per line)</FieldLabel>
+              <textarea
+                className="min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                id="features"
+                onChange={(e) => setFeaturesText(e.target.value)}
+                placeholder="Three rear pockets&#10;Full-length YKK zipper"
+                value={featuresText}
+              />
+            </Field>
           </FieldGroup>
 
           <div className="flex items-center justify-between gap-3">
@@ -232,7 +359,9 @@ function DashboardCreateProductPage() {
             >
               Cancel
             </Link>
-            <Button type="submit">Add product</Button>
+            <Button disabled={saving} type="submit">
+              {saving ? 'Saving…' : 'Add product'}
+            </Button>
           </div>
         </form>
       </div>

@@ -1,17 +1,26 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ShopCheckout } from '~/components/shop-checkout'
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { getSession } from '~/lib/auth.functions'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/shop/checkout')({
+  beforeLoad: async () => {
+    const session = await getSession()
+    if (!session) {
+      throw redirect({
+        to: '/auth/login',
+        search: { redirect: '/shop/checkout' },
+      })
+    }
+  },
   head: () => ({
     meta: seo({
       title: 'Checkout | Barong Cycling Team',
-      description: 'Complete your Barong kit order — pickup or delivery.',
+      description: 'Complete your Barong kit order — ship within Indonesia.',
     }),
   }),
-  component: ShopCheckoutPage,
+  component: ShopCheckoutLayout,
 })
 
-function ShopCheckoutPage() {
-  return <ShopCheckout />
+function ShopCheckoutLayout() {
+  return <Outlet />
 }

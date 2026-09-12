@@ -10,7 +10,8 @@
   "vars": {
     "EMAIL_PROVIDER": "cloudflare",
     "EMAIL_FROM": "noreply@barongmelali.com",
-    "EMAIL_FROM_NAME": "Barong Cycling Team"
+    "EMAIL_FROM_NAME": "Barong Cycling Team",
+    "PAYMENT_PROVIDER": "stub"
   },
   "send_email": [
     {
@@ -43,7 +44,9 @@
       "vars": {
         "EMAIL_PROVIDER": "resend",
         "EMAIL_FROM": "noreply@barongmelali.com",
-        "EMAIL_FROM_NAME": "Barong Cycling Team"
+        "EMAIL_FROM_NAME": "Barong Cycling Team",
+        "PAYMENT_PROVIDER": "stub",
+        "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com"
       },
       "send_email": [
         {

@@ -2,7 +2,6 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   formatShopPrice,
   shopImageSrc,
-  shopProducts,
 } from '~/data/shop'
 import {
   Breadcrumb,
@@ -13,13 +12,17 @@ import {
 import { buttonVariants } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import { listProducts } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
 
 export const Route = createFileRoute('/dashboard/catalogue/')({
+  loader: () => listProducts({ data: { includeInactive: true } }),
   component: DashboardCataloguePage,
 })
 
 function DashboardCataloguePage() {
+  const products = Route.useLoaderData()
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2">
@@ -46,7 +49,7 @@ function DashboardCataloguePage() {
               Catalogue
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {shopProducts.length} products · Club kit on the public shop
+              {products.length} products · Club kit on the public shop
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -66,7 +69,7 @@ function DashboardCataloguePage() {
         </div>
 
         <ul className="divide-y divide-border border border-border">
-          {shopProducts.map((product) => (
+          {products.map((product) => (
             <li key={product.slug}>
               <Link
                 className="flex items-center gap-4 px-4 py-3 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50"
@@ -87,6 +90,18 @@ function DashboardCataloguePage() {
                     {product.color}
                     <span className="text-border"> · </span>
                     {formatShopPrice(product.price)}
+                    {product.preOrder ? (
+                      <>
+                        <span className="text-border"> · </span>
+                        Pre order
+                      </>
+                    ) : null}
+                    {product.active === false ? (
+                      <>
+                        <span className="text-border"> · </span>
+                        Hidden
+                      </>
+                    ) : null}
                   </p>
                 </div>
                 <span className="shrink-0 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">

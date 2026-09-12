@@ -10,6 +10,11 @@ interface __BaseEnv_Env {
 	EMAIL_PROVIDER: string;
 	EMAIL_FROM: string;
 	EMAIL_FROM_NAME: string;
+	PAYMENT_PROVIDER: string;
+	PAYMENT_PUBLIC_URL: string;
+	DOKU_API_URL: string;
+	DOKU_CLIENT_ID: string;
+	DOKU_SECRET_KEY: string;
 	AUTOSEND_API_KEY: string;
 	RESEND_FROM_EMAIL: string;
 	RESEND_API_KEY: string;
@@ -24,6 +29,11 @@ declare namespace Cloudflare {
 		EMAIL_PROVIDER: string;
 		EMAIL_FROM: string;
 		EMAIL_FROM_NAME: string;
+		PAYMENT_PROVIDER: string;
+		PAYMENT_PUBLIC_URL: string;
+		DOKU_API_URL: string;
+		DOKU_CLIENT_ID: string;
+		DOKU_SECRET_KEY: string;
 		AUTOSEND_API_KEY: string;
 		RESEND_FROM_EMAIL: string;
 		RESEND_API_KEY: string;
@@ -35,7 +45,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "EMAIL_PROVIDER" | "EMAIL_FROM" | "EMAIL_FROM_NAME" | "AUTOSEND_API_KEY" | "RESEND_FROM_EMAIL" | "RESEND_API_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "EMAIL_PROVIDER" | "EMAIL_FROM" | "EMAIL_FROM_NAME" | "PAYMENT_PROVIDER" | "PAYMENT_PUBLIC_URL" | "DOKU_API_URL" | "DOKU_CLIENT_ID" | "DOKU_SECRET_KEY" | "AUTOSEND_API_KEY" | "RESEND_FROM_EMAIL" | "RESEND_API_KEY">> {}
 }
 
 // Begin runtime types

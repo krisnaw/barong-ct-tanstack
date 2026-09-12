@@ -5,22 +5,28 @@ import { Button, buttonVariants } from '~/components/ui/button'
 import {
   formatOrderDate,
   orderItemCount,
+  orderNeedsPayment,
+  orderPaymentStatus,
+  type OrderPaymentStatus,
   type OrderStatus,
   type ShopOrder,
 } from '~/data/orders'
-import { formatShopPrice, jerseySizeGuide, shopImageSrc } from '~/data/shop'
+import { formatCustomMeasurements, formatShopPrice, jerseySizeGuide, shopImageSrc } from '~/data/shop'
 import {
   ACCOUNT_BLOOD_TYPES,
   ACCOUNT_GENDERS,
   ACCOUNT_PROVINCES,
   accountDisplayName,
   accountInitials,
+  emptyShippingAddress,
   useAccount,
   type AccountProfile,
+  type AccountShippingAddress,
 } from '~/lib/account'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { toast } from '~/components/ui/toast'
-import { useShopOrders } from '~/lib/orders'
+import { listMyOrders } from '~/lib/order.functions'
+import { startPayment } from '~/lib/payment.functions'
 import { cn } from '~/lib/utils'
 
 const orderStatusStyles: Record<OrderStatus, string> = {
@@ -29,6 +35,14 @@ const orderStatusStyles: Record<OrderStatus, string> = {
   shipped: 'border-indigo-200 bg-indigo-50 text-indigo-800',
   completed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   cancelled: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+}
+
+const paymentStatusStyles: Record<OrderPaymentStatus, string> = {
+  unpaid: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+  pending: 'border-amber-200 bg-amber-50 text-amber-800',
+  paid: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  failed: 'border-rose-200 bg-rose-50 text-rose-800',
+  expired: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
 const sections = [
@@ -167,7 +181,7 @@ function isSectionActive(
   if (section.exact) {
     return pathname === '/account' || pathname === '/account/'
   }
-  return pathname === section.to
+  return pathname === section.to || pathname.startsWith(`${section.to}/`)
 }
 
 export function AccountProfilePanel() {
@@ -248,6 +262,11 @@ export function AccountProfilePanel() {
         emergencyContactName: draft.emergencyContactName,
         emergencyContactPhone: draft.emergencyContactPhone,
         jerseySize: draft.jerseySize,
+        address: draft.address,
+        apartment: draft.apartment,
+        city: draft.city,
+        province: draft.province,
+        postal: draft.postal,
       })
       toast.add({
         type: 'success',
@@ -433,6 +452,18 @@ export function AccountProfilePanel() {
       </div>
 
       <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
+        Address
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Used for event information. Shipping stays on the Shipping Address page.
+      </p>
+      <AddressFields
+        idPrefix="profile"
+        onChange={(key, value) => setField(key, value)}
+        value={draft}
+      />
+
+      <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
         Preferred Jersey Size
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -470,20 +501,21 @@ export function AccountProfilePanel() {
 }
 
 export function AccountAddressPanel() {
-  const { profile, updateProfile } = useAccount()
-  const [draft, setDraft] = React.useState(() => profile ?? emptyDraft())
+  const { shippingAddress, updateShippingAddress } = useAccount()
+  const [draft, setDraft] = React.useState<AccountShippingAddress>(
+    () => shippingAddress ?? emptyShippingAddress(),
+  )
   const [saved, setSaved] = React.useState(false)
   const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState('')
 
   React.useEffect(() => {
-    if (profile) setDraft(profile)
-  }, [profile])
+    setDraft(shippingAddress ?? emptyShippingAddress())
+  }, [shippingAddress])
 
-  if (!profile) return null
-
-  function setField<K extends keyof AccountProfile>(
+  function setField<K extends keyof AccountShippingAddress>(
     key: K,
-    value: AccountProfile[K],
+    value: AccountShippingAddress[K],
   ) {
     setDraft((current) => ({ ...current, [key]: value }))
     setSaved(false)
@@ -491,9 +523,11 @@ export function AccountAddressPanel() {
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault()
+    setError('')
     setPending(true)
     try {
-      await updateProfile({
+      await updateShippingAddress({
+        id: draft.id,
         address: draft.address,
         apartment: draft.apartment,
         city: draft.city,
@@ -501,6 +535,8 @@ export function AccountAddressPanel() {
         postal: draft.postal,
       })
       setSaved(true)
+    } catch {
+      setError('Could not save shipping address')
     } finally {
       setPending(false)
     }
@@ -512,65 +548,51 @@ export function AccountAddressPanel() {
         Shipping address
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        For shipped orders. Pickup still uses the Denpasar meet point.
+        For shipped kit orders. One address for now — more can be added later.
       </p>
-      <div className="mt-5 grid gap-3">
-        <AccountField
-          autoComplete="address-line1"
-          id="address"
-          label="Address"
-          onChange={(value) => setField('address', value)}
-          value={draft.address}
-        />
-        <AccountField
-          autoComplete="address-line2"
-          id="apartment"
-          label="Apartment, suite, etc. (optional)"
-          onChange={(value) => setField('apartment', value)}
-          value={draft.apartment}
-        />
-        <div className="grid gap-3 sm:grid-cols-3">
-          <AccountField
-            autoComplete="address-level2"
-            id="city"
-            label="City"
-            onChange={(value) => setField('city', value)}
-            value={draft.city}
-          />
-          <AccountSelect
-            id="province"
-            label="Province"
-            onChange={(value) => setField('province', value)}
-            value={draft.province}
-          >
-            {ACCOUNT_PROVINCES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </AccountSelect>
-          <AccountField
-            autoComplete="postal-code"
-            id="postal"
-            label="Postal code"
-            onChange={(value) => setField('postal', value)}
-            value={draft.postal}
-          />
-        </div>
-      </div>
+      <AddressFields
+        idPrefix="shipping"
+        onChange={(key, value) => setField(key, value)}
+        value={draft}
+      />
+      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
       <SaveBar pending={pending} saved={saved} />
     </form>
   )
 }
 
-export function AccountOrdersPanel() {
+export function AccountOrdersPanel({
+  orders: initialOrders,
+}: {
+  orders?: ShopOrder[]
+}) {
   const { profile } = useAccount()
-  const { orders, ready } = useShopOrders()
+  const [orders, setOrders] = React.useState<ShopOrder[]>(initialOrders ?? [])
+  const [ready, setReady] = React.useState(Array.isArray(initialOrders))
+
+  React.useEffect(() => {
+    if (Array.isArray(initialOrders)) {
+      setOrders(initialOrders)
+      setReady(true)
+      return
+    }
+    let cancelled = false
+    void listMyOrders()
+      .then((rows) => {
+        if (!cancelled) setOrders(rows ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([])
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [initialOrders])
 
   if (!profile) return null
-
-  const mine = orders.filter(
-    (order) =>
-      order.email.trim().toLowerCase() === profile.email.trim().toLowerCase(),
-  )
 
   return (
     <div>
@@ -578,11 +600,11 @@ export function AccountOrdersPanel() {
         Order history
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Kit placed with this email, including pickup and shipped orders.
+        Kit placed on this account.
       </p>
       {!ready ? (
         <p className="mt-6 text-sm text-muted-foreground">Loading orders…</p>
-      ) : mine.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="mt-6 border-y border-border py-10">
           <p className="font-heading text-base font-medium tracking-tight">
             No orders yet
@@ -599,7 +621,7 @@ export function AccountOrdersPanel() {
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-border border-y border-border">
-          {mine.map((order) => (
+          {orders.map((order) => (
             <OrderRow key={order.id} order={order} />
           ))}
         </ul>
@@ -657,12 +679,92 @@ function emptyDraft(): AccountProfile {
 
 function OrderRow({ order }: { order: ShopOrder }) {
   const count = orderItemCount(order)
+  const preview = order.lines[0]
   return (
-    <li className="py-5">
-      <div className="flex items-start justify-between gap-3">
+    <li>
+      <Link
+        className="flex items-center gap-4 py-4 outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40"
+        params={{ id: order.id }}
+        to="/account/orders/$id"
+      >
+        {preview ? (
+          <img
+            alt=""
+            className="size-14 shrink-0 object-cover bg-muted"
+            height={112}
+            src={shopImageSrc(preview.image, 112)}
+            width={112}
+          />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{order.id}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {formatOrderDate(order.placedAt)}
+            <span className="text-border"> · </span>
+            {count} {count === 1 ? 'item' : 'items'}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className="text-sm font-medium tabular-nums">
+            {formatShopPrice(order.total)}
+          </span>
+          <span
+            className={cn(
+              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+              paymentStatusStyles[orderPaymentStatus(order)],
+            )}
+          >
+            {orderPaymentStatus(order)}
+          </span>
+        </div>
+      </Link>
+    </li>
+  )
+}
+
+function PayNowButton({ order }: { order: ShopOrder }) {
+  const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState('')
+
+  async function pay() {
+    setPending(true)
+    setError('')
+    try {
+      const started = await startPayment({ data: { orderNumber: order.id } })
+      window.location.assign(started.url)
+    } catch (caught) {
+      setPending(false)
+      setError(caught instanceof Error ? caught.message : 'Could not start payment')
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <Button disabled={pending} onClick={() => void pay()} type="button">
+        {pending ? 'Redirecting…' : `Pay ${formatShopPrice(order.total)}`}
+      </Button>
+      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+    </div>
+  )
+}
+
+export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
+  const count = orderItemCount(order)
+
+  return (
+    <div>
+      <Link
+        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        to="/account/orders"
+      >
+        Back to orders
+      </Link>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium">{order.id}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">
+            {order.id}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             {formatOrderDate(order.placedAt)}
             <span className="text-border"> · </span>
             {count} {count === 1 ? 'item' : 'items'}
@@ -670,24 +772,36 @@ function OrderRow({ order }: { order: ShopOrder }) {
             {order.shippingLabel}
           </p>
         </div>
-        <span
-          className={cn(
-            'shrink-0 border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-            orderStatusStyles[order.status],
-          )}
-        >
-          {order.status}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span
+            className={cn(
+              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+              orderStatusStyles[order.status],
+            )}
+          >
+            {order.status}
+          </span>
+          <span
+            className={cn(
+              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+              paymentStatusStyles[orderPaymentStatus(order)],
+            )}
+          >
+            {orderPaymentStatus(order)}
+          </span>
+        </div>
       </div>
-      <ul className="mt-4 space-y-3">
+      {orderNeedsPayment(order) ? <PayNowButton order={order} /> : null}
+
+      <ul className="mt-6 divide-y divide-border border-y border-border">
         {order.lines.map((line) => (
           <li
-            className="flex items-center gap-3"
-            key={`${order.id}-${line.slug}-${line.size}`}
+            className="flex items-center gap-3 py-4"
+            key={`${order.id}-${line.slug}-${line.size}-${line.custom?.chest ?? ''}`}
           >
             <img
               alt=""
-              className="size-14 object-cover"
+              className="size-14 object-cover bg-muted"
               height={112}
               src={shopImageSrc(line.image, 112)}
               width={112}
@@ -700,7 +814,18 @@ function OrderRow({ order }: { order: ShopOrder }) {
                 {line.color}
                 <span className="text-border"> · </span>
                 {line.quantity}×
+                {line.preOrder ? (
+                  <>
+                    <span className="text-border"> · </span>
+                    Pre order
+                  </>
+                ) : null}
               </p>
+              {line.custom ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {formatCustomMeasurements(line.custom)}
+                </p>
+              ) : null}
             </div>
             <p className="shrink-0 text-sm tabular-nums">
               {formatShopPrice(line.price * line.quantity)}
@@ -708,13 +833,105 @@ function OrderRow({ order }: { order: ShopOrder }) {
           </li>
         ))}
       </ul>
-      <p className="mt-4 flex items-baseline justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Total</span>
-        <span className="font-medium tabular-nums">
-          {formatShopPrice(order.total)}
-        </span>
-      </p>
-    </li>
+
+      <dl className="mt-6 space-y-2 text-sm">
+        <div>
+          <dt className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            Ship to
+          </dt>
+          <dd className="mt-1">
+            {order.address}
+            <br />
+            {[order.city, order.province, order.postal].filter(Boolean).join(' ')}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted-foreground">Subtotal</dt>
+          <dd className="tabular-nums">{formatShopPrice(order.subtotal)}</dd>
+        </div>
+        {order.discount > 0 ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-muted-foreground">Discount</dt>
+            <dd className="tabular-nums">−{formatShopPrice(order.discount)}</dd>
+          </div>
+        ) : null}
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted-foreground">Shipping</dt>
+          <dd className="tabular-nums">
+            {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 border-t border-border pt-4">
+          <dt className="text-muted-foreground">Total</dt>
+          <dd className="font-medium tabular-nums">
+            {formatShopPrice(order.total)}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  )
+}
+
+type AddressValues = {
+  address: string
+  apartment: string
+  city: string
+  province: string
+  postal: string
+}
+
+function AddressFields({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: AddressValues
+  onChange: (key: keyof AddressValues, next: string) => void
+  idPrefix: string
+}) {
+  return (
+    <div className="mt-5 grid gap-3">
+      <AccountField
+        autoComplete="address-line1"
+        id={`${idPrefix}-address`}
+        label="Address"
+        onChange={(next) => onChange('address', next)}
+        value={value.address}
+      />
+      <AccountField
+        autoComplete="address-line2"
+        id={`${idPrefix}-apartment`}
+        label="Apartment, suite, etc. (optional)"
+        onChange={(next) => onChange('apartment', next)}
+        value={value.apartment}
+      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <AccountField
+          autoComplete="address-level2"
+          id={`${idPrefix}-city`}
+          label="City"
+          onChange={(next) => onChange('city', next)}
+          value={value.city}
+        />
+        <AccountSelect
+          id={`${idPrefix}-province`}
+          label="Province"
+          onChange={(next) => onChange('province', next)}
+          value={value.province}
+        >
+          {ACCOUNT_PROVINCES.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </AccountSelect>
+        <AccountField
+          autoComplete="postal-code"
+          id={`${idPrefix}-postal`}
+          label="Postal code"
+          onChange={(next) => onChange('postal', next)}
+          value={value.postal}
+        />
+      </div>
+    </div>
   )
 }
 

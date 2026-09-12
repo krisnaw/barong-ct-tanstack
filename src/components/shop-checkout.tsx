@@ -3,50 +3,44 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import {
   CaretDownIcon,
   CheckCircleIcon,
+  CreditCardIcon,
   LockSimpleIcon,
+  QrCodeIcon,
   ShoppingBagIcon,
 } from '@phosphor-icons/react'
 import { Button } from '~/components/ui/button'
 import {
+  findShopProduct,
+  formatCustomMeasurements,
   formatShopPrice,
-  getShopProduct,
   shopImageSrc,
   type ShopProduct,
 } from '~/data/shop'
-import type { ShopOrder } from '~/data/orders'
-import { useAccount } from '~/lib/account'
-import { useCart, type CartItem } from '~/lib/cart'
-import { addPlacedOrder } from '~/lib/orders'
+import {
+  discountAmount as orderDiscountAmount,
+  formatPaymentLabel,
+  orderNeedsPayment,
+  parseDiscountCode,
+  SHIPPING_RATES,
+  type ShopOrder,
+  type ShippingSpeed,
+} from '~/data/orders'
+import {
+  useAccount,
+  type AccountShippingAddress,
+} from '~/lib/account'
+import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
+import { placeOrder } from '~/lib/order.functions'
+import { startPayment } from '~/lib/payment.functions'
+import type { PaymentDisplay } from '~/lib/payment/types'
 import { cn } from '~/lib/utils'
 
 type CartLine = CartItem & { product: ShopProduct }
-
-type DeliveryMethod = 'ship' | 'pickup'
-type ShippingSpeed = 'regular' | 'express'
 
 type Discount = {
   code: string
   type: 'percent' | 'fixed'
   value: number
-}
-
-type PlacedOrder = {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  phone: string
-  delivery: DeliveryMethod
-  address: string
-  city: string
-  province: string
-  postal: string
-  shippingLabel: string
-  lines: CartLine[]
-  subtotal: number
-  shipping: number
-  discount: number
-  total: number
 }
 
 const PROVINCES = [
@@ -58,57 +52,68 @@ const PROVINCES = [
   'Yogyakarta',
 ]
 
-const SHIPPING_RATES: Record<ShippingSpeed, { label: string; detail: string; price: number }> = {
-  regular: {
-    label: 'JNE Regular',
-    detail: '2–4 business days',
-    price: 35_000,
-  },
-  express: {
-    label: 'JNE YES',
-    detail: '1–2 business days',
-    price: 55_000,
-  },
-}
-
-function useCartLines(items: CartItem[]): CartLine[] {
+function useCartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
   return items.flatMap((item) => {
-    const product = getShopProduct(item.slug)
+    const product = findShopProduct(products, item.slug)
     if (!product) return []
     return [{ ...item, product }]
   })
 }
 
 function discountAmount(subtotal: number, discount: Discount | null) {
-  if (!discount) return 0
-  if (discount.type === 'percent') {
-    return Math.round(subtotal * (discount.value / 100))
-  }
-  return Math.min(discount.value, subtotal)
+  return orderDiscountAmount(subtotal, discount)
 }
 
-function parseDiscount(code: string): Discount | null {
-  const normalized = code.trim().toUpperCase()
-  if (normalized === 'BARONG10') {
-    return { code: normalized, type: 'percent', value: 10 }
-  }
-  if (normalized === 'MELALI') {
-    return { code: normalized, type: 'fixed', value: 50_000 }
-  }
-  return null
+function shippingAddressComplete(
+  address: AccountShippingAddress | null | undefined,
+) {
+  return Boolean(
+    address &&
+      address.address.trim() &&
+      address.city.trim() &&
+      address.postal.trim(),
+  )
 }
 
-export function ShopCheckout() {
+function formatShippingAddress(address: {
+  address: string
+  apartment?: string
+  city: string
+  province: string
+  postal: string
+}) {
+  const street = [address.address, address.apartment].filter(Boolean).join(', ')
+  const locality = [address.city, address.province, address.postal]
+    .filter(Boolean)
+    .join(' ')
+  return { street, locality }
+}
+
+export function ShopCheckout({
+  products,
+  paymentDisplay,
+}: {
+  products: ShopProduct[]
+  paymentDisplay: PaymentDisplay
+}) {
   const navigate = useNavigate()
   const { items, clear, ready } = useCart()
-  const { profile, signedIn, ready: accountReady } = useAccount()
-  const lines = useCartLines(items)
-  const [order, setOrder] = React.useState<PlacedOrder | null>(null)
+  const {
+    profile,
+    shippingAddress,
+    signedIn,
+    ready: accountReady,
+    updateShippingAddress,
+  } = useAccount()
+  const lines = useCartLines(items, products)
+  const [pending, setPending] = React.useState(false)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
+  const [addressSource, setAddressSource] = React.useState<'saved' | 'new'>(
+    'new',
+  )
 
   const [email, setEmail] = React.useState('')
   const [marketing, setMarketing] = React.useState(true)
-  const [delivery, setDelivery] = React.useState<DeliveryMethod>('pickup')
   const [firstName, setFirstName] = React.useState('')
   const [lastName, setLastName] = React.useState('')
   const [address, setAddress] = React.useState('')
@@ -118,10 +123,6 @@ export function ShopCheckout() {
   const [postal, setPostal] = React.useState('')
   const [phone, setPhone] = React.useState('')
   const [shippingSpeed, setShippingSpeed] = React.useState<ShippingSpeed>('regular')
-  const [cardNumber, setCardNumber] = React.useState('')
-  const [expiry, setExpiry] = React.useState('')
-  const [cvv, setCvv] = React.useState('')
-  const [cardName, setCardName] = React.useState('')
   const [discountInput, setDiscountInput] = React.useState('')
   const [discount, setDiscount] = React.useState<Discount | null>(null)
   const [discountError, setDiscountError] = React.useState('')
@@ -131,17 +132,18 @@ export function ShopCheckout() {
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
-  const shipping =
-    delivery === 'pickup' ? 0 : SHIPPING_RATES[shippingSpeed].price
+  const hasSavedAddress = shippingAddressComplete(shippingAddress)
+  const useSavedAddress = hasSavedAddress && addressSource === 'saved'
+  const shipping = SHIPPING_RATES[shippingSpeed].price
   const savings = discountAmount(subtotal, discount)
   const total = Math.max(subtotal - savings + shipping, 0)
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
 
   React.useEffect(() => {
-    if (ready && items.length === 0 && !order) {
+    if (ready && items.length === 0) {
       void navigate({ to: '/shop/cart' })
     }
-  }, [ready, items.length, order, navigate])
+  }, [ready, items.length, navigate])
 
   React.useEffect(() => {
     if (!accountReady || !signedIn || !profile) return
@@ -149,16 +151,16 @@ export function ShopCheckout() {
     setFirstName(profile.firstName)
     setLastName(profile.lastName)
     setPhone(profile.phone)
-    setAddress(profile.address)
-    setApartment(profile.apartment)
-    setCity(profile.city)
-    if (profile.province) setProvince(profile.province)
-    setPostal(profile.postal)
-  }, [accountReady, signedIn, profile])
+    if (shippingAddressComplete(shippingAddress)) {
+      setAddressSource('saved')
+      return
+    }
+    setAddressSource('new')
+  }, [accountReady, signedIn, profile, shippingAddress])
 
   function applyDiscount(event: React.FormEvent) {
     event.preventDefault()
-    const next = parseDiscount(discountInput)
+    const next = parseDiscountCode(discountInput)
     if (!next) {
       setDiscount(null)
       setDiscountError('Enter a valid discount code')
@@ -174,20 +176,15 @@ export function ShopCheckout() {
     if (!firstName.trim()) next.firstName = 'Enter a first name'
     if (!lastName.trim()) next.lastName = 'Enter a last name'
     if (!phone.trim()) next.phone = 'Enter a phone number'
-    if (delivery === 'ship') {
+    if (!useSavedAddress) {
       if (!address.trim()) next.address = 'Enter an address'
       if (!city.trim()) next.city = 'Enter a city'
       if (!postal.trim()) next.postal = 'Enter a postal code'
     }
-    const digits = cardNumber.replace(/\s/g, '')
-    if (digits.length < 13) next.cardNumber = 'Enter a card number'
-    if (!/^\d{2}\s\/\s\d{2}$/.test(expiry)) next.expiry = 'Enter a valid expiry'
-    if (cvv.replace(/\D/g, '').length < 3) next.cvv = 'Enter a CVV'
-    if (!cardName.trim()) next.cardName = 'Enter the name on the card'
     return next
   }
 
-  function handlePay(event: React.FormEvent) {
+  async function handlePay(event: React.FormEvent) {
     event.preventDefault()
     const next = validate()
     if (Object.keys(next).length > 0) {
@@ -195,63 +192,72 @@ export function ShopCheckout() {
       return
     }
     setErrors({})
-    const shippingLabel =
-      delivery === 'pickup'
-        ? 'Pickup · Denpasar meet point'
-        : `${SHIPPING_RATES[shippingSpeed].label} · ${SHIPPING_RATES[shippingSpeed].detail}`
-    const id = `BCT-${Math.floor(1000 + Math.random() * 9000)}`
-    const placed: ShopOrder = {
-      id,
-      placedAt: new Date().toISOString(),
-      email,
-      firstName,
-      lastName,
-      phone,
-      delivery,
-      address: [address, apartment].filter(Boolean).join(', '),
-      city,
-      province,
-      postal,
-      shippingLabel,
-      lines: lines.map((item) => ({
-        slug: item.slug,
-        name: item.product.name,
-        color: item.product.color,
-        size: item.size,
-        quantity: item.quantity,
-        price: item.product.price,
-        image: item.product.image,
-      })),
-      subtotal,
-      shipping,
-      discount: savings,
-      total,
-      status: 'pending',
-      payment: 'paid',
+
+    const ship = useSavedAddress && shippingAddress
+      ? {
+          address: shippingAddress.address,
+          apartment: shippingAddress.apartment,
+          city: shippingAddress.city,
+          province: shippingAddress.province,
+          postal: shippingAddress.postal,
+        }
+      : { address, apartment, city, province, postal }
+
+    let shippingAddressId = useSavedAddress ? shippingAddress?.id : undefined
+    if (!useSavedAddress) {
+      try {
+        const saved = await updateShippingAddress(ship)
+        shippingAddressId = saved?.id
+      } catch {
+        setErrors({ address: 'Could not save shipping address' })
+        return
+      }
     }
-    addPlacedOrder(placed)
-    setOrder({
-      id,
-      email,
-      firstName,
-      lastName,
-      phone,
-      delivery,
-      address: placed.address,
-      city,
-      province,
-      postal,
-      shippingLabel,
-      lines,
-      subtotal,
-      shipping,
-      discount: savings,
-      total,
-    })
-    clear()
+
+    setPending(true)
+    try {
+      const placed = await placeOrder({
+        data: {
+          email,
+          firstName,
+          lastName,
+          phone,
+          address: ship.address,
+          apartment: ship.apartment,
+          city: ship.city,
+          province: ship.province,
+          postal: ship.postal,
+          shippingAddressId,
+          shippingSpeed,
+          discountCode: discount?.code,
+          lines: lines.map((item) => ({
+            slug: item.slug,
+            size: item.size,
+            quantity: item.quantity,
+            custom: item.custom,
+          })),
+        },
+      })
+      clear()
+      try {
+        const started = await startPayment({
+          data: { orderNumber: placed.id },
+        })
+        window.location.assign(started.url)
+      } catch {
+        window.location.assign(
+          `/shop/checkout/return?order=${encodeURIComponent(placed.id)}`,
+        )
+      }
+    } catch (error) {
+      setPending(false)
+      setErrors({
+        form: error instanceof Error ? error.message : 'Could not place order',
+      })
+    }
   }
 
-  if (!ready || (items.length === 0 && !order)) {
+  if (!ready || items.length === 0) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background text-sm text-muted-foreground">
         Loading checkout…
@@ -259,16 +265,11 @@ export function ShopCheckout() {
     )
   }
 
-  if (order) {
-    return <CheckoutConfirmation order={order} />
-  }
-
   const summary = (
     <OrderSummary
       lines={lines}
       subtotal={subtotal}
       shipping={shipping}
-      delivery={delivery}
       savings={savings}
       total={total}
       discount={discount}
@@ -361,33 +362,7 @@ export function ShopCheckout() {
 
           <section>
             <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">Delivery</h2>
-            <div className="mb-3 grid grid-cols-2 overflow-hidden rounded-md border border-neutral-300">
-              <DeliveryTab
-                active={delivery === 'ship'}
-                onClick={() => setDelivery('ship')}
-              >
-                Ship
-              </DeliveryTab>
-              <DeliveryTab
-                active={delivery === 'pickup'}
-                onClick={() => setDelivery('pickup')}
-              >
-                Pickup
-              </DeliveryTab>
-            </div>
-
-            {delivery === 'pickup' ? (
-              <div className="rounded-md border border-neutral-300 p-4">
-                <p className="font-medium">Denpasar meet point</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Jalan Raya Sesetan, Denpasar, Bali. Ready in 2–3 days. We’ll
-                  confirm on WhatsApp.
-                </p>
-                <p className="mt-2 text-sm font-medium">Free</p>
-              </div>
-            ) : null}
-
-            <div className="mt-3 grid gap-3">
+            <div className="grid gap-3">
               <CheckoutSelect
                 id="country"
                 label="Country/region"
@@ -414,7 +389,59 @@ export function ShopCheckout() {
                   value={lastName}
                 />
               </div>
-              {delivery === 'ship' ? (
+              <CheckoutField
+                autoComplete="tel"
+                error={errors.phone}
+                id="phone"
+                label="Phone"
+                onChange={setPhone}
+                type="tel"
+                value={phone}
+              />
+              {hasSavedAddress && shippingAddress ? (
+                <div className="overflow-hidden rounded-md border border-neutral-300">
+                  <label
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 px-4 py-3',
+                      useSavedAddress && 'bg-neutral-50',
+                    )}
+                  >
+                    <input
+                      checked={useSavedAddress}
+                      className="mt-1 size-4"
+                      name="address-source"
+                      onChange={() => setAddressSource('saved')}
+                      type="radio"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium">
+                        {shippingAddress.label || 'Saved address'}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">
+                        {formatShippingAddress(shippingAddress).street}
+                        <br />
+                        {formatShippingAddress(shippingAddress).locality}
+                      </span>
+                    </span>
+                  </label>
+                  <label
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 border-t border-neutral-300 px-4 py-3',
+                      !useSavedAddress && 'bg-neutral-50',
+                    )}
+                  >
+                    <input
+                      checked={!useSavedAddress}
+                      className="mt-1 size-4"
+                      name="address-source"
+                      onChange={() => setAddressSource('new')}
+                      type="radio"
+                    />
+                    <span className="text-sm font-medium">New address</span>
+                  </label>
+                </div>
+              ) : null}
+              {!useSavedAddress ? (
                 <>
                   <CheckoutField
                     autoComplete="address-line1"
@@ -461,20 +488,10 @@ export function ShopCheckout() {
                   </div>
                 </>
               ) : null}
-              <CheckoutField
-                autoComplete="tel"
-                error={errors.phone}
-                id="phone"
-                label="Phone"
-                onChange={setPhone}
-                type="tel"
-                value={phone}
-              />
             </div>
           </section>
 
-          {delivery === 'ship' ? (
-            <section>
+          <section>
               <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">
                 Shipping method
               </h2>
@@ -513,68 +530,58 @@ export function ShopCheckout() {
                 })}
               </div>
             </section>
-          ) : null}
 
           <section>
             <h2 className="text-[1.35rem] font-semibold tracking-tight">Payment</h2>
             <p className="mt-1 mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
               <LockSimpleIcon className="size-3.5" />
-              All transactions are secure and encrypted.
+              Pay securely with {paymentDisplay.displayName}.
             </p>
             <div className="overflow-hidden rounded-md border border-neutral-300">
-              <div className="flex items-center justify-between bg-neutral-50 px-4 py-3">
-                <span className="text-sm font-medium">Credit card</span>
-                <span className="text-[11px] tracking-wide text-muted-foreground">
-                  Visa · Mastercard · Amex
-                </span>
-              </div>
-              <div className="grid gap-3 p-3">
-                <CheckoutField
-                  autoComplete="cc-number"
-                  error={errors.cardNumber}
-                  id="cardNumber"
-                  inputMode="numeric"
-                  label="Card number"
-                  onChange={(value) => setCardNumber(formatCardNumber(value))}
-                  value={cardNumber}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <CheckoutField
-                    autoComplete="cc-exp"
-                    error={errors.expiry}
-                    id="expiry"
-                    label="Expiration date (MM / YY)"
-                    onChange={(value) => setExpiry(formatExpiry(value))}
-                    value={expiry}
-                  />
-                  <CheckoutField
-                    autoComplete="cc-csc"
-                    error={errors.cvv}
-                    id="cvv"
-                    inputMode="numeric"
-                    label="Security code"
-                    onChange={(value) => setCvv(value.replace(/\D/g, '').slice(0, 4))}
-                    value={cvv}
-                  />
-                </div>
-                <CheckoutField
-                  autoComplete="cc-name"
-                  error={errors.cardName}
-                  id="cardName"
-                  label="Name on card"
-                  onChange={setCardName}
-                  value={cardName}
-                />
-              </div>
+              {paymentDisplay.methods.map((method, index) => {
+                const Icon =
+                  method.id === 'qris'
+                    ? QrCodeIcon
+                    : method.id === 'card'
+                      ? CreditCardIcon
+                      : LockSimpleIcon
+                return (
+                  <div
+                    className={cn(
+                      'flex items-start gap-3 px-4 py-3',
+                      index < paymentDisplay.methods.length - 1 &&
+                        'border-b border-neutral-300',
+                    )}
+                    key={method.id}
+                  >
+                    <Icon className="mt-0.5 size-5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{method.label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {method.detail}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
 
-          <Button className="h-14 w-full rounded-md text-base" size="lg" type="submit">
-            Pay now
+          {errors.form ? (
+            <p className="text-sm text-red-600">{errors.form}</p>
+          ) : null}
+
+          <Button
+            className="h-14 w-full rounded-md text-base"
+            disabled={pending}
+            size="lg"
+            type="submit"
+          >
+            {pending ? 'Redirecting…' : `Pay ${formatShopPrice(total)}`}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            This is a demo checkout. No payment is taken.
+            You’ll be redirected to complete payment.
           </p>
         </form>
 
@@ -600,7 +607,7 @@ export function ShopCheckout() {
   )
 }
 
-function CheckoutConfirmation({ order }: { order: PlacedOrder }) {
+export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
   return (
     <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
       <div className="px-5 py-8 sm:px-10 lg:px-16 lg:py-12">
@@ -643,19 +650,11 @@ function CheckoutConfirmation({ order }: { order: PlacedOrder }) {
                 </dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">
-                  {order.delivery === 'pickup' ? 'Pickup' : 'Ship to'}
-                </dt>
+                <dt className="text-muted-foreground">Ship to</dt>
                 <dd className="mt-1">
-                  {order.delivery === 'pickup' ? (
-                    'Denpasar meet point, Jalan Raya Sesetan'
-                  ) : (
-                    <>
-                      {order.address}
-                      <br />
-                      {order.city}, {order.province} {order.postal}
-                    </>
-                  )}
+                  {order.address}
+                  <br />
+                  {order.city}, {order.province} {order.postal}
                 </dd>
               </div>
               <div>
@@ -664,7 +663,7 @@ function CheckoutConfirmation({ order }: { order: PlacedOrder }) {
               </div>
               <div>
                 <dt className="text-muted-foreground">Payment</dt>
-                <dd className="mt-1">Credit card · {formatShopPrice(order.total)}</dd>
+                <dd className="mt-1">{formatPaymentLabel(order)}</dd>
               </div>
             </dl>
           </div>
@@ -685,11 +684,79 @@ function CheckoutConfirmation({ order }: { order: PlacedOrder }) {
   )
 }
 
+export function CheckoutAwaitingPayment({
+  order,
+  title,
+  detail,
+}: {
+  order: ShopOrder
+  title: string
+  detail: string
+}) {
+  const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState('')
+
+  async function payAgain() {
+    setPending(true)
+    setError('')
+    try {
+      const started = await startPayment({ data: { orderNumber: order.id } })
+      window.location.assign(started.url)
+    } catch (caught) {
+      setPending(false)
+      setError(
+        caught instanceof Error ? caught.message : 'Could not start payment',
+      )
+    }
+  }
+
+  return (
+    <div className="min-h-dvh bg-background px-5 py-8 sm:px-10 lg:px-16 lg:py-12">
+      <Link
+        className="mb-10 flex items-center gap-2.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        to="/"
+      >
+        <span className="grid size-8 place-items-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">
+          B
+        </span>
+        <span className="font-heading text-lg font-semibold tracking-tight">
+          Barong
+        </span>
+      </Link>
+      <div className="mx-auto max-w-xl">
+        <p className="text-sm text-muted-foreground">Order #{order.id}</p>
+        <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
+          {title}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
+        {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+        {orderNeedsPayment(order) ? (
+          <Button
+            className="mt-8"
+            disabled={pending}
+            onClick={() => void payAgain()}
+            size="lg"
+          >
+            {pending ? 'Redirecting…' : `Pay ${formatShopPrice(order.total)}`}
+          </Button>
+        ) : null}
+        <div className="mt-6">
+          <Link
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            to="/shop"
+          >
+            Continue shopping
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function OrderSummary({
   lines,
   subtotal,
   shipping,
-  delivery,
   savings,
   total,
   discount,
@@ -701,7 +768,6 @@ function OrderSummary({
   lines: CartLine[]
   subtotal: number
   shipping: number
-  delivery: DeliveryMethod
   savings: number
   total: number
   discount: Discount | null
@@ -716,7 +782,7 @@ function OrderSummary({
         {lines.map((line) => (
           <li
             className="flex items-center gap-3"
-            key={`${line.slug}-${line.size}`}
+            key={cartLineKey(line)}
           >
             <div className="relative shrink-0">
               <img
@@ -734,7 +800,13 @@ function OrderSummary({
               <p className="text-sm font-medium">{line.product.name}</p>
               <p className="text-xs text-muted-foreground">
                 {line.product.color} / {line.size}
+                {line.product.preOrder ? ' · Pre order' : ''}
               </p>
+              {line.custom ? (
+                <p className="text-xs text-muted-foreground">
+                  {formatCustomMeasurements(line.custom)}
+                </p>
+              ) : null}
             </div>
             <p className="text-sm tabular-nums">
               {formatShopPrice(line.product.price * line.quantity)}
@@ -783,7 +855,7 @@ function OrderSummary({
         <div className="flex justify-between">
           <dt>Shipping</dt>
           <dd className="tabular-nums">
-            {delivery === 'pickup' ? 'Free' : formatShopPrice(shipping)}
+            {formatShopPrice(shipping)}
           </dd>
         </div>
       </dl>
@@ -800,21 +872,21 @@ function OrderSummary({
   )
 }
 
-function ConfirmationSummary({ order }: { order: PlacedOrder }) {
+function ConfirmationSummary({ order }: { order: ShopOrder }) {
   return (
     <div>
       <ul className="space-y-4">
         {order.lines.map((line) => (
           <li
             className="flex items-center gap-3"
-            key={`${line.slug}-${line.size}`}
+            key={`${line.slug}-${line.size}-${line.custom?.chest ?? ''}`}
           >
             <div className="relative shrink-0">
               <img
                 alt=""
                 className="size-16 rounded-md border border-neutral-200 object-cover"
                 height={128}
-                src={shopImageSrc(line.product.image, 128)}
+                src={shopImageSrc(line.image, 128)}
                 width={128}
               />
               <span className="absolute -top-2 -right-2 grid min-w-5 place-items-center rounded-full bg-neutral-600 px-1 text-[11px] leading-5 text-white">
@@ -822,13 +894,19 @@ function ConfirmationSummary({ order }: { order: PlacedOrder }) {
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{line.product.name}</p>
+              <p className="text-sm font-medium">{line.name}</p>
               <p className="text-xs text-muted-foreground">
-                {line.product.color} / {line.size}
+                {line.color} / {line.size}
+                {line.preOrder ? ' · Pre order' : ''}
               </p>
+              {line.custom ? (
+                <p className="text-xs text-muted-foreground">
+                  {formatCustomMeasurements(line.custom)}
+                </p>
+              ) : null}
             </div>
             <p className="text-sm tabular-nums">
-              {formatShopPrice(line.product.price * line.quantity)}
+              {formatShopPrice(line.price * line.quantity)}
             </p>
           </li>
         ))}
@@ -858,29 +936,6 @@ function ConfirmationSummary({ order }: { order: PlacedOrder }) {
         </span>
       </div>
     </div>
-  )
-}
-
-function DeliveryTab({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={cn(
-        'h-12 text-sm font-medium',
-        active ? 'bg-neutral-100' : 'bg-background text-muted-foreground',
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
   )
 }
 
@@ -967,15 +1022,3 @@ function CheckoutSelect({
   )
 }
 
-function formatCardNumber(value: string) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 16)
-    .replace(/(\d{4})(?=\d)/g, '$1 ')
-}
-
-function formatExpiry(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
-  if (digits.length <= 2) return digits
-  return `${digits.slice(0, 2)} / ${digits.slice(2)}`
-}

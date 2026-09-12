@@ -3,27 +3,28 @@ import { Link } from '@tanstack/react-router'
 import { MinusIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { buttonVariants } from '~/components/ui/button'
 import {
+  findShopProduct,
+  formatCustomMeasurements,
   formatShopPrice,
-  getShopProduct,
   shopImageSrc,
   type ShopProduct,
 } from '~/data/shop'
-import { useCart, type CartItem } from '~/lib/cart'
+import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 
 type CartLine = CartItem & { product: ShopProduct }
 
-function useCartLines(items: CartItem[]): CartLine[] {
+function useCartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
   return items.flatMap((item) => {
-    const product = getShopProduct(item.slug)
+    const product = findShopProduct(products, item.slug)
     if (!product) return []
     return [{ ...item, product }]
   })
 }
 
-export function ShopCart() {
+export function ShopCart({ products }: { products: ShopProduct[] }) {
   const { items, setQuantity, removeItem, ready } = useCart()
-  const lines = useCartLines(items)
+  const lines = useCartLines(items, products)
 
   const subtotal = lines.reduce(
     (sum, line) => sum + line.product.price * line.quantity,
@@ -62,12 +63,12 @@ export function ShopCart() {
           <ul className="divide-y divide-border border-y border-border">
             {lines.map((line) => (
               <CartRow
-                key={`${line.slug}-${line.size}`}
+                key={cartLineKey(line)}
                 line={line}
                 onQuantity={(quantity) =>
-                  setQuantity(line.slug, line.size, quantity)
+                  setQuantity(line.slug, line.size, quantity, line.custom)
                 }
-                onRemove={() => removeItem(line.slug, line.size)}
+                onRemove={() => removeItem(line.slug, line.size, line.custom)}
               />
             ))}
           </ul>
@@ -83,7 +84,7 @@ export function ShopCart() {
               </span>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Pickup at the club meet point, or ship within Indonesia.
+              Ships within Indonesia. Add a shipping address at checkout.
             </p>
             <Link
               className={cn(buttonVariants({ size: 'lg' }), 'mt-6 w-full')}
@@ -138,7 +139,18 @@ function CartRow({
               Size {line.size}
               <span className="text-border"> · </span>
               {line.product.color}
+              {line.product.preOrder ? (
+                <>
+                  <span className="text-border"> · </span>
+                  Pre order
+                </>
+              ) : null}
             </p>
+            {line.custom ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formatCustomMeasurements(line.custom)}
+              </p>
+            ) : null}
           </div>
           <p className="shrink-0 text-sm font-medium tabular-nums">
             {formatShopPrice(line.product.price * line.quantity)}

@@ -31,6 +31,8 @@ import { Route as ShopIndexRouteImport } from './routes/shop.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as ShopCartRouteImport } from './routes/shop.cart'
 import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
+import { Route as AccountOrdersIndexRouteImport } from './routes/account.orders.index'
+import { Route as AccountOrdersIdRouteImport } from './routes/account.orders.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarsUserIdRouteImport } from './routes/api/avatars.$userId'
 import { Route as DashboardCatalogueIndexRouteImport } from './routes/dashboard/catalogue.index'
@@ -43,6 +45,11 @@ import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/ord
 import { Route as DashboardOrdersIdRouteImport } from './routes/dashboard/orders.$id'
 import { Route as EventsSlugIndexRouteImport } from './routes/events.$slug.index'
 import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.register'
+import { Route as ShopCheckoutIndexRouteImport } from './routes/shop.checkout.index'
+import { Route as ShopCheckoutCancelRouteImport } from './routes/shop.checkout.cancel'
+import { Route as ShopCheckoutReturnRouteImport } from './routes/shop.checkout.return'
+import { Route as ShopCheckoutSimulateRouteImport } from './routes/shop.checkout.simulate'
+import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -154,6 +161,16 @@ const ShopCheckoutRoute = ShopCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => ShopRoute,
 } as any)
+const AccountOrdersIndexRoute = AccountOrdersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountOrdersRoute,
+} as any)
+const AccountOrdersIdRoute = AccountOrdersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AccountOrdersRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -214,6 +231,32 @@ const EventsSlugRegisterRoute = EventsSlugRegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => EventsSlugRoute,
 } as any)
+const ShopCheckoutIndexRoute = ShopCheckoutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShopCheckoutRoute,
+} as any)
+const ShopCheckoutCancelRoute = ShopCheckoutCancelRouteImport.update({
+  id: '/cancel',
+  path: '/cancel',
+  getParentRoute: () => ShopCheckoutRoute,
+} as any)
+const ShopCheckoutReturnRoute = ShopCheckoutReturnRouteImport.update({
+  id: '/return',
+  path: '/return',
+  getParentRoute: () => ShopCheckoutRoute,
+} as any)
+const ShopCheckoutSimulateRoute = ShopCheckoutSimulateRouteImport.update({
+  id: '/simulate',
+  path: '/simulate',
+  getParentRoute: () => ShopCheckoutRoute,
+} as any)
+const ApiPaymentsWebhookProviderRoute =
+  ApiPaymentsWebhookProviderRouteImport.update({
+    id: '/api/payments/webhook/$provider',
+    path: '/api/payments/webhook/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -222,7 +265,7 @@ export interface FileRoutesByFullPath {
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
   '/account/address': typeof AccountAddressRoute
-  '/account/orders': typeof AccountOrdersRoute
+  '/account/orders': typeof AccountOrdersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
@@ -233,11 +276,12 @@ export interface FileRoutesByFullPath {
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
-  '/shop/checkout': typeof ShopCheckoutRoute
+  '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/account/': typeof AccountIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
@@ -246,26 +290,31 @@ export interface FileRoutesByFullPath {
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
+  '/shop/checkout/return': typeof ShopCheckoutReturnRoute
+  '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account/address': typeof AccountAddressRoute
-  '/account/orders': typeof AccountOrdersRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
-  '/shop/checkout': typeof ShopCheckoutRoute
   '/account': typeof AccountIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/events': typeof EventsIndexRoute
   '/shop': typeof ShopIndexRoute
+  '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
@@ -274,10 +323,16 @@ export interface FileRoutesByTo {
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
+  '/shop/checkout/return': typeof ShopCheckoutReturnRoute
+  '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/account/orders': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue': typeof DashboardCatalogueIndexRoute
   '/dashboard/events': typeof DashboardEventsIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
+  '/shop/checkout': typeof ShopCheckoutIndexRoute
+  '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -287,7 +342,7 @@ export interface FileRoutesById {
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
   '/account/address': typeof AccountAddressRoute
-  '/account/orders': typeof AccountOrdersRoute
+  '/account/orders': typeof AccountOrdersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
@@ -298,11 +353,12 @@ export interface FileRoutesById {
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
-  '/shop/checkout': typeof ShopCheckoutRoute
+  '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/account/': typeof AccountIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
@@ -311,10 +367,16 @@ export interface FileRoutesById {
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
+  '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
+  '/shop/checkout/return': typeof ShopCheckoutReturnRoute
+  '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -341,6 +403,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
@@ -349,26 +412,31 @@ export interface FileRouteTypes {
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/shop/checkout/cancel'
+    | '/shop/checkout/return'
+    | '/shop/checkout/simulate'
+    | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
     | '/dashboard/orders/'
     | '/events/$slug/'
+    | '/shop/checkout/'
+    | '/api/payments/webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account/address'
-    | '/account/orders'
     | '/auth/login'
     | '/auth/signup'
     | '/dashboard/users'
     | '/recaps/$slug'
     | '/shop/$slug'
     | '/shop/cart'
-    | '/shop/checkout'
     | '/account'
     | '/dashboard'
     | '/events'
     | '/shop'
+    | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
@@ -377,10 +445,16 @@ export interface FileRouteTypes {
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/shop/checkout/cancel'
+    | '/shop/checkout/return'
+    | '/shop/checkout/simulate'
+    | '/account/orders'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
     | '/events/$slug'
+    | '/shop/checkout'
+    | '/api/payments/webhook/$provider'
   id:
     | '__root__'
     | '/'
@@ -405,6 +479,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
     | '/dashboard/catalogue/$slug'
@@ -413,10 +488,16 @@ export interface FileRouteTypes {
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
     | '/events/$slug/register'
+    | '/shop/checkout/cancel'
+    | '/shop/checkout/return'
+    | '/shop/checkout/simulate'
+    | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
     | '/dashboard/orders/'
     | '/events/$slug/'
+    | '/shop/checkout/'
+    | '/api/payments/webhook/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -430,6 +511,7 @@ export interface RootRouteChildren {
   RecapsSlugRoute: typeof RecapsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarsUserIdRoute: typeof ApiAvatarsUserIdRoute
+  ApiPaymentsWebhookProviderRoute: typeof ApiPaymentsWebhookProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -588,6 +670,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCheckoutRouteImport
       parentRoute: typeof ShopRoute
     }
+    '/account/orders/': {
+      id: '/account/orders/'
+      path: '/'
+      fullPath: '/account/orders/'
+      preLoaderRoute: typeof AccountOrdersIndexRouteImport
+      parentRoute: typeof AccountOrdersRoute
+    }
+    '/account/orders/$id': {
+      id: '/account/orders/$id'
+      path: '/$id'
+      fullPath: '/account/orders/$id'
+      preLoaderRoute: typeof AccountOrdersIdRouteImport
+      parentRoute: typeof AccountOrdersRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -672,6 +768,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugRegisterRouteImport
       parentRoute: typeof EventsSlugRoute
     }
+    '/shop/checkout/': {
+      id: '/shop/checkout/'
+      path: '/'
+      fullPath: '/shop/checkout/'
+      preLoaderRoute: typeof ShopCheckoutIndexRouteImport
+      parentRoute: typeof ShopCheckoutRoute
+    }
+    '/shop/checkout/cancel': {
+      id: '/shop/checkout/cancel'
+      path: '/cancel'
+      fullPath: '/shop/checkout/cancel'
+      preLoaderRoute: typeof ShopCheckoutCancelRouteImport
+      parentRoute: typeof ShopCheckoutRoute
+    }
+    '/shop/checkout/return': {
+      id: '/shop/checkout/return'
+      path: '/return'
+      fullPath: '/shop/checkout/return'
+      preLoaderRoute: typeof ShopCheckoutReturnRouteImport
+      parentRoute: typeof ShopCheckoutRoute
+    }
+    '/shop/checkout/simulate': {
+      id: '/shop/checkout/simulate'
+      path: '/simulate'
+      fullPath: '/shop/checkout/simulate'
+      preLoaderRoute: typeof ShopCheckoutSimulateRouteImport
+      parentRoute: typeof ShopCheckoutRoute
+    }
+    '/api/payments/webhook/$provider': {
+      id: '/api/payments/webhook/$provider'
+      path: '/api/payments/webhook/$provider'
+      fullPath: '/api/payments/webhook/$provider'
+      preLoaderRoute: typeof ApiPaymentsWebhookProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -740,15 +871,29 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
   DashboardRouteRouteChildren,
 )
 
+interface AccountOrdersRouteChildren {
+  AccountOrdersIdRoute: typeof AccountOrdersIdRoute
+  AccountOrdersIndexRoute: typeof AccountOrdersIndexRoute
+}
+
+const AccountOrdersRouteChildren: AccountOrdersRouteChildren = {
+  AccountOrdersIdRoute: AccountOrdersIdRoute,
+  AccountOrdersIndexRoute: AccountOrdersIndexRoute,
+}
+
+const AccountOrdersRouteWithChildren = AccountOrdersRoute._addFileChildren(
+  AccountOrdersRouteChildren,
+)
+
 interface AccountRouteChildren {
   AccountAddressRoute: typeof AccountAddressRoute
-  AccountOrdersRoute: typeof AccountOrdersRoute
+  AccountOrdersRoute: typeof AccountOrdersRouteWithChildren
   AccountIndexRoute: typeof AccountIndexRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
   AccountAddressRoute: AccountAddressRoute,
-  AccountOrdersRoute: AccountOrdersRoute,
+  AccountOrdersRoute: AccountOrdersRouteWithChildren,
   AccountIndexRoute: AccountIndexRoute,
 }
 
@@ -782,17 +927,35 @@ const EventsRouteChildren: EventsRouteChildren = {
 const EventsRouteWithChildren =
   EventsRoute._addFileChildren(EventsRouteChildren)
 
+interface ShopCheckoutRouteChildren {
+  ShopCheckoutCancelRoute: typeof ShopCheckoutCancelRoute
+  ShopCheckoutReturnRoute: typeof ShopCheckoutReturnRoute
+  ShopCheckoutSimulateRoute: typeof ShopCheckoutSimulateRoute
+  ShopCheckoutIndexRoute: typeof ShopCheckoutIndexRoute
+}
+
+const ShopCheckoutRouteChildren: ShopCheckoutRouteChildren = {
+  ShopCheckoutCancelRoute: ShopCheckoutCancelRoute,
+  ShopCheckoutReturnRoute: ShopCheckoutReturnRoute,
+  ShopCheckoutSimulateRoute: ShopCheckoutSimulateRoute,
+  ShopCheckoutIndexRoute: ShopCheckoutIndexRoute,
+}
+
+const ShopCheckoutRouteWithChildren = ShopCheckoutRoute._addFileChildren(
+  ShopCheckoutRouteChildren,
+)
+
 interface ShopRouteChildren {
   ShopSlugRoute: typeof ShopSlugRoute
   ShopCartRoute: typeof ShopCartRoute
-  ShopCheckoutRoute: typeof ShopCheckoutRoute
+  ShopCheckoutRoute: typeof ShopCheckoutRouteWithChildren
   ShopIndexRoute: typeof ShopIndexRoute
 }
 
 const ShopRouteChildren: ShopRouteChildren = {
   ShopSlugRoute: ShopSlugRoute,
   ShopCartRoute: ShopCartRoute,
-  ShopCheckoutRoute: ShopCheckoutRoute,
+  ShopCheckoutRoute: ShopCheckoutRouteWithChildren,
   ShopIndexRoute: ShopIndexRoute,
 }
 
@@ -809,6 +972,7 @@ const rootRouteChildren: RootRouteChildren = {
   RecapsSlugRoute: RecapsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarsUserIdRoute: ApiAvatarsUserIdRoute,
+  ApiPaymentsWebhookProviderRoute: ApiPaymentsWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

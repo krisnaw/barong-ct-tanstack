@@ -4,11 +4,12 @@ import {
   formatOrderDate,
   orderCustomerName,
   orderItemCount,
+  orderPaymentStatus,
   orderStatuses,
   type OrderStatus,
 } from '~/data/orders'
 import { formatShopPrice } from '~/data/shop'
-import { useShopOrders } from '~/lib/orders'
+import { listOrders } from '~/lib/order.functions'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,11 +29,12 @@ const orderStatusStyles: Record<OrderStatus, string> = {
 }
 
 export const Route = createFileRoute('/dashboard/orders/')({
+  loader: async () => (await listOrders()) ?? [],
   component: DashboardOrdersPage,
 })
 
 function DashboardOrdersPage() {
-  const { orders } = useShopOrders()
+  const orders = Route.useLoaderData()
   const [filter, setFilter] = React.useState<OrderStatus | 'all'>('all')
   const visible =
     filter === 'all' ? orders : orders.filter((order) => order.status === filter)
@@ -119,7 +121,7 @@ function DashboardOrdersPage() {
                     </p>
                   </div>
                   <span className="hidden shrink-0 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase sm:inline">
-                    {order.payment}
+                    {orderPaymentStatus(order)}
                   </span>
                   <span
                     className={cn(

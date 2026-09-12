@@ -1,13 +1,19 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import {
   formatOrderDate,
   orderCustomerName,
   orderItemCount,
+  orderPaymentStatus,
   orderStatuses,
+  type OrderPayment,
   type OrderStatus,
 } from '~/data/orders'
-import { formatShopPrice, shopImageSrc } from '~/data/shop'
-import { useShopOrders } from '~/lib/orders'
+import { formatCustomMeasurements, formatShopPrice, shopImageSrc } from '~/data/shop'
+import {
+  getOrderById,
+  updateOrderPayment,
+  updateOrderStatus,
+} from '~/lib/order.functions'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,9 +36,16 @@ const orderStatusStyles: Record<OrderStatus, string> = {
 }
 
 export const Route = createFileRoute('/dashboard/orders/$id')({
-  head: ({ params }) => ({
+  loader: async ({ params }) => {
+    const order = await getOrderById({ data: { id: params.id } })
+    if (!order) {
+      throw notFound()
+    }
+    return { order }
+  },
+  head: ({ loaderData, params }) => ({
     meta: seo({
-      title: `${params.id} · Dashboard | Barong Cycling Team`,
+      title: `${loaderData?.order.id ?? params.id} · Dashboard | Barong Cycling Team`,
       description: 'Manage a Barong Cycling Team shop order.',
     }),
   }),
@@ -40,25 +53,17 @@ export const Route = createFileRoute('/dashboard/orders/$id')({
 })
 
 function DashboardOrderDetailPage() {
-  const { id } = Route.useParams()
-  const { getOrder, ready, updatePayment, updateStatus } = useShopOrders()
-  const order = getOrder(id)
+  const { order } = Route.useLoaderData()
+  const router = useRouter()
 
-  if (!ready && !order) {
-    return (
-      <p className="px-4 py-8 text-sm text-muted-foreground">Loading order…</p>
-    )
+  async function changeStatus(status: OrderStatus) {
+    await updateOrderStatus({ data: { id: order.id, status } })
+    await router.invalidate()
   }
 
-  if (!order) {
-    return (
-      <div className="px-4 py-8 text-sm text-muted-foreground">
-        <p>This order is not in the shop queue.</p>
-        <Link className="mt-3 inline-block underline" to="/dashboard/orders">
-          Back to orders
-        </Link>
-      </div>
-    )
+  async function changePayment(payment: OrderPayment) {
+    await updateOrderPayment({ data: { id: order.id, payment } })
+    await router.invalidate()
   }
 
   return (
@@ -99,7 +104,7 @@ function DashboardOrderDetailPage() {
                 {order.status}
               </span>
               <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-                {order.payment}
+                {orderPaymentStatus(order)}
               </span>
             </div>
             <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
@@ -131,7 +136,7 @@ function DashboardOrderDetailPage() {
                       : 'border-border hover:border-foreground/40',
                   )}
                   key={status}
-                  onClick={() => updateStatus(order.id, status)}
+                  onClick={() => void changeStatus(status)}
                   type="button"
                 >
                   {status}
@@ -148,18 +153,34 @@ function DashboardOrderDetailPage() {
                 <button
                   className={cn(
                     'border px-3 py-2 text-sm font-medium capitalize transition-colors',
-                    order.payment === payment
+                    (payment === 'paid'
+                      ? orderPaymentStatus(order) === 'paid'
+                      : orderPaymentStatus(order) !== 'paid')
                       ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:border-foreground/40',
                   )}
                   key={payment}
-                  onClick={() => updatePayment(order.id, payment)}
+                  onClick={() => void changePayment(payment)}
                   type="button"
                 >
                   {payment}
                 </button>
               ))}
             </div>
+            {order.payment ? (
+              <dl className="mt-4 space-y-1 text-sm text-muted-foreground">
+                <div>
+                  Provider{' '}
+                  <span className="text-foreground">{order.payment.provider}</span>
+                </div>
+                <div>
+                  Transaction{' '}
+                  <span className="break-all text-foreground">
+                    {order.payment.transactionId}
+                  </span>
+                </div>
+              </dl>
+            ) : null}
           </div>
         </section>
 
@@ -171,7 +192,7 @@ function DashboardOrderDetailPage() {
             {order.lines.map((item) => (
               <li
                 className="flex items-center gap-4 px-4 py-3 text-sm"
-                key={`${item.slug}-${item.size}`}
+                key={`${item.slug}-${item.size}-${item.custom?.chest ?? ''}`}
               >
                 <img
                   alt=""
@@ -190,6 +211,11 @@ function DashboardOrderDetailPage() {
                     <span className="text-border"> · </span>
                     ×{item.quantity}
                   </p>
+                  {item.custom ? (
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {formatCustomMeasurements(item.custom)}
+                    </p>
+                  ) : null}
                 </div>
                 <span className="shrink-0 tabular-nums">
                   {formatShopPrice(item.price * item.quantity)}
@@ -216,21 +242,17 @@ function DashboardOrderDetailPage() {
             </h2>
             <dl className="mt-3 divide-y divide-border border border-border text-sm">
               <InfoRow label="Method" value={order.shippingLabel} />
-              {order.delivery === 'ship' ? (
-                <InfoRow
-                  label="Address"
-                  value={[
-                    order.address,
-                    [order.city, order.province, order.postal]
-                      .filter(Boolean)
-                      .join(', '),
-                  ]
+              <InfoRow
+                label="Address"
+                value={[
+                  order.address,
+                  [order.city, order.province, order.postal]
                     .filter(Boolean)
-                    .join(' · ')}
-                />
-              ) : (
-                <InfoRow label="City" value={order.city} />
-              )}
+                    .join(', '),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              />
             </dl>
           </div>
         </section>

@@ -15,8 +15,9 @@ import { authClient } from '~/lib/auth-client'
 
 export function LoginForm({
   className,
+  redirectTo,
   ...props
-}: React.ComponentProps<'div'>) {
+}: React.ComponentProps<'div'> & { redirectTo?: string }) {
   const navigate = useNavigate()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -40,7 +41,11 @@ export function LoginForm({
       return
     }
 
-    void navigate({ to: '/account' })
+    if (redirectTo === '/shop/checkout') {
+      void navigate({ to: '/shop/checkout' })
+    } else {
+      void navigate({ to: '/account' })
+    }
   }
 
   return (

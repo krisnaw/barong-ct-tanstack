@@ -5,7 +5,14 @@ import {
   getMyProfile,
   upsertMyProfile,
 } from '~/lib/profile.functions'
+import {
+  getMyShippingAddresses,
+  upsertMyShippingAddress,
+  type ShippingAddressRow,
+} from '~/lib/shipping-address.functions'
 import { removeAvatar, uploadAvatar } from '~/lib/avatar.functions'
+
+export type AccountShippingAddress = ShippingAddressRow
 
 export const ACCOUNT_PROVINCES = [
   'Bali',
@@ -57,12 +64,29 @@ export type AccountProfile = {
 
 type AccountContextValue = {
   profile: AccountProfile | null
+  shippingAddress: AccountShippingAddress | null
   signedIn: boolean
   ready: boolean
   signOut: () => void
   updateProfile: (patch: Partial<AccountProfile>) => Promise<void>
+  updateShippingAddress: (
+    patch: Partial<AccountShippingAddress>,
+  ) => Promise<AccountShippingAddress | undefined>
   uploadAvatarImage: (file: File) => Promise<string>
   clearAvatarImage: () => Promise<void>
+}
+
+export function emptyShippingAddress(): AccountShippingAddress {
+  return {
+    id: '',
+    label: 'Home',
+    address: '',
+    apartment: '',
+    city: '',
+    province: 'Bali',
+    postal: '',
+    isDefault: true,
+  }
 }
 
 const AccountContext = React.createContext<AccountContextValue | null>(null)
@@ -111,6 +135,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const { data: session, isPending } = authClient.useSession()
   const [profile, setProfile] = React.useState<AccountProfile | null>(null)
+  const [shippingAddress, setShippingAddress] =
+    React.useState<AccountShippingAddress | null>(null)
   const [profileReady, setProfileReady] = React.useState(false)
   const user = session?.user
   const userId = user?.id
@@ -120,13 +146,14 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
     if (!userId) {
       setProfile(null)
+      setShippingAddress(null)
       setProfileReady(!isPending)
       return
     }
 
     setProfileReady(false)
-    void getMyProfile()
-      .then((row) => {
+    void Promise.all([getMyProfile(), getMyShippingAddresses()])
+      .then(([row, addresses]) => {
         if (cancelled) return
         setProfile({
           ...emptyProfile(row.email),
@@ -142,6 +169,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           province: row.province,
           postal: row.postal,
         })
+        setShippingAddress(addresses[0] ?? null)
         setProfileReady(true)
       })
       .catch(() => {
@@ -150,6 +178,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           ...emptyProfile(user?.email ?? ''),
           avatarUrl: user?.image ?? '',
         })
+        setShippingAddress(null)
         setProfileReady(true)
       })
 
@@ -164,6 +193,26 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       void navigate({ to: '/' })
     })
   }, [navigate])
+
+  const updateShippingAddress = React.useCallback(
+    async (patch: Partial<AccountShippingAddress>) => {
+      if (!user) return
+      const next = await upsertMyShippingAddress({
+        data: {
+          id: patch.id || shippingAddress?.id || undefined,
+          label: patch.label,
+          address: patch.address,
+          apartment: patch.apartment,
+          city: patch.city,
+          province: patch.province,
+          postal: patch.postal,
+        },
+      })
+      setShippingAddress(next)
+      return next
+    },
+    [user, shippingAddress?.id],
+  )
 
   const updateProfile = React.useCallback(
     async (patch: Partial<AccountProfile>) => {
@@ -227,20 +276,24 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const value = React.useMemo(
     () => ({
       profile,
+      shippingAddress,
       signedIn: Boolean(user),
       ready: !isPending && profileReady,
       signOut,
       updateProfile,
+      updateShippingAddress,
       uploadAvatarImage,
       clearAvatarImage,
     }),
     [
       profile,
+      shippingAddress,
       user,
       isPending,
       profileReady,
       signOut,
       updateProfile,
+      updateShippingAddress,
       uploadAvatarImage,
       clearAvatarImage,
     ],

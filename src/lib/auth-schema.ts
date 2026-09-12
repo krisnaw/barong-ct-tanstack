@@ -114,6 +114,31 @@ export const userProfile = sqliteTable('user_profile', {
     .notNull(),
 })
 
+export const userShippingAddress = sqliteTable(
+  'user_shipping_address',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    label: text('label').default('Home').notNull(),
+    address: text('address'),
+    apartment: text('apartment'),
+    city: text('city'),
+    province: text('province').default('Bali'),
+    postal: text('postal'),
+    isDefault: integer('is_default', { mode: 'boolean' }).default(true).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index('user_shipping_address_userId_idx').on(table.userId)],
+)
+
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -121,6 +146,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
     fields: [user.id],
     references: [userProfile.userId],
   }),
+  shippingAddresses: many(userShippingAddress),
 }))
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -143,3 +169,13 @@ export const userProfileRelations = relations(userProfile, ({ one }) => ({
     references: [user.id],
   }),
 }))
+
+export const userShippingAddressRelations = relations(
+  userShippingAddress,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [userShippingAddress.userId],
+      references: [user.id],
+    }),
+  }),
+)

@@ -34,7 +34,11 @@ function localD1Path() {
 }
 
 export default defineConfig({
-  schema: './src/lib/auth-schema.ts',
+  schema: [
+    './src/lib/auth-schema.ts',
+    './src/lib/shop-schema.ts',
+    './src/lib/order-schema.ts',
+  ],
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {
