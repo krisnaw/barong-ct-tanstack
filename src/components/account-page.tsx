@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { CheckIcon } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   formatOrderDate,
@@ -505,7 +504,6 @@ export function AccountAddressPanel() {
   const [draft, setDraft] = React.useState<AccountShippingAddress>(
     () => shippingAddress ?? emptyShippingAddress(),
   )
-  const [saved, setSaved] = React.useState(false)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState('')
 
@@ -518,7 +516,6 @@ export function AccountAddressPanel() {
     value: AccountShippingAddress[K],
   ) {
     setDraft((current) => ({ ...current, [key]: value }))
-    setSaved(false)
   }
 
   async function handleSave(event: React.FormEvent) {
@@ -534,7 +531,10 @@ export function AccountAddressPanel() {
         province: draft.province,
         postal: draft.postal,
       })
-      setSaved(true)
+      toast.add({
+        type: 'success',
+        title: 'Shipping address saved',
+      })
     } catch {
       setError('Could not save shipping address')
     } finally {
@@ -556,7 +556,7 @@ export function AccountAddressPanel() {
         value={draft}
       />
       {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
-      <SaveBar pending={pending} saved={saved} />
+      <SaveBar pending={pending} />
     </form>
   )
 }
@@ -632,11 +632,9 @@ export function AccountOrdersPanel({
 
 function SaveBar({
   pending,
-  saved,
   label = 'Save',
 }: {
   pending?: boolean
-  saved?: boolean
   label?: string
 }) {
   return (
@@ -644,12 +642,6 @@ function SaveBar({
       <Button disabled={pending} size="lg" type="submit">
         {pending ? 'Saving…' : label}
       </Button>
-      {saved ? (
-        <p className="inline-flex items-center gap-1.5 text-sm">
-          <CheckIcon aria-hidden className="size-4" weight="bold" />
-          Saved
-        </p>
-      ) : null}
     </div>
   )
 }
