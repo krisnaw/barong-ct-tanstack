@@ -45,8 +45,8 @@
         "EMAIL_PROVIDER": "resend",
         "EMAIL_FROM": "noreply@barongmelali.com",
         "EMAIL_FROM_NAME": "Barong Cycling Team",
-        "PAYMENT_PROVIDER": "stub",
-        "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com"
+        "PAYMENT_PROVIDER": "doku",
+        "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com",
       },
       "send_email": [
         {
