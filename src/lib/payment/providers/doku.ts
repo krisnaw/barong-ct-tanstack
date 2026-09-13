@@ -147,7 +147,7 @@ export const dokuProvider: PaymentProvider = {
         line_items: lineItems(input),
       },
       payment: {
-        payment_due_date: 60,
+        payment_due_date: 24 * 60,
         payment_method_types: ['QRIS', 'CREDIT_CARD'],
       },
       customer: {
