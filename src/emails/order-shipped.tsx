@@ -5,6 +5,7 @@ import {
   Container,
   Head,
   Heading,
+  Hr,
   Html,
   Img,
   Preview,
@@ -126,8 +127,9 @@ export function OrderShipped({
                           <Img
                             alt=""
                             className="block bg-bg"
-                            height={48}
+                            height={64}
                             src={item.image}
+                            style={{ height: 'auto', objectFit: 'cover' }}
                             width={48}
                           />
                         </Column>
@@ -149,7 +151,12 @@ export function OrderShipped({
                         </Column>
                       </Row>
                     ))}
-                    <Row className="mt-4">
+                    <Row>
+                      <Column>
+                        <Hr className="border-stroke-strong mx-0 mt-4 mb-4 w-full border-solid" />
+                      </Column>
+                    </Row>
+                    <Row>
                       <Column>
                         <Text className="font-13 text-fg-3 m-0 font-sans">
                           Total
