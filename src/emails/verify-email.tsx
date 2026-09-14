@@ -1,15 +1,12 @@
 import {
   Body,
   Button,
-  Column,
   Container,
   Head,
   Heading,
   Html,
   Img,
-  Link,
   Preview,
-  Row,
   Section,
   Tailwind,
   Text,
@@ -44,28 +41,13 @@ export function VerifyEmail({
             <Section>
               <Section className="bg-bg mobile:px-2 px-6 py-4">
                 <Section className="mb-3 px-6">
-                  <Row>
-                    <Column
-                      align="left"
-                      className="w-1/2 py-[7px] text-left align-middle"
-                    >
-                      <Img
-                        alt={companyName}
-                        className="block"
-                        height={32}
-                        src={logoUrl}
-                        width={25}
-                      />
-                    </Column>
-                    <Column
-                      align="right"
-                      className="w-1/2 py-[7px] text-right align-middle"
-                    >
-                      <Text className="font-13 text-fg-3 m-0 text-right font-sans">
-                        {companyName}
-                      </Text>
-                    </Column>
-                  </Row>
+                  <Img
+                    alt={companyName}
+                    className="block"
+                    height={32}
+                    src={logoUrl}
+                    width={25}
+                  />
                 </Section>
 
                 <Section className="bg-bg-2 mobile:px-6 mobile:py-12 rounded-[8px] px-[40px] py-[64px] text-center">
@@ -106,25 +88,9 @@ export function VerifyEmail({
                 </Section>
 
                 <Section className="bg-bg">
-                  <Row>
-                    <Column className="px-6 py-10 text-center">
-                      <Text className="font-13 text-fg-3 mx-auto mt-0 mb-8 max-w-[280px] text-center font-sans">
-                        Denpasar peloton since 2016. Keep the bunch together.
-                      </Text>
-
-                      <Text className="font-11 text-fg-3 mt-4 mb-5 text-center font-sans">
-                        Barong Cycling Team
-                        <br />
-                        Denpasar, Bali
-                      </Text>
-                      <Text className="font-11 text-fg-3 m-0 text-center font-sans">
-                        <Link href={url} className="text-fg-3">
-                          Manage account
-                        </Link>{' '}
-                        on {companyName}.
-                      </Text>
-                    </Column>
-                  </Row>
+                  <Text className="font-11 text-fg-3 m-0 px-6 py-10 text-center font-sans">
+                    Barong Cycling Team, est 2016
+                  </Text>
                 </Section>
               </Section>
             </Section>
