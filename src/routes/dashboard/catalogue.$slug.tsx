@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
+import { ProductImageUrlFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import {
   jerseySizeGuide,
   shopImageSrc,
@@ -54,13 +55,16 @@ function DashboardProductDetailPage() {
   const router = useRouter()
   const [name, setName] = React.useState(product.name)
   const [price, setPrice] = React.useState(String(product.price))
-  const [image, setImage] = React.useState(product.image)
+  const [imageUrls, setImageUrls] = React.useState(() =>
+    initialImageFields(
+      product.images.length > 0 ? product.images : [product.image],
+    ),
+  )
   const [imageAlt, setImageAlt] = React.useState(product.imageAlt)
   const [description, setDescription] = React.useState(product.description)
   const [featuresText, setFeaturesText] = React.useState(
     product.features.join('\n'),
   )
-  const [imagesText, setImagesText] = React.useState(product.images.join('\n'))
   const [preOrder, setPreOrder] = React.useState(product.preOrder)
   const [membersOnly, setMembersOnly] = React.useState(product.membersOnly)
   const [active, setActive] = React.useState(product.active !== false)
@@ -74,15 +78,19 @@ function DashboardProductDetailPage() {
       ),
   )
   const [saving, setSaving] = React.useState(false)
+  const previewImage = collectImageUrls(imageUrls)[0]
 
   React.useEffect(() => {
     setName(product.name)
     setPrice(String(product.price))
-    setImage(product.image)
+    setImageUrls(
+      initialImageFields(
+        product.images.length > 0 ? product.images : [product.image],
+      ),
+    )
     setImageAlt(product.imageAlt)
     setDescription(product.description)
     setFeaturesText(product.features.join('\n'))
-    setImagesText(product.images.join('\n'))
     setPreOrder(product.preOrder)
     setMembersOnly(product.membersOnly)
     setActive(product.active !== false)
@@ -110,10 +118,12 @@ function DashboardProductDetailPage() {
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
-      const images = imagesText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
+      const images = collectImageUrls(imageUrls)
+      if (images.length === 0) {
+        toast.add({ type: 'error', title: 'Add at least one feature image' })
+        setSaving(false)
+        return
+      }
       const updated = await updateProduct({
         data: {
           id: product.id,
@@ -121,8 +131,8 @@ function DashboardProductDetailPage() {
           name,
           price: parsedPrice,
           description,
-          image,
-          images: images.length > 0 ? images : image ? [image] : [],
+          image: images[0],
+          images,
           imageAlt,
           features,
           preOrder,
@@ -298,36 +308,18 @@ function DashboardProductDetailPage() {
               </Field>
             ) : null}
 
-            <Field>
-              <FieldLabel htmlFor="image">Primary image URL</FieldLabel>
-              <div className="flex items-start gap-3">
-                <img
-                  alt={imageAlt || product.imageAlt}
-                  className="size-16 shrink-0 object-cover bg-muted"
-                  decoding="async"
-                  height={64}
-                  src={shopImageSrc(image || product.image, 128)}
-                  width={64}
-                />
-                <Input
-                  id="image"
-                  onChange={(e) => setImage(e.target.value)}
-                  required
-                  type="url"
-                  value={image}
-                />
-              </div>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="images">Gallery URLs (one per line)</FieldLabel>
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                id="images"
-                onChange={(e) => setImagesText(e.target.value)}
-                value={imagesText}
+            {previewImage ? (
+              <img
+                alt={imageAlt || product.imageAlt}
+                className="size-16 object-cover bg-muted"
+                decoding="async"
+                height={64}
+                src={shopImageSrc(previewImage, 128)}
+                width={64}
               />
-            </Field>
+            ) : null}
+
+            <ProductImageUrlFields onChange={setImageUrls} values={imageUrls} />
 
             <Field>
               <FieldLabel htmlFor="imageAlt">Image alt text</FieldLabel>

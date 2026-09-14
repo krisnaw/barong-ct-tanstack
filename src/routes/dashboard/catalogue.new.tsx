@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { ProductImageUrlFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import { jerseySizeGuide } from '~/data/shop'
 import {
   Breadcrumb,
@@ -39,7 +40,7 @@ function DashboardCreateProductPage() {
   const navigate = useNavigate()
   const [name, setName] = React.useState('')
   const [price, setPrice] = React.useState('850000')
-  const [image, setImage] = React.useState('')
+  const [imageUrls, setImageUrls] = React.useState(() => initialImageFields([]))
   const [imageAlt, setImageAlt] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [featuresText, setFeaturesText] = React.useState('')
@@ -66,13 +67,19 @@ function DashboardCreateProductPage() {
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
+      const images = collectImageUrls(imageUrls)
+      if (images.length === 0) {
+        toast.add({ type: 'error', title: 'Add at least one feature image' })
+        setSaving(false)
+        return
+      }
       const product = await createProduct({
         data: {
           name,
           price: parsedPrice,
           description,
-          image,
-          images: image ? [image] : [],
+          image: images[0],
+          images,
           imageAlt,
           features,
           preOrder,
@@ -256,17 +263,7 @@ function DashboardCreateProductPage() {
               </Field>
             ) : null}
 
-            <Field>
-              <FieldLabel htmlFor="image">Image URL</FieldLabel>
-              <Input
-                id="image"
-                onChange={(e) => setImage(e.target.value)}
-                placeholder="https://cdn.shopify.com/s/files/…"
-                required
-                type="url"
-                value={image}
-              />
-            </Field>
+            <ProductImageUrlFields onChange={setImageUrls} values={imageUrls} />
 
             <Field>
               <FieldLabel htmlFor="imageAlt">Image alt text</FieldLabel>
