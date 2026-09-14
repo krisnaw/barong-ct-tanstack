@@ -10,6 +10,7 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPaymentStatus,
+  orderPickupPointName,
   orderStatusLabel,
   orderStatuses,
   orderStatusStyles,
@@ -193,9 +194,17 @@ function DashboardOrderDetailPage() {
             <OrderBlock title="Delivery">
               <dl className="divide-y divide-border text-sm">
                 <InfoRow
-                  label={order.delivery === 'pickup' ? 'Pickup' : 'Method'}
-                  value={order.shippingLabel}
+                  label="Delivery type"
+                  value={
+                    order.delivery === 'pickup' ? 'Pick up' : order.shippingLabel
+                  }
                 />
+                {order.delivery === 'pickup' ? (
+                  <InfoRow
+                    label="Pick up point"
+                    value={orderPickupPointName(order) ?? ''}
+                  />
+                ) : null}
                 {order.delivery !== 'pickup' &&
                 order.courier &&
                 order.trackingNumber ? (
@@ -220,7 +229,7 @@ function DashboardOrderDetailPage() {
                   </>
                 ) : null}
                 <InfoRow
-                  label={order.delivery === 'pickup' ? 'Location' : 'Address'}
+                  label="Address"
                   value={[
                     order.address,
                     [order.city, order.province, order.postal]

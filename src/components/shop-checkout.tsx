@@ -18,10 +18,9 @@ import {
   type ShopProduct,
 } from '~/data/shop'
 import {
-  discountAmount,
-  formatPaymentLabel,
+  orderCustomerName,
   orderNeedsPayment,
-  parseDiscountCode,
+  orderPickupPointName,
   type ShopOrder,
 } from '~/data/orders'
 import {
@@ -36,12 +35,6 @@ import type { PaymentDisplay } from '~/lib/payment/types'
 import { cn } from '~/lib/utils'
 
 type CartLine = CartItem & { product: ShopProduct }
-
-type Discount = {
-  code: string
-  type: 'percent' | 'fixed'
-  value: number
-}
 
 type CheckoutDraft = {
   email: string
@@ -100,8 +93,6 @@ export function ShopCheckout({
   const [pickupPointId, setPickupPointId] = React.useState(
     pickupPoints[0]?.id ?? '',
   )
-  const [discountInput, setDiscountInput] = React.useState('')
-  const [appliedDiscountInput, setAppliedDiscountInput] = React.useState('')
   const [didSubmit, setDidSubmit] = React.useState(false)
   const [actionError, setActionError] = React.useState<Record<string, string>>(
     {},
@@ -111,9 +102,6 @@ export function ShopCheckout({
   const firstName = draft.firstName ?? profile?.firstName ?? ''
   const lastName = draft.lastName ?? profile?.lastName ?? ''
   const phone = draft.phone ?? profile?.phone ?? ''
-  const discount = parseDiscountCode(appliedDiscountInput)
-  const discountError =
-    appliedDiscountInput && !discount ? 'Enter a valid discount code' : ''
   const fieldErrors = didSubmit
     ? checkoutFieldErrors({
         email,
@@ -128,8 +116,7 @@ export function ShopCheckout({
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
-  const savings = discountAmount(subtotal, discount)
-  const total = Math.max(subtotal - savings, 0)
+  const total = subtotal
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
   const selectedPickup =
     pickupPoints.find((point) => point.id === pickupPointId) ?? null
@@ -150,11 +137,6 @@ export function ShopCheckout({
     if (pickupPoints.some((point) => point.id === pickupPointId)) return
     setPickupPointId(pickupPoints[0]?.id ?? '')
   }, [pickupPoints, pickupPointId])
-
-  function applyDiscount(event: React.FormEvent) {
-    event.preventDefault()
-    setAppliedDiscountInput(discountInput)
-  }
 
   async function handlePay(event: React.FormEvent) {
     event.preventDefault()
@@ -182,7 +164,6 @@ export function ShopCheckout({
           lastName,
           phone,
           pickupPointId,
-          discountCode: discount?.code,
           lines: lines.map((item) => ({
             slug: item.slug,
             size: item.size,
@@ -223,13 +204,7 @@ export function ShopCheckout({
     <OrderSummary
       lines={lines}
       subtotal={subtotal}
-      savings={savings}
       total={total}
-      discount={discount}
-      discountInput={discountInput}
-      discountError={discountError}
-      onDiscountInput={setDiscountInput}
-      onApplyDiscount={applyDiscount}
     />
   )
 
@@ -502,28 +477,37 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
               <div>
                 <dt className="text-muted-foreground">Contact</dt>
                 <dd className="mt-1">
+                  {orderCustomerName(order)}
+                  <br />
                   {order.email}
                   <br />
                   {order.phone}
                 </dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">
-                  {order.delivery === 'pickup' ? 'Pickup' : 'Ship to'}
-                </dt>
-                <dd className="mt-1">
-                  {order.address}
-                  <br />
-                  {order.city}, {order.province} {order.postal}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Method</dt>
-                <dd className="mt-1">{order.shippingLabel}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Payment</dt>
-                <dd className="mt-1">{formatPaymentLabel(order)}</dd>
+                <p className="text-muted-foreground">Delivery information</p>
+                <dl className="mt-3 space-y-3">
+                  <div>
+                    <dt className="text-muted-foreground">Delivery type</dt>
+                    <dd className="mt-1">
+                      {order.delivery === 'pickup' ? 'Pick up' : order.shippingLabel}
+                    </dd>
+                  </div>
+                  {order.delivery === 'pickup' ? (
+                    <div>
+                      <dt className="text-muted-foreground">Pick up point</dt>
+                      <dd className="mt-1">{orderPickupPointName(order)}</dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt className="text-muted-foreground">Address</dt>
+                    <dd className="mt-1">
+                      {order.address}
+                      <br />
+                      {order.city}, {order.province} {order.postal}
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </dl>
           </div>
@@ -616,23 +600,11 @@ export function CheckoutAwaitingPayment({
 function OrderSummary({
   lines,
   subtotal,
-  savings,
   total,
-  discount,
-  discountInput,
-  discountError,
-  onDiscountInput,
-  onApplyDiscount,
 }: {
   lines: CartLine[]
   subtotal: number
-  savings: number
   total: number
-  discount: Discount | null
-  discountInput: string
-  discountError: string
-  onDiscountInput: (value: string) => void
-  onApplyDiscount: (event: React.FormEvent) => void
 }) {
   return (
     <div>
@@ -673,43 +645,11 @@ function OrderSummary({
         ))}
       </ul>
 
-      <form className="mt-6 flex gap-2" onSubmit={onApplyDiscount}>
-        <div className="min-w-0 flex-1">
-          <CheckoutField
-            id="discount"
-            label="Discount code"
-            onChange={onDiscountInput}
-            value={discountInput}
-          />
-        </div>
-        <button
-          className="h-12 shrink-0 rounded-md bg-neutral-200 px-4 text-sm font-medium disabled:opacity-40"
-          disabled={!discountInput.trim()}
-          type="submit"
-        >
-          Apply
-        </button>
-      </form>
-      {discountError ? (
-        <p className="mt-1.5 text-xs text-red-600">{discountError}</p>
-      ) : null}
-      {discount ? (
-        <p className="mt-1.5 text-xs text-green-700">
-          {discount.code} applied
-        </p>
-      ) : null}
-
       <dl className="mt-6 space-y-2 text-sm">
         <div className="flex justify-between">
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{formatShopPrice(subtotal)}</dd>
         </div>
-        {savings > 0 ? (
-          <div className="flex justify-between text-green-700">
-            <dt>Discount</dt>
-            <dd className="tabular-nums">−{formatShopPrice(savings)}</dd>
-          </div>
-        ) : null}
         <div className="flex justify-between">
           <dt>Pickup</dt>
           <dd className="tabular-nums">Free</dd>

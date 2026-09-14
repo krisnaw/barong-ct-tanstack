@@ -15,6 +15,7 @@ import {
   orderCustomerName,
   orderItemCount,
   orderNeedsPayment,
+  orderPickupPointName,
   orderStatusLabel,
   orderStatusStyles,
   type ShopOrder,
@@ -868,13 +869,19 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
           </h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="font-medium">
-                {order.delivery === 'pickup' ? 'Pickup' : 'Delivery type'}
-              </dt>
+              <dt className="font-medium">Delivery type</dt>
               <dd className="mt-0.5 text-muted-foreground">
-                {order.shippingLabel}
+                {order.delivery === 'pickup' ? 'Pick up' : order.shippingLabel}
               </dd>
             </div>
+            {order.delivery === 'pickup' ? (
+              <div>
+                <dt className="font-medium">Pick up point</dt>
+                <dd className="mt-0.5 text-muted-foreground">
+                  {orderPickupPointName(order)}
+                </dd>
+              </div>
+            ) : null}
             {order.delivery !== 'pickup' &&
             order.courier &&
             order.trackingNumber ? (
@@ -890,9 +897,7 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
               </div>
             ) : null}
             <div>
-              <dt className="font-medium">
-                {order.delivery === 'pickup' ? 'Location' : 'Address'}
-              </dt>
+              <dt className="font-medium">Address</dt>
               <dd className="mt-0.5 text-muted-foreground">
                 {order.delivery === 'pickup' ? null : (
                   <>

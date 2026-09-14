@@ -177,6 +177,11 @@ export function orderCustomerName(order: ShopOrder) {
   return `${order.firstName} ${order.lastName}`.trim()
 }
 
+export function orderPickupPointName(order: ShopOrder) {
+  if (order.delivery !== 'pickup') return undefined
+  return order.shippingLabel.replace(/^Pickup · /, '').split(' · ')[0]
+}
+
 export function orderItemCount(order: ShopOrder) {
   return order.lines.reduce((sum, line) => sum + line.quantity, 0)
 }
