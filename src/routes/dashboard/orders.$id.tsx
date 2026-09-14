@@ -127,7 +127,9 @@ function DashboardOrderDetailPage() {
               {order.id}
             </h1>
             <div className="flex flex-wrap items-center gap-2">
-              <AddTrackingDialog order={order} />
+              {order.delivery === 'pickup' ? null : (
+                <AddTrackingDialog order={order} />
+              )}
               <ChangeStatusDialog order={order} />
             </div>
           </div>
@@ -190,8 +192,13 @@ function DashboardOrderDetailPage() {
 
             <OrderBlock title="Delivery">
               <dl className="divide-y divide-border text-sm">
-                <InfoRow label="Method" value={order.shippingLabel} />
-                {order.courier && order.trackingNumber ? (
+                <InfoRow
+                  label={order.delivery === 'pickup' ? 'Pickup' : 'Method'}
+                  value={order.shippingLabel}
+                />
+                {order.delivery !== 'pickup' &&
+                order.courier &&
+                order.trackingNumber ? (
                   <>
                     <InfoRow label="Courier" value={courierLabel(order.courier)} />
                     <div className="flex items-start justify-between gap-4 px-4 py-3">
@@ -213,7 +220,7 @@ function DashboardOrderDetailPage() {
                   </>
                 ) : null}
                 <InfoRow
-                  label="Address"
+                  label={order.delivery === 'pickup' ? 'Location' : 'Address'}
                   value={[
                     order.address,
                     [order.city, order.province, order.postal]
@@ -236,11 +243,9 @@ function DashboardOrderDetailPage() {
                   />
                 ) : null}
                 <InfoRow
-                  label="Shipping"
+                  label={order.delivery === 'pickup' ? 'Pickup' : 'Shipping'}
                   value={
-                    order.shipping === 0
-                      ? 'Free'
-                      : formatShopPrice(order.shipping)
+                    order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)
                   }
                 />
                 <div className="flex items-center justify-between px-4 py-3 font-medium">

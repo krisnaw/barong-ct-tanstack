@@ -84,7 +84,7 @@ export function ShopCart({ products }: { products: ShopProduct[] }) {
               </span>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Ships within Indonesia. Add a shipping address at checkout.
+              Collect at a Barong pickup point. Choose a location at checkout.
             </p>
             <Link
               className={cn(buttonVariants({ size: 'lg' }), 'mt-6 w-full')}

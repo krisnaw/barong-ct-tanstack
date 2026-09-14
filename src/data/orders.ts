@@ -51,6 +51,7 @@ export type ShopOrder = {
   lastName: string
   phone: string
   delivery: OrderDelivery
+  pickupPointId?: string
   address: string
   city: string
   province: string

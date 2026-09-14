@@ -9,12 +9,12 @@ import {
   orderStatuses,
   parseDiscountCode,
   resolveOrderStatus,
-  SHIPPING_RATES,
   type PaymentStatus,
   type ShopOrder,
   type ShopOrderLine,
   type ShopPayment,
 } from '~/data/orders'
+import { formatPickupLabel } from '~/data/pickup-points'
 import {
   CUSTOM_SIZE,
   customMeasurementsComplete,
@@ -27,7 +27,7 @@ import { db } from '~/lib/db'
 import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
 import { lineItems, orders, payment } from '~/lib/order-schema'
 import { orderLookupIds } from '~/lib/payment/order-search'
-import { product } from '~/lib/shop-schema'
+import { pickupPoint, product } from '~/lib/shop-schema'
 
 const customSchema = z.object({
   chest: z.string(),
@@ -41,13 +41,7 @@ const placeOrderSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().min(1),
-  address: z.string().min(1),
-  apartment: z.string().optional(),
-  city: z.string().min(1),
-  province: z.string().min(1),
-  postal: z.string().min(1),
-  shippingAddressId: z.string().optional(),
-  shippingSpeed: z.enum(['regular', 'express']),
+  pickupPointId: z.string().min(1),
   discountCode: z.string().optional(),
   lines: z
     .array(
@@ -130,7 +124,8 @@ function mapOrder(
     firstName: row.firstName,
     lastName: row.lastName,
     phone: row.phone,
-    delivery: 'ship',
+    delivery: row.pickupPointId || row.shippingSpeed === 'pickup' ? 'pickup' : 'ship',
+    pickupPointId: row.pickupPointId ?? undefined,
     address: [row.address, row.apartment].filter(Boolean).join(', '),
     city: row.city,
     province: row.province,
@@ -268,6 +263,15 @@ export const placeOrder = createServerFn({ method: 'POST' })
       }
     })
 
+    const [point] = await db
+      .select()
+      .from(pickupPoint)
+      .where(eq(pickupPoint.id, data.pickupPointId))
+      .limit(1)
+    if (!point || !point.active) {
+      throw new Error('Select a pickup location')
+    }
+
     const subtotal = resolvedLines.reduce(
       (sum, line) => sum + line.price * line.quantity,
       0,
@@ -276,9 +280,8 @@ export const placeOrder = createServerFn({ method: 'POST' })
       ? parseDiscountCode(data.discountCode)
       : null
     const savings = discountAmount(subtotal, discount)
-    const shipping = SHIPPING_RATES[data.shippingSpeed].price
+    const shipping = 0
     const total = Math.max(subtotal - savings + shipping, 0)
-    const rate = SHIPPING_RATES[data.shippingSpeed]
 
     const id = crypto.randomUUID()
     let number = generateOrderNumber()
@@ -299,14 +302,15 @@ export const placeOrder = createServerFn({ method: 'POST' })
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         phone: data.phone.trim(),
-        address: data.address.trim(),
-        apartment: data.apartment?.trim() || null,
-        city: data.city.trim(),
-        province: data.province.trim(),
-        postal: data.postal.trim(),
-        shippingAddressId: data.shippingAddressId || null,
-        shippingSpeed: data.shippingSpeed,
-        shippingLabel: `${rate.label} · ${rate.detail}`,
+        address: point.address,
+        apartment: null,
+        city: point.city,
+        province: point.province,
+        postal: point.postal,
+        shippingAddressId: null,
+        pickupPointId: point.id,
+        shippingSpeed: 'pickup',
+        shippingLabel: formatPickupLabel(point),
         subtotal,
         shipping,
         discount: savings,

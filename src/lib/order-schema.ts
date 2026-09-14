@@ -1,7 +1,7 @@
 import { relations, sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user, userShippingAddress } from '~/lib/auth-schema'
-import { product } from '~/lib/shop-schema'
+import { pickupPoint, product } from '~/lib/shop-schema'
 
 export const orders = sqliteTable(
   'orders',
@@ -24,6 +24,9 @@ export const orders = sqliteTable(
       () => userShippingAddress.id,
       { onDelete: 'set null' },
     ),
+    pickupPointId: text('pickup_point_id').references(() => pickupPoint.id, {
+      onDelete: 'set null',
+    }),
     shippingSpeed: text('shipping_speed').notNull(),
     shippingLabel: text('shipping_label').notNull(),
     subtotal: integer('subtotal').notNull(),
@@ -45,6 +48,7 @@ export const orders = sqliteTable(
   (table) => [
     index('orders_userId_idx').on(table.userId),
     index('orders_placed_at_idx').on(table.placedAt),
+    index('orders_pickup_point_id_idx').on(table.pickupPointId),
   ],
 )
 
@@ -110,6 +114,10 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   shippingAddress: one(userShippingAddress, {
     fields: [orders.shippingAddressId],
     references: [userShippingAddress.id],
+  }),
+  pickupPoint: one(pickupPoint, {
+    fields: [orders.pickupPointId],
+    references: [pickupPoint.id],
   }),
   lines: many(lineItems),
   payments: many(payment),

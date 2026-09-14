@@ -22,14 +22,13 @@ import {
   formatPaymentLabel,
   orderNeedsPayment,
   parseDiscountCode,
-  SHIPPING_RATES,
   type ShopOrder,
-  type ShippingSpeed,
 } from '~/data/orders'
 import {
-  useAccount,
-  type AccountShippingAddress,
-} from '~/lib/account'
+  formatPickupAddress,
+  type PickupPoint,
+} from '~/data/pickup-points'
+import { useAccount } from '~/lib/account'
 import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
 import { placeOrder } from '~/lib/order.functions'
 import { startPayment } from '~/lib/payment.functions'
@@ -49,21 +48,7 @@ type CheckoutDraft = {
   firstName: string
   lastName: string
   phone: string
-  address: string
-  apartment: string
-  city: string
-  province: string
-  postal: string
 }
-
-const PROVINCES = [
-  'Bali',
-  'DKI Jakarta',
-  'Jawa Barat',
-  'Jawa Tengah',
-  'Jawa Timur',
-  'Yogyakarta',
-]
 
 function cartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
   return items.flatMap((item) => {
@@ -78,72 +63,43 @@ function checkoutFieldErrors({
   firstName,
   lastName,
   phone,
-  useSavedAddress,
-  address,
-  city,
-  postal,
+  pickupPointId,
 }: {
   email: string
   firstName: string
   lastName: string
   phone: string
-  useSavedAddress: boolean
-  address: string
-  city: string
-  postal: string
+  pickupPointId: string
 }) {
   const next: Record<string, string> = {}
   if (!email.includes('@')) next.email = 'Enter a valid email'
   if (!firstName.trim()) next.firstName = 'Enter a first name'
   if (!lastName.trim()) next.lastName = 'Enter a last name'
   if (!phone.trim()) next.phone = 'Enter a phone number'
-  if (!useSavedAddress) {
-    if (!address.trim()) next.address = 'Enter an address'
-    if (!city.trim()) next.city = 'Enter a city'
-    if (!postal.trim()) next.postal = 'Enter a postal code'
-  }
+  if (!pickupPointId) next.pickup = 'Select a pickup location'
   return next
-}
-
-function shippingAddressComplete(
-  address: AccountShippingAddress | null | undefined,
-) {
-  return Boolean(
-    address?.address.trim() && address.city.trim() && address.postal.trim(),
-  )
-}
-
-function formatShippingAddress(address: {
-  address: string
-  apartment?: string
-  city: string
-  province: string
-  postal: string
-}) {
-  const street = [address.address, address.apartment].filter(Boolean).join(', ')
-  const locality = [address.city, address.province, address.postal]
-    .filter(Boolean)
-    .join(' ')
-  return { street, locality }
 }
 
 export function ShopCheckout({
   products,
   paymentDisplay,
+  pickupPoints,
 }: {
   products: ShopProduct[]
   paymentDisplay: PaymentDisplay
+  pickupPoints: PickupPoint[]
 }) {
   const navigate = useNavigate()
   const { items, clear, ready } = useCart()
-  const { profile, shippingAddress, updateShippingAddress } = useAccount()
+  const { profile } = useAccount()
   const lines = cartLines(items, products)
   const [pending, setPending] = React.useState(false)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
-  const [preferNewAddress, setPreferNewAddress] = React.useState(false)
   const [draft, setDraft] = React.useState<Partial<CheckoutDraft>>({})
   const [marketing, setMarketing] = React.useState(true)
-  const [shippingSpeed, setShippingSpeed] = React.useState<ShippingSpeed>('regular')
+  const [pickupPointId, setPickupPointId] = React.useState(
+    pickupPoints[0]?.id ?? '',
+  )
   const [discountInput, setDiscountInput] = React.useState('')
   const [appliedDiscountInput, setAppliedDiscountInput] = React.useState('')
   const [didSubmit, setDidSubmit] = React.useState(false)
@@ -155,26 +111,16 @@ export function ShopCheckout({
   const firstName = draft.firstName ?? profile?.firstName ?? ''
   const lastName = draft.lastName ?? profile?.lastName ?? ''
   const phone = draft.phone ?? profile?.phone ?? ''
-  const address = draft.address ?? ''
-  const apartment = draft.apartment ?? ''
-  const city = draft.city ?? ''
-  const province = draft.province ?? 'Bali'
-  const postal = draft.postal ?? ''
   const discount = parseDiscountCode(appliedDiscountInput)
   const discountError =
     appliedDiscountInput && !discount ? 'Enter a valid discount code' : ''
-  const hasSavedAddress = shippingAddressComplete(shippingAddress)
-  const useSavedAddress = hasSavedAddress && !preferNewAddress
   const fieldErrors = didSubmit
     ? checkoutFieldErrors({
         email,
         firstName,
         lastName,
         phone,
-        useSavedAddress,
-        address,
-        city,
-        postal,
+        pickupPointId,
       })
     : {}
   const errors = { ...fieldErrors, ...actionError }
@@ -182,13 +128,11 @@ export function ShopCheckout({
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
-  const shipping = SHIPPING_RATES[shippingSpeed].price
   const savings = discountAmount(subtotal, discount)
-  const total = Math.max(subtotal - savings + shipping, 0)
+  const total = Math.max(subtotal - savings, 0)
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
-  const savedAddressText = shippingAddress
-    ? formatShippingAddress(shippingAddress)
-    : null
+  const selectedPickup =
+    pickupPoints.find((point) => point.id === pickupPointId) ?? null
 
   function patchDraft<K extends keyof CheckoutDraft>(
     key: K,
@@ -201,6 +145,11 @@ export function ShopCheckout({
     if (pending || !ready || items.length > 0) return
     void navigate({ to: '/shop/cart' })
   }, [pending, ready, items.length, navigate])
+
+  React.useEffect(() => {
+    if (pickupPoints.some((point) => point.id === pickupPointId)) return
+    setPickupPointId(pickupPoints[0]?.id ?? '')
+  }, [pickupPoints, pickupPointId])
 
   function applyDiscount(event: React.FormEvent) {
     event.preventDefault()
@@ -216,32 +165,12 @@ export function ShopCheckout({
       firstName,
       lastName,
       phone,
-      useSavedAddress,
-      address,
-      city,
-      postal,
+      pickupPointId,
     })
     if (Object.keys(next).length > 0) return
-
-    const ship = useSavedAddress && shippingAddress
-      ? {
-          address: shippingAddress.address,
-          apartment: shippingAddress.apartment,
-          city: shippingAddress.city,
-          province: shippingAddress.province,
-          postal: shippingAddress.postal,
-        }
-      : { address, apartment, city, province, postal }
-
-    let shippingAddressId = useSavedAddress ? shippingAddress?.id : undefined
-    if (!useSavedAddress) {
-      try {
-        const saved = await updateShippingAddress(ship)
-        shippingAddressId = saved?.id
-      } catch {
-        setActionError({ address: 'Could not save shipping address' })
-        return
-      }
+    if (!selectedPickup) {
+      setActionError({ pickup: 'Select a pickup location' })
+      return
     }
 
     setPending(true)
@@ -252,13 +181,7 @@ export function ShopCheckout({
           firstName,
           lastName,
           phone,
-          address: ship.address,
-          apartment: ship.apartment,
-          city: ship.city,
-          province: ship.province,
-          postal: ship.postal,
-          shippingAddressId,
-          shippingSpeed,
+          pickupPointId,
           discountCode: discount?.code,
           lines: lines.map((item) => ({
             slug: item.slug,
@@ -300,7 +223,6 @@ export function ShopCheckout({
     <OrderSummary
       lines={lines}
       subtotal={subtotal}
-      shipping={shipping}
       savings={savings}
       total={total}
       discount={discount}
@@ -371,37 +293,16 @@ export function ShopCheckout({
         <form className="mx-auto max-w-xl space-y-8" onSubmit={handlePay}>
           <section>
             <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">Contact</h2>
-            <CheckoutField
-              autoComplete="email"
-              error={errors.email}
-              id="email"
-              label="Email"
-              onChange={(value) => patchDraft('email', value)}
-              type="email"
-              value={email}
-            />
-            <label className="mt-3 flex items-start gap-2 text-sm">
-              <input
-                checked={marketing}
-                className="mt-0.5 size-4 rounded-sm border-neutral-300"
-                onChange={(event) => setMarketing(event.target.checked)}
-                type="checkbox"
-              />
-              Email me with news and offers
-            </label>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">Delivery</h2>
             <div className="grid gap-3">
-              <CheckoutSelect
-                id="country"
-                label="Country/region"
-                onChange={() => undefined}
-                value="Indonesia"
-              >
-                <option>Indonesia</option>
-              </CheckoutSelect>
+              <CheckoutField
+                autoComplete="email"
+                error={errors.email}
+                id="email"
+                label="Email"
+                onChange={(value) => patchDraft('email', value)}
+                type="email"
+                value={email}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <CheckoutField
                   autoComplete="given-name"
@@ -429,138 +330,74 @@ export function ShopCheckout({
                 type="tel"
                 value={phone}
               />
-              {hasSavedAddress && shippingAddress && savedAddressText ? (
-                <div className="overflow-hidden rounded-md border border-neutral-300">
-                  <label
-                    className={cn(
-                      'flex cursor-pointer items-start gap-3 px-4 py-3',
-                      useSavedAddress && 'bg-neutral-50',
-                    )}
-                  >
-                    <input
-                      checked={useSavedAddress}
-                      className="mt-1 size-4"
-                      name="address-source"
-                      onChange={() => setPreferNewAddress(false)}
-                      type="radio"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium">
-                        {shippingAddress.label || 'Saved address'}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-muted-foreground">
-                        {savedAddressText.street}
-                        <br />
-                        {savedAddressText.locality}
-                      </span>
-                    </span>
-                  </label>
-                  <label
-                    className={cn(
-                      'flex cursor-pointer items-start gap-3 border-t border-neutral-300 px-4 py-3',
-                      !useSavedAddress && 'bg-neutral-50',
-                    )}
-                  >
-                    <input
-                      checked={!useSavedAddress}
-                      className="mt-1 size-4"
-                      name="address-source"
-                      onChange={() => setPreferNewAddress(true)}
-                      type="radio"
-                    />
-                    <span className="text-sm font-medium">New address</span>
-                  </label>
-                </div>
-              ) : null}
-              {!useSavedAddress ? (
-                <>
-                  <CheckoutField
-                    autoComplete="address-line1"
-                    error={errors.address}
-                    id="address"
-                    label="Address"
-                    onChange={(value) => patchDraft('address', value)}
-                    value={address}
-                  />
-                  <CheckoutField
-                    autoComplete="address-line2"
-                    id="apartment"
-                    label="Apartment, suite, etc. (optional)"
-                    onChange={(value) => patchDraft('apartment', value)}
-                    value={apartment}
-                  />
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <CheckoutField
-                      autoComplete="address-level2"
-                      error={errors.city}
-                      id="city"
-                      label="City"
-                      onChange={(value) => patchDraft('city', value)}
-                      value={city}
-                    />
-                    <CheckoutSelect
-                      id="province"
-                      label="Province"
-                      onChange={(value) => patchDraft('province', value)}
-                      value={province}
-                    >
-                      {PROVINCES.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </CheckoutSelect>
-                    <CheckoutField
-                      autoComplete="postal-code"
-                      error={errors.postal}
-                      id="postal"
-                      label="Postal code"
-                      onChange={(value) => patchDraft('postal', value)}
-                      value={postal}
-                    />
-                  </div>
-                </>
-              ) : null}
             </div>
+            <label className="mt-3 flex items-start gap-2 text-sm">
+              <input
+                checked={marketing}
+                className="mt-0.5 size-4 rounded-sm border-neutral-300"
+                onChange={(event) => setMarketing(event.target.checked)}
+                type="checkbox"
+              />
+              Email me with news and offers
+            </label>
           </section>
 
           <section>
-              <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">
-                Shipping method
-              </h2>
+            <h2 className="mb-3 text-[1.35rem] font-semibold tracking-tight">
+              Pickup location
+            </h2>
+            {pickupPoints.length === 0 ? (
+              <p className="rounded-md border border-neutral-300 px-4 py-3 text-sm text-muted-foreground">
+                Pickup is not available right now. Check back shortly.
+              </p>
+            ) : (
               <div className="overflow-hidden rounded-md border border-neutral-300">
-                {(Object.keys(SHIPPING_RATES) as ShippingSpeed[]).map((speed) => {
-                  const option = SHIPPING_RATES[speed]
-                  const active = shippingSpeed === speed
+                {pickupPoints.map((point) => {
+                  const active = point.id === pickupPointId
                   return (
                     <label
                       className={cn(
-                        'flex cursor-pointer items-center justify-between gap-4 border-b border-neutral-300 px-4 py-3 last:border-0',
+                        'flex cursor-pointer items-start gap-3 border-b border-neutral-300 px-4 py-3 last:border-0',
                         active && 'bg-neutral-50',
                       )}
-                      key={speed}
+                      key={point.id}
                     >
-                      <span className="flex items-center gap-3">
-                        <input
-                          checked={active}
-                          className="size-4"
-                          name="shipping"
-                          onChange={() => setShippingSpeed(speed)}
-                          type="radio"
-                        />
-                        <span>
-                          <span className="block text-sm font-medium">{option.label}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {option.detail}
-                          </span>
+                      <input
+                        checked={active}
+                        className="mt-1 size-4"
+                        name="pickup"
+                        onChange={() => setPickupPointId(point.id)}
+                        type="radio"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium">
+                          {point.name}
                         </span>
-                      </span>
-                      <span className="text-sm font-medium tabular-nums">
-                        {formatShopPrice(option.price)}
+                        <span className="mt-0.5 block text-sm text-muted-foreground">
+                          {formatPickupAddress(point)}
+                          {point.hours ? (
+                            <>
+                              <br />
+                              {point.hours}
+                            </>
+                          ) : null}
+                          {point.notes ? (
+                            <>
+                              <br />
+                              {point.notes}
+                            </>
+                          ) : null}
+                        </span>
                       </span>
                     </label>
                   )
                 })}
               </div>
-            </section>
+            )}
+            {errors.pickup ? (
+              <p className="mt-1.5 text-xs text-red-600">{errors.pickup}</p>
+            ) : null}
+          </section>
 
           <section>
             <h2 className="text-[1.35rem] font-semibold tracking-tight">Payment</h2>
@@ -568,8 +405,8 @@ export function ShopCheckout({
               <LockSimpleIcon className="size-3.5" />
               Pay securely with {paymentDisplay.displayName}.
             </p>
-            <div className="overflow-hidden rounded-md border border-neutral-300">
-              {paymentDisplay.methods.map((method, index) => {
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {paymentDisplay.methods.map((method) => {
                 const Icon =
                   method.id === 'qris'
                     ? QrCodeIcon
@@ -579,22 +416,10 @@ export function ShopCheckout({
                         ? BankIcon
                         : LockSimpleIcon
                 return (
-                  <div
-                    className={cn(
-                      'flex items-start gap-3 px-4 py-3',
-                      index < paymentDisplay.methods.length - 1 &&
-                        'border-b border-neutral-300',
-                    )}
-                    key={method.id}
-                  >
-                    <Icon className="mt-0.5 size-5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">{method.label}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {method.detail}
-                      </p>
-                    </div>
-                  </div>
+                  <span className="inline-flex items-center gap-1.5" key={method.id}>
+                    <Icon className="size-4 shrink-0" />
+                    {method.label}
+                  </span>
                 )
               })}
             </div>
@@ -606,7 +431,7 @@ export function ShopCheckout({
 
           <Button
             className="h-14 w-full rounded-md text-base"
-            disabled={pending}
+            disabled={pending || pickupPoints.length === 0}
             size="lg"
             type="submit"
           >
@@ -683,7 +508,9 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
                 </dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Ship to</dt>
+                <dt className="text-muted-foreground">
+                  {order.delivery === 'pickup' ? 'Pickup' : 'Ship to'}
+                </dt>
                 <dd className="mt-1">
                   {order.address}
                   <br />
@@ -789,7 +616,6 @@ export function CheckoutAwaitingPayment({
 function OrderSummary({
   lines,
   subtotal,
-  shipping,
   savings,
   total,
   discount,
@@ -800,7 +626,6 @@ function OrderSummary({
 }: {
   lines: CartLine[]
   subtotal: number
-  shipping: number
   savings: number
   total: number
   discount: Discount | null
@@ -886,10 +711,8 @@ function OrderSummary({
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt>Shipping</dt>
-          <dd className="tabular-nums">
-            {formatShopPrice(shipping)}
-          </dd>
+          <dt>Pickup</dt>
+          <dd className="tabular-nums">Free</dd>
         </div>
       </dl>
       <div className="mt-4 flex items-baseline justify-between border-t border-neutral-300 pt-4">
@@ -956,7 +779,7 @@ function ConfirmationSummary({ order }: { order: ShopOrder }) {
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt>Shipping</dt>
+          <dt>{order.delivery === 'pickup' ? 'Pickup' : 'Shipping'}</dt>
           <dd className="tabular-nums">
             {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
           </dd>
@@ -1018,39 +841,6 @@ function CheckoutField({
         </label>
       </div>
       {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-    </div>
-  )
-}
-
-function CheckoutSelect({
-  id,
-  label,
-  value,
-  onChange,
-  children,
-}: {
-  id: string
-  label: string
-  value: string
-  onChange: (value: string) => void
-  children: React.ReactNode
-}) {
-  return (
-    <div className="relative">
-      <select
-        className="h-12 w-full appearance-none rounded-md border border-neutral-300 bg-background px-3 pt-3.5 pb-1 text-sm outline-none focus:border-foreground focus:ring-1 focus:ring-foreground"
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      >
-        {children}
-      </select>
-      <label
-        className="pointer-events-none absolute top-2.5 left-3 text-[11px] text-neutral-500"
-        htmlFor={id}
-      >
-        {label}
-      </label>
     </div>
   )
 }

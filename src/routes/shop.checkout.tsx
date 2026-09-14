@@ -15,7 +15,7 @@ export const Route = createFileRoute('/shop/checkout')({
   head: () => ({
     meta: seo({
       title: 'Checkout | Barong Cycling Team',
-      description: 'Complete your Barong kit order — ship within Indonesia.',
+      description: 'Complete your Barong kit order — collect at a pickup point.',
     }),
   }),
   component: ShopCheckoutLayout,

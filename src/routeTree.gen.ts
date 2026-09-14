@@ -23,6 +23,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
 import { Route as DashboardOrdersRouteImport } from './routes/dashboard/orders'
+import { Route as DashboardPickupPointsRouteImport } from './routes/dashboard/pickup-points'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
@@ -43,6 +44,9 @@ import { Route as DashboardEventsSlugRouteImport } from './routes/dashboard/even
 import { Route as DashboardEventsNewRouteImport } from './routes/dashboard/events.new'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders.index'
 import { Route as DashboardOrdersIdRouteImport } from './routes/dashboard/orders.$id'
+import { Route as DashboardPickupPointsIndexRouteImport } from './routes/dashboard/pickup-points.index'
+import { Route as DashboardPickupPointsIdRouteImport } from './routes/dashboard/pickup-points.$id'
+import { Route as DashboardPickupPointsNewRouteImport } from './routes/dashboard/pickup-points.new'
 import { Route as EventsSlugIndexRouteImport } from './routes/events.$slug.index'
 import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.register'
 import { Route as ShopCheckoutIndexRouteImport } from './routes/shop.checkout.index'
@@ -119,6 +123,11 @@ const DashboardEventsRoute = DashboardEventsRouteImport.update({
 const DashboardOrdersRoute = DashboardOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardPickupPointsRoute = DashboardPickupPointsRouteImport.update({
+  id: '/pickup-points',
+  path: '/pickup-points',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardUsersRoute = DashboardUsersRouteImport.update({
@@ -221,6 +230,23 @@ const DashboardOrdersIdRoute = DashboardOrdersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => DashboardOrdersRoute,
 } as any)
+const DashboardPickupPointsIndexRoute =
+  DashboardPickupPointsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardPickupPointsRoute,
+  } as any)
+const DashboardPickupPointsIdRoute = DashboardPickupPointsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => DashboardPickupPointsRoute,
+} as any)
+const DashboardPickupPointsNewRoute =
+  DashboardPickupPointsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => DashboardPickupPointsRoute,
+  } as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -271,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
+  '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/events/$slug': typeof EventsSlugRouteWithChildren
   '/recaps/$slug': typeof RecapsSlugRoute
@@ -289,6 +316,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
+  '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -297,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
+  '/dashboard/pickup-points/': typeof DashboardPickupPointsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
@@ -322,6 +352,8 @@ export interface FileRoutesByTo {
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
+  '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -330,6 +362,7 @@ export interface FileRoutesByTo {
   '/dashboard/catalogue': typeof DashboardCatalogueIndexRoute
   '/dashboard/events': typeof DashboardEventsIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/pickup-points': typeof DashboardPickupPointsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/shop/checkout': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
@@ -348,6 +381,7 @@ export interface FileRoutesById {
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
+  '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/events/$slug': typeof EventsSlugRouteWithChildren
   '/recaps/$slug': typeof RecapsSlugRoute
@@ -366,6 +400,8 @@ export interface FileRoutesById {
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
+  '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -374,6 +410,7 @@ export interface FileRoutesById {
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
+  '/dashboard/pickup-points/': typeof DashboardPickupPointsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
@@ -393,6 +430,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
+    | '/dashboard/pickup-points'
     | '/dashboard/users'
     | '/events/$slug'
     | '/recaps/$slug'
@@ -411,6 +449,8 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
+    | '/dashboard/pickup-points/$id'
+    | '/dashboard/pickup-points/new'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -419,6 +459,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
     | '/dashboard/orders/'
+    | '/dashboard/pickup-points/'
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
@@ -444,6 +485,8 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
+    | '/dashboard/pickup-points/$id'
+    | '/dashboard/pickup-points/new'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -452,6 +495,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
+    | '/dashboard/pickup-points'
     | '/events/$slug'
     | '/shop/checkout'
     | '/api/payments/webhook/$provider'
@@ -469,6 +513,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/orders'
+    | '/dashboard/pickup-points'
     | '/dashboard/users'
     | '/events/$slug'
     | '/recaps/$slug'
@@ -487,6 +532,8 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
+    | '/dashboard/pickup-points/$id'
+    | '/dashboard/pickup-points/new'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -495,6 +542,7 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
     | '/dashboard/orders/'
+    | '/dashboard/pickup-points/'
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
@@ -612,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/dashboard/orders'
       preLoaderRoute: typeof DashboardOrdersRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/pickup-points': {
+      id: '/dashboard/pickup-points'
+      path: '/pickup-points'
+      fullPath: '/dashboard/pickup-points'
+      preLoaderRoute: typeof DashboardPickupPointsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/users': {
@@ -754,6 +809,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardOrdersIdRouteImport
       parentRoute: typeof DashboardOrdersRoute
     }
+    '/dashboard/pickup-points/': {
+      id: '/dashboard/pickup-points/'
+      path: '/'
+      fullPath: '/dashboard/pickup-points/'
+      preLoaderRoute: typeof DashboardPickupPointsIndexRouteImport
+      parentRoute: typeof DashboardPickupPointsRoute
+    }
+    '/dashboard/pickup-points/$id': {
+      id: '/dashboard/pickup-points/$id'
+      path: '/$id'
+      fullPath: '/dashboard/pickup-points/$id'
+      preLoaderRoute: typeof DashboardPickupPointsIdRouteImport
+      parentRoute: typeof DashboardPickupPointsRoute
+    }
+    '/dashboard/pickup-points/new': {
+      id: '/dashboard/pickup-points/new'
+      path: '/new'
+      fullPath: '/dashboard/pickup-points/new'
+      preLoaderRoute: typeof DashboardPickupPointsNewRouteImport
+      parentRoute: typeof DashboardPickupPointsRoute
+    }
     '/events/$slug/': {
       id: '/events/$slug/'
       path: '/'
@@ -851,10 +927,28 @@ const DashboardOrdersRouteWithChildren = DashboardOrdersRoute._addFileChildren(
   DashboardOrdersRouteChildren,
 )
 
+interface DashboardPickupPointsRouteChildren {
+  DashboardPickupPointsIdRoute: typeof DashboardPickupPointsIdRoute
+  DashboardPickupPointsNewRoute: typeof DashboardPickupPointsNewRoute
+  DashboardPickupPointsIndexRoute: typeof DashboardPickupPointsIndexRoute
+}
+
+const DashboardPickupPointsRouteChildren: DashboardPickupPointsRouteChildren = {
+  DashboardPickupPointsIdRoute: DashboardPickupPointsIdRoute,
+  DashboardPickupPointsNewRoute: DashboardPickupPointsNewRoute,
+  DashboardPickupPointsIndexRoute: DashboardPickupPointsIndexRoute,
+}
+
+const DashboardPickupPointsRouteWithChildren =
+  DashboardPickupPointsRoute._addFileChildren(
+    DashboardPickupPointsRouteChildren,
+  )
+
 interface DashboardRouteRouteChildren {
   DashboardCatalogueRoute: typeof DashboardCatalogueRouteWithChildren
   DashboardEventsRoute: typeof DashboardEventsRouteWithChildren
   DashboardOrdersRoute: typeof DashboardOrdersRouteWithChildren
+  DashboardPickupPointsRoute: typeof DashboardPickupPointsRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -863,6 +957,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCatalogueRoute: DashboardCatalogueRouteWithChildren,
   DashboardEventsRoute: DashboardEventsRouteWithChildren,
   DashboardOrdersRoute: DashboardOrdersRouteWithChildren,
+  DashboardPickupPointsRoute: DashboardPickupPointsRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

@@ -868,12 +868,16 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
           </h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="font-medium">Delivery type</dt>
+              <dt className="font-medium">
+                {order.delivery === 'pickup' ? 'Pickup' : 'Delivery type'}
+              </dt>
               <dd className="mt-0.5 text-muted-foreground">
                 {order.shippingLabel}
               </dd>
             </div>
-            {order.courier && order.trackingNumber ? (
+            {order.delivery !== 'pickup' &&
+            order.courier &&
+            order.trackingNumber ? (
               <div>
                 <dt className="font-medium">Tracking</dt>
                 <dd className="mt-0.5 text-muted-foreground">
@@ -886,10 +890,16 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
               </div>
             ) : null}
             <div>
-              <dt className="font-medium">Address</dt>
+              <dt className="font-medium">
+                {order.delivery === 'pickup' ? 'Location' : 'Address'}
+              </dt>
               <dd className="mt-0.5 text-muted-foreground">
-                {orderCustomerName(order)}
-                <br />
+                {order.delivery === 'pickup' ? null : (
+                  <>
+                    {orderCustomerName(order)}
+                    <br />
+                  </>
+                )}
                 {order.address}
                 <br />
                 {[order.city, order.province, order.postal]

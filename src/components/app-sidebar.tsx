@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
   CommandIcon,
+  MapPinIcon,
   PackageIcon,
   TShirtIcon,
   UsersIcon,
@@ -42,6 +43,11 @@ const data = {
       title: 'Orders',
       url: '/dashboard/orders',
       icon: <PackageIcon />,
+    },
+    {
+      title: 'Pickup Points',
+      url: '/dashboard/pickup-points',
+      icon: <MapPinIcon />,
     },
     {
       title: 'Users',
