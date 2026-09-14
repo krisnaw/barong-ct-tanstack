@@ -42,6 +42,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '~/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
@@ -116,7 +123,7 @@ function DashboardOrderDetailPage() {
               {order.delivery === 'pickup' ? null : (
                 <AddTrackingDialog order={order} />
               )}
-              <ChangeStatusDialog order={order} />
+              <ChangeStatusMenu order={order} />
             </div>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -387,31 +394,18 @@ function asAdminStatus(status: ShopOrder['status']): AdminOrderStatus {
     : 'pending'
 }
 
-function ChangeStatusDialog({ order }: { order: ShopOrder }) {
+function ChangeStatusMenu({ order }: { order: ShopOrder }) {
   const router = useRouter()
-  const [open, setOpen] = React.useState(false)
-  const [nextStatus, setNextStatus] = React.useState<AdminOrderStatus>(
-    asAdminStatus(order.status),
-  )
   const [saving, setSaving] = React.useState(false)
+  const current = asAdminStatus(order.status)
 
-  React.useEffect(() => {
-    if (open) {
-      setNextStatus(asAdminStatus(order.status))
-    }
-  }, [open, order.status])
-
-  async function save() {
-    if (nextStatus === order.status) {
-      setOpen(false)
-      return
-    }
+  async function save(status: AdminOrderStatus) {
+    if (status === order.status || saving) return
     setSaving(true)
     try {
-      await updateOrderStatus({ data: { id: order.id, status: nextStatus } })
+      await updateOrderStatus({ data: { id: order.id, status } })
       await router.invalidate()
       toast.add({ type: 'success', title: 'Order status updated' })
-      setOpen(false)
     } catch {
       toast.add({ type: 'error', title: 'Could not update status' })
     } finally {
@@ -420,46 +414,27 @@ function ChangeStatusDialog({ order }: { order: ShopOrder }) {
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={saving}
+        render={<Button size="sm" variant="outline" />}
+      >
         Change status
         <CaretDownIcon data-icon="inline-end" />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Change order status</DialogTitle>
-          <DialogDescription>
-            Update fulfillment for {order.id}.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-1.5">
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-40">
+        <DropdownMenuRadioGroup
+          onValueChange={(value) => void save(value as AdminOrderStatus)}
+          value={current}
+        >
           {adminStatusOptions.map((status) => (
-            <button
-              className={cn(
-                'border px-3 py-2 text-left text-sm font-medium transition-colors',
-                nextStatus === status
-                  ? 'border-foreground bg-foreground text-background'
-                  : 'border-border hover:border-foreground/40',
-              )}
-              key={status}
-              onClick={() => setNextStatus(status)}
-              type="button"
-            >
+            <DropdownMenuRadioItem key={status} value={status}>
               {orderStatusLabel(status)}
-            </button>
+            </DropdownMenuRadioItem>
           ))}
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-          <Button
-            disabled={saving || nextStatus === order.status}
-            onClick={() => void save()}
-          >
-            {saving ? 'Updating…' : 'Update status'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

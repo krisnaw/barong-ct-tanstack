@@ -18,6 +18,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '~/components/ui/breadcrumb'
+import { Label } from '~/components/ui/label'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import {
@@ -28,7 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
-import { cn } from '~/lib/utils'
 
 export const Route = createFileRoute('/dashboard/orders/')({
   loader: async () => (await listOrders()) ?? [],
@@ -37,6 +37,7 @@ export const Route = createFileRoute('/dashboard/orders/')({
 
 function DashboardOrdersPage() {
   const orders = Route.useLoaderData()
+  const statusFilterId = React.useId()
   const [filter, setFilter] = React.useState<OrderStatus | 'all'>('all')
   const visible =
     filter === 'all' ? orders : orders.filter((order) => order.status === filter)
@@ -69,31 +70,33 @@ function DashboardOrdersPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Orders
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {orders.length} total · {openCount} in progress
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <FilterButton
-            active={filter === 'all'}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </FilterButton>
-          {orderStatuses.map((status) => (
-            <FilterButton
-              active={filter === status}
-              key={status}
-              onClick={() => setFilter(status)}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+              Orders
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {orders.length} total · {openCount} in progress
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor={statusFilterId}>Status</Label>
+            <select
+              className="h-8 min-w-44 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              id={statusFilterId}
+              onChange={(event) =>
+                setFilter(event.target.value as OrderStatus | 'all')
+              }
+              value={filter}
             >
-              {orderStatusLabel(status)}
-            </FilterButton>
-          ))}
+              <option value="all">All</option>
+              {orderStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {orderStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {visible.length === 0 ? (
@@ -155,30 +158,5 @@ function DashboardOrdersPage() {
         )}
       </div>
     </>
-  )
-}
-
-function FilterButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={cn(
-        'border px-3 py-1.5 text-sm font-medium capitalize transition-colors',
-        active
-          ? 'border-foreground bg-foreground text-background'
-          : 'border-border hover:border-foreground/40',
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
   )
 }
