@@ -13,6 +13,7 @@ export type ShopProduct = {
   sizes: string[]
   stockBySize: Record<string, number>
   preOrder: boolean
+  membersOnly: boolean
   active?: boolean
   image: string
   images: string[]

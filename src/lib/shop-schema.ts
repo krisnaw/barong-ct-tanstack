@@ -17,6 +17,9 @@ export const product = sqliteTable(
     images: text('images').notNull().default('[]'),
     imageAlt: text('image_alt').notNull(),
     preOrder: integer('pre_order', { mode: 'boolean' }).default(true).notNull(),
+    membersOnly: integer('members_only', { mode: 'boolean' })
+      .default(false)
+      .notNull(),
     active: integer('active', { mode: 'boolean' }).default(true).notNull(),
     sortOrder: integer('sort_order').default(0).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })

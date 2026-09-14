@@ -62,6 +62,7 @@ function DashboardProductDetailPage() {
   )
   const [imagesText, setImagesText] = React.useState(product.images.join('\n'))
   const [preOrder, setPreOrder] = React.useState(product.preOrder)
+  const [membersOnly, setMembersOnly] = React.useState(product.membersOnly)
   const [active, setActive] = React.useState(product.active !== false)
   const [stockBySize, setStockBySize] = React.useState<Record<string, string>>(
     () =>
@@ -83,6 +84,7 @@ function DashboardProductDetailPage() {
     setFeaturesText(product.features.join('\n'))
     setImagesText(product.images.join('\n'))
     setPreOrder(product.preOrder)
+    setMembersOnly(product.membersOnly)
     setActive(product.active !== false)
     setStockBySize(
       Object.fromEntries(
@@ -124,6 +126,7 @@ function DashboardProductDetailPage() {
           imageAlt,
           features,
           preOrder,
+          membersOnly,
           active,
           sizes: jerseySizeGuide.sizes.map((size) => ({
             size,
@@ -241,13 +244,27 @@ function DashboardProductDetailPage() {
               </FieldDescription>
             </Field>
 
-            <div className="flex items-center gap-2">
-              <Switch
-                aria-label={active ? 'Active' : 'Inactive'}
-                checked={active}
-                onCheckedChange={setActive}
-              />
-              <span className="text-sm">{active ? 'Active' : 'Inactive'}</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Switch
+                  aria-label={active ? 'Active' : 'Inactive'}
+                  checked={active}
+                  onCheckedChange={setActive}
+                />
+                <span className="text-sm">{active ? 'Active' : 'Inactive'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  aria-label={
+                    membersOnly ? 'Verified members only' : 'Anyone can buy'
+                  }
+                  checked={membersOnly}
+                  onCheckedChange={setMembersOnly}
+                />
+                <span className="text-sm">
+                  {membersOnly ? 'Verified members only' : 'Anyone can buy'}
+                </span>
+              </div>
             </div>
 
             {!preOrder ? (

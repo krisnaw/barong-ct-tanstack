@@ -7,11 +7,11 @@ import {
   orderPaymentStatus,
   orderStatusLabel,
   orderStatuses,
-  orderStatusStyles,
   type OrderStatus,
 } from '~/data/orders'
 import { formatShopPrice } from '~/data/shop'
 import { listOrders } from '~/lib/order.functions'
+import { OrderStatusBadge } from '~/components/order-status-badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -144,14 +144,7 @@ function DashboardOrdersPage() {
                         {orderPaymentStatus(order)}
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <span
-                          className={cn(
-                            'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                            orderStatusStyles[order.status],
-                          )}
-                        >
-                          {orderStatusLabel(order.status)}
-                        </span>
+                        <OrderStatusBadge status={order.status} />
                       </TableCell>
                     </TableRow>
                   )

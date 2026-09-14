@@ -12,15 +12,15 @@ import {
   orderPaymentStatus,
   orderPickupPointName,
   orderStatusLabel,
-  orderStatuses,
-  orderStatusStyles,
+  adminStatusOptions,
+  type AdminOrderStatus,
   type CourierId,
   type OrderPaymentStatus,
-  type OrderStatus,
   type ShopOrder,
 } from '~/data/orders'
 import { formatCustomMeasurements, formatShopPrice, shopImageSrc } from '~/data/shop'
 import { getOrderById, shipOrder, updateOrderStatus } from '~/lib/order.functions'
+import { OrderStatusBadge } from '~/components/order-status-badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -106,22 +106,7 @@ function DashboardOrderDetailPage() {
       <div className="flex flex-1 flex-col gap-6 px-4 pb-6">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                orderStatusStyles[order.status],
-              )}
-            >
-              {orderStatusLabel(order.status)}
-            </span>
-            <span
-              className={cn(
-                'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                paymentStatusStyles[paymentStatus],
-              )}
-            >
-              Payment {paymentStatus}
-            </span>
+            <OrderStatusBadge status={order.status} />
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
@@ -191,7 +176,7 @@ function DashboardOrderDetailPage() {
               </dl>
             </OrderBlock>
 
-            <OrderBlock title="Delivery">
+            <OrderBlock title="Delivery information">
               <dl className="divide-y divide-border text-sm">
                 <InfoRow
                   label="Delivery type"
@@ -242,8 +227,28 @@ function DashboardOrderDetailPage() {
               </dl>
             </OrderBlock>
 
-            <OrderBlock title="Totals">
+            <OrderBlock title="Payment information">
               <dl className="divide-y divide-border text-sm">
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <dt className="shrink-0 text-muted-foreground">Status</dt>
+                  <dd>
+                    <span
+                      className={cn(
+                        'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+                        paymentStatusStyles[paymentStatus],
+                      )}
+                    >
+                      {paymentStatus}
+                    </span>
+                  </dd>
+                </div>
+                <InfoRow label="Method" value={formatPaymentLabel(order)} />
+                {order.payment?.transactionId ? (
+                  <InfoRow
+                    label="Transaction"
+                    value={order.payment.transactionId}
+                  />
+                ) : null}
                 <InfoRow label="Subtotal" value={formatShopPrice(order.subtotal)} />
                 {order.discount > 0 ? (
                   <InfoRow
@@ -261,13 +266,6 @@ function DashboardOrderDetailPage() {
                   <dt>Total</dt>
                   <dd className="tabular-nums">{formatShopPrice(order.total)}</dd>
                 </div>
-                <InfoRow label="Payment" value={formatPaymentLabel(order)} />
-                {order.payment?.transactionId ? (
-                  <InfoRow
-                    label="Transaction"
-                    value={order.payment.transactionId}
-                  />
-                ) : null}
               </dl>
             </OrderBlock>
           </div>
@@ -315,7 +313,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
       await router.invalidate()
       toast.add({
         type: 'success',
-        title: hasTracking ? 'Tracking updated' : 'Order marked as shipped',
+        title: hasTracking ? 'Tracking updated' : 'Order marked as completed',
       })
       setOpen(false)
     } catch {
@@ -340,7 +338,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
           <DialogDescription>
             {hasTracking
               ? `Update the courier tracking number for ${order.id}.`
-              : `Add a courier tracking number to mark ${order.id} as shipped.`}
+              : `Add a courier tracking number to mark ${order.id} as completed.`}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
@@ -375,7 +373,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
             disabled={saving || trackingNumber.trim().length < 4}
             onClick={() => void save()}
           >
-            {saving ? 'Saving…' : hasTracking ? 'Save tracking' : 'Mark as shipped'}
+            {saving ? 'Saving…' : hasTracking ? 'Save tracking' : 'Mark as completed'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -383,15 +381,23 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
   )
 }
 
+function asAdminStatus(status: ShopOrder['status']): AdminOrderStatus {
+  return adminStatusOptions.includes(status as AdminOrderStatus)
+    ? (status as AdminOrderStatus)
+    : 'pending'
+}
+
 function ChangeStatusDialog({ order }: { order: ShopOrder }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
-  const [nextStatus, setNextStatus] = React.useState<OrderStatus>(order.status)
+  const [nextStatus, setNextStatus] = React.useState<AdminOrderStatus>(
+    asAdminStatus(order.status),
+  )
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (open) {
-      setNextStatus(order.status)
+      setNextStatus(asAdminStatus(order.status))
     }
   }, [open, order.status])
 
@@ -427,7 +433,7 @@ function ChangeStatusDialog({ order }: { order: ShopOrder }) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">
-          {orderStatuses.map((status) => (
+          {adminStatusOptions.map((status) => (
             <button
               className={cn(
                 'border px-3 py-2 text-left text-sm font-medium transition-colors',

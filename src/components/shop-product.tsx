@@ -21,6 +21,7 @@ import {
   type ShopProduct,
 } from '~/data/shop'
 import { useAccount } from '~/lib/account'
+import { authClient } from '~/lib/auth-client'
 import { useCart } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 import { toast } from '~/components/ui/toast'
@@ -37,6 +38,7 @@ const emptyCustom: CustomMeasurements = {
 export function ShopProductDetail({ product }: { product: ShopProduct }) {
   const { addItem } = useCart()
   const { profile, signedIn } = useAccount()
+  const { data: session } = authClient.useSession()
   const [size, setSize] = React.useState('')
   const [custom, setCustom] = React.useState<CustomMeasurements>(emptyCustom)
   const [added, setAdded] = React.useState(false)
@@ -49,6 +51,7 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
   const isCustom = size === CUSTOM_SIZE
   const customReady = !isCustom || customMeasurementsComplete(custom)
   const canAdd = Boolean(size) && customReady && sizeOptions.includes(size)
+  const membersLocked = product.membersOnly && !session?.user?.emailVerified
   const savedSize =
     signedIn &&
     profile?.jerseySize &&
@@ -57,7 +60,7 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
       : ''
 
   function handleAdd() {
-    if (!canAdd) return
+    if (!canAdd || membersLocked) return
     addItem(product.slug, size, 1, isCustom ? custom : undefined)
     setAdded(true)
     toast.add({
@@ -162,6 +165,11 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
                 Pre order
               </span>
             ) : null}
+            {product.membersOnly ? (
+              <span className="rounded-sm border border-border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-foreground uppercase">
+                Members
+              </span>
+            ) : null}
           </div>
           <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em]">
             {product.name}
@@ -171,7 +179,8 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
           </p>
           {product.preOrder ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              Made to order. Production starts after checkout closes.
+              Pre-order takes 2 weeks or longer. We’ll notify you when it’s
+              ready to pick up.
             </p>
           ) : null}
 
@@ -260,19 +269,28 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
 
           <Button
             className="mt-6 w-full"
-            disabled={!canAdd}
+            disabled={!canAdd || membersLocked}
             onClick={handleAdd}
             size="lg"
             type="button"
           >
-            {!size
-              ? 'Select a size'
-              : isCustom && !customReady
-                ? 'Enter custom measurements'
-                : isCustom
-                  ? 'Add custom to bag'
-                  : `Add ${size} to bag`}
+            {membersLocked
+              ? 'Verified members only'
+              : !size
+                ? 'Select a size'
+                : isCustom && !customReady
+                  ? 'Enter custom measurements'
+                  : isCustom
+                    ? 'Add custom to bag'
+                    : `Add ${size} to bag`}
           </Button>
+          {membersLocked ? (
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              {signedIn
+                ? 'Verify your email to buy this jersey.'
+                : 'Sign in and verify your email to buy this jersey.'}
+            </p>
+          ) : null}
 
           {added ? (
             <p className="mt-3 flex items-center justify-center gap-2 text-sm text-foreground">
@@ -364,6 +382,16 @@ function ProductDetailsAccordion({
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Availability</dt>
               <dd className="font-medium">Pre order</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Lead time</dt>
+              <dd className="text-right font-medium">2 weeks or longer</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Pickup</dt>
+              <dd className="text-right font-medium">
+                We’ll notify you when it’s ready
+              </dd>
             </div>
           </dl>
         ) : null}

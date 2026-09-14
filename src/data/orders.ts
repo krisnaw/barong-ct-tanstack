@@ -11,6 +11,9 @@ export const orderStatuses = [
 
 export type OrderStatus = (typeof orderStatuses)[number]
 
+export const adminStatusOptions = ['pending', 'paid', 'completed'] as const
+export type AdminOrderStatus = (typeof adminStatusOptions)[number]
+
 export type OrderPayment = 'unpaid' | 'paid'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'expired'
 export type OrderPaymentStatus = OrderPayment | PaymentStatus

@@ -8,6 +8,7 @@ import {
   TruckIcon,
 } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '~/components/ui/button'
+import { OrderStatusBadge } from '~/components/order-status-badge'
 import {
   courierLabel,
   formatOrderDate,
@@ -16,8 +17,6 @@ import {
   orderItemCount,
   orderNeedsPayment,
   orderPickupPointName,
-  orderStatusLabel,
-  orderStatusStyles,
   type ShopOrder,
 } from '~/data/orders'
 import { formatCustomMeasurements, formatShopPrice, jerseySizeGuide, shopImageSrc } from '~/data/shop'
@@ -694,14 +693,7 @@ function OrderRow({ order }: { order: ShopOrder }) {
           <span className="text-sm font-medium tabular-nums">
             {formatShopPrice(order.total)}
           </span>
-          <span
-            className={cn(
-              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              orderStatusStyles[order.status],
-            )}
-          >
-            {orderStatusLabel(order.status)}
-          </span>
+          <OrderStatusBadge status={order.status} />
         </div>
       </Link>
     </li>
@@ -787,14 +779,7 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
           <h2 className="font-heading text-lg font-semibold tracking-tight">
             {order.id}
           </h2>
-          <span
-            className={cn(
-              'rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              orderStatusStyles[order.status],
-            )}
-          >
-            {orderStatusLabel(order.status)}
-          </span>
+          <OrderStatusBadge status={order.status} />
         </div>
         {orderNeedsPayment(order) ? <PayNowButton order={order} /> : null}
       </div>

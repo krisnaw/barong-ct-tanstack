@@ -13,6 +13,14 @@ import {
 import { buttonVariants } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
 import { listProducts } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
 
@@ -69,49 +77,71 @@ function DashboardCataloguePage() {
           </div>
         </div>
 
-        <ul className="divide-y divide-border border border-border">
-          {products.map((product) => (
-            <li key={product.slug}>
-              <Link
-                className="flex items-center gap-4 px-4 py-3 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50"
-                params={{ slug: product.slug }}
-                to="/dashboard/catalogue/$slug"
-              >
-                <img
-                  alt=""
-                  className="size-12 shrink-0 object-cover bg-muted"
-                  decoding="async"
-                  height={96}
-                  src={shopImageSrc(product.image, 96)}
-                  width={96}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{product.name}</p>
-                  <p className="mt-0.5 truncate text-muted-foreground">
-                    {formatShopPrice(product.price)}
-                    {product.preOrder ? (
-                      <>
-                        <span className="text-border"> · </span>
-                        Pre order
-                      </>
-                    ) : null}
-                    {product.active === false ? (
-                      <>
-                        <span className="text-border"> · </span>
-                        Hidden
-                      </>
-                    ) : null}
-                  </p>
-                </div>
-                <span className="shrink-0 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                  {product.preOrder
-                    ? 'Any size'
-                    : `${availableSizeCount(product)} sizes`}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {products.length === 0 ? (
+          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+            No products yet.
+          </p>
+        ) : (
+          <div className="border border-border">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4">Product</TableHead>
+                  <TableHead className="px-4">Price</TableHead>
+                  <TableHead className="px-4">Stock</TableHead>
+                  <TableHead className="px-4">Members</TableHead>
+                  <TableHead className="px-4">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow className="relative" key={product.slug}>
+                    <TableCell className="px-4 py-3">
+                      <Link
+                        className="flex items-center gap-3 after:absolute after:inset-0"
+                        params={{ slug: product.slug }}
+                        to="/dashboard/catalogue/$slug"
+                      >
+                        <img
+                          alt=""
+                          className="size-10 shrink-0 object-cover bg-muted"
+                          decoding="async"
+                          height={80}
+                          src={shopImageSrc(product.image, 80)}
+                          width={80}
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {product.name}
+                          </span>
+                          {product.preOrder ? (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              Pre order
+                            </span>
+                          ) : null}
+                        </span>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 tabular-nums">
+                      {formatShopPrice(product.price)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground">
+                      {product.preOrder
+                        ? 'Any size'
+                        : `${availableSizeCount(product)} sizes`}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      {product.membersOnly ? 'Verified only' : 'Anyone'}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                      {product.active === false ? 'Hidden' : 'Active'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </>
   )

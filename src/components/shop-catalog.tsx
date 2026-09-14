@@ -46,11 +46,16 @@ export function ShopCatalog({ products }: { products: ShopProduct[] }) {
                   <h2 className="font-heading text-sm font-medium tracking-tight">
                     {product.name}
                   </h2>
-                  {product.preOrder ? (
-                    <span className="text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                      Pre order
-                    </span>
-                  ) : null}
+                {product.preOrder ? (
+                  <span className="text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                    Pre order
+                  </span>
+                ) : null}
+                {product.membersOnly ? (
+                  <span className="text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                    Members
+                  </span>
+                ) : null}
                 </div>
                 <p className="mt-0.5 text-sm tabular-nums">
                   {formatShopPrice(product.price)}

@@ -3,10 +3,10 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import {
+  adminStatusOptions,
   courierIds,
   discountAmount,
   formatInvoiceNumber,
-  orderStatuses,
   parseDiscountCode,
   resolveOrderStatus,
   type PaymentStatus,
@@ -218,6 +218,9 @@ export const placeOrder = createServerFn({ method: 'POST' })
       if (!row || !row.active) {
         throw new Error(`Unknown product: ${line.slug}`)
       }
+      if (row.membersOnly && !session.user.emailVerified) {
+        throw new Error(`${row.name} is for verified members only`)
+      }
       const stockBySize = Object.fromEntries(
         row.sizes.map((size) => [size.size, size.stock]),
       )
@@ -234,6 +237,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         sizes: row.sizes.map((size) => size.size),
         stockBySize,
         preOrder: row.preOrder,
+        membersOnly: row.membersOnly,
         image: row.image,
         images: [],
         imageAlt: row.imageAlt,
@@ -389,7 +393,7 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
   .validator(
     z.object({
       id: z.string().min(1),
-      status: z.enum(orderStatuses),
+      status: z.enum(adminStatusOptions),
     }),
   )
   .handler(async ({ data }) => {
@@ -410,13 +414,6 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
       existing.lines,
       existing.payments,
     )
-    if (existing.status !== 'shipped' && data.status === 'shipped') {
-      try {
-        await sendOrderShippedEmail(next)
-      } catch (error) {
-        console.error('Failed to send shipped email', error)
-      }
-    }
     return next
   })
 
@@ -443,7 +440,7 @@ export const shipOrder = createServerFn({ method: 'POST' })
       .set({
         courier: data.courier,
         trackingNumber,
-        status: 'shipped',
+        status: 'completed',
         updatedAt: new Date(),
       })
       .where(eq(orders.id, existing.id))
@@ -452,12 +449,12 @@ export const shipOrder = createServerFn({ method: 'POST' })
         ...existing,
         courier: data.courier,
         trackingNumber,
-        status: 'shipped',
+        status: 'completed',
       },
       existing.lines,
       existing.payments,
     )
-    if (existing.status !== 'shipped') {
+    if (!existing.trackingNumber) {
       try {
         await sendOrderShippedEmail(next)
       } catch (error) {
