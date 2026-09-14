@@ -414,6 +414,17 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
       existing.lines,
       existing.payments,
     )
+    if (
+      existing.status !== 'completed' &&
+      data.status === 'completed' &&
+      next.delivery === 'pickup'
+    ) {
+      try {
+        await sendOrderShippedEmail(next)
+      } catch (error) {
+        console.error('Failed to send pickup email', error)
+      }
+    }
     return next
   })
 

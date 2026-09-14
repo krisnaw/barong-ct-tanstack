@@ -30,13 +30,41 @@ type OrderShippedProps = {
   firstName?: string
   invoiceNumber: string
   invoiceDateTime: string
+  delivery: 'ship' | 'pickup'
   shippingLabel: string
+  pickupPointName?: string
+  pickupHours?: string
   courierLabel?: string
   trackingNumber?: string
   addressLines: string[]
   items: OrderShippedItem[]
   total: string
   orderUrl: string
+}
+
+export function orderFulfillmentEmailCopy(input: {
+  delivery: 'ship' | 'pickup'
+  shippingLabel: string
+  pickupPointName?: string
+}) {
+  if (input.delivery === 'pickup') {
+    return {
+      subject: 'Your order is ready to collect',
+      preview: 'Your order is ready to collect',
+      heading: 'Your kit is ready to collect',
+      intro: input.pickupPointName
+        ? `Your order is ready to collect at ${input.pickupPointName}.`
+        : 'Your order is ready to collect.',
+      addressLabel: 'Collect at',
+    }
+  }
+  return {
+    subject: 'Your order has been shipped',
+    preview: 'Your order has been shipped',
+    heading: 'Your kit is on the way',
+    intro: `Your order has been shipped via ${input.shippingLabel}.`,
+    addressLabel: 'Ship to',
+  }
 }
 
 const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong_logo.png'
@@ -47,7 +75,10 @@ export function OrderShipped({
   firstName,
   invoiceNumber,
   invoiceDateTime,
+  delivery,
   shippingLabel,
+  pickupPointName,
+  pickupHours,
   courierLabel,
   trackingNumber,
   addressLines,
@@ -56,6 +87,12 @@ export function OrderShipped({
   orderUrl,
 }: OrderShippedProps) {
   const greeting = firstName?.trim() ? `Hi ${firstName.trim()},` : 'Hi,'
+  const isPickup = delivery === 'pickup'
+  const copy = orderFulfillmentEmailCopy({
+    delivery,
+    shippingLabel,
+    pickupPointName,
+  })
 
   return (
     <Tailwind config={barebonesBoxedTailwindConfig}>
@@ -65,7 +102,7 @@ export function OrderShipped({
         </Head>
 
         <Body className="bg-bg-2 m-0 text-center font-sans">
-          <Preview>Your order has been shipped</Preview>
+          <Preview>{copy.preview}</Preview>
           <Container className="mobile:mt-0 mx-auto mt-8 w-full max-w-[640px]">
             <Section>
               <Section className="bg-bg mobile:px-2 px-6 py-4">
@@ -89,15 +126,21 @@ export function OrderShipped({
                       width={56}
                     />
                     <Heading as="h1" className="font-28 text-fg m-0 font-sans">
-                      Your kit is on the way
+                      {copy.heading}
                     </Heading>
                   </Section>
 
                   <Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[400px] text-center font-sans">
                     {greeting}
                     <br />
-                    Your order has been shipped via {shippingLabel}.
-                    {courierLabel && trackingNumber ? (
+                    {copy.intro}
+                    {isPickup && pickupHours ? (
+                      <>
+                        <br />
+                        Hours: {pickupHours}.
+                      </>
+                    ) : null}
+                    {!isPickup && courierLabel && trackingNumber ? (
                       <>
                         <br />
                         {courierLabel} tracking {trackingNumber}.
@@ -172,7 +215,7 @@ export function OrderShipped({
 
                   <Section className="mb-8 text-left">
                     <Text className="font-11 text-fg-3 mt-0 mb-2 font-sans tracking-[0.14em] uppercase">
-                      Ship to
+                      {copy.addressLabel}
                     </Text>
                     {addressLines.map((line) => (
                       <Text
@@ -215,6 +258,7 @@ OrderShipped.PreviewProps = {
   invoiceNumber: '20260914-105032',
   invoiceDateTime: '14 Sep 2026, 10:50',
   shippingLabel: 'JNE Regular · 2–4 business days',
+  delivery: 'ship',
   courierLabel: 'JNE',
   trackingNumber: '882837192001',
   addressLines: [
