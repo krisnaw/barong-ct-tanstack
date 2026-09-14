@@ -125,6 +125,11 @@ export const dokuProvider: PaymentProvider = {
       detail: 'Scan QRIS on the DOKU payment page.',
     },
     {
+      id: 'bni_va',
+      label: 'BNI Virtual Account',
+      detail: 'Pay to a BNI VA number on the DOKU payment page.',
+    },
+    {
       id: 'card',
       label: 'Credit card',
       detail: 'Visa, Mastercard, and other cards via DOKU.',
@@ -148,7 +153,7 @@ export const dokuProvider: PaymentProvider = {
       },
       payment: {
         payment_due_date: 24 * 60,
-        payment_method_types: ['QRIS', 'CREDIT_CARD'],
+        payment_method_types: ['QRIS', 'VIRTUAL_ACCOUNT_BNI', 'CREDIT_CARD'],
       },
       customer: {
         name: input.customer.firstName,

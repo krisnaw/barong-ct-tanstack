@@ -6,11 +6,12 @@ import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/shop/checkout/cancel')({
   validateSearch: checkoutOrderSearch,
-  loader: async ({ search }) => {
-    if (!search.order) {
+  loaderDeps: ({ search }) => ({ order: search.order }),
+  loader: async ({ deps }) => {
+    if (!deps.order) {
       throw redirect({ to: '/account/orders' })
     }
-    const order = await getOrderById({ data: { id: search.order } })
+    const order = await getOrderById({ data: { id: deps.order } })
     if (!order) throw redirect({ to: '/account/orders' })
     return { order }
   },

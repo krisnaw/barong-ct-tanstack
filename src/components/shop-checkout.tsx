@@ -4,6 +4,7 @@ import {
   CaretDownIcon,
   CheckCircleIcon,
   CreditCardIcon,
+  BankIcon,
   LockSimpleIcon,
   QrCodeIcon,
   ShoppingBagIcon,
@@ -574,7 +575,9 @@ export function ShopCheckout({
                     ? QrCodeIcon
                     : method.id === 'card'
                       ? CreditCardIcon
-                      : LockSimpleIcon
+                      : method.id === 'bni_va'
+                        ? BankIcon
+                        : LockSimpleIcon
                 return (
                   <div
                     className={cn(
