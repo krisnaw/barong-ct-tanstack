@@ -1,10 +1,15 @@
 import * as React from 'react'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { ArrowLeftIcon, CreditCardIcon, TruckIcon } from '@phosphor-icons/react'
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CopyIcon,
+  CreditCardIcon,
+  TruckIcon,
+} from '@phosphor-icons/react'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   courierLabel,
-  courierTrackingUrl,
   formatOrderDate,
   formatPaymentLabel,
   orderCustomerName,
@@ -702,6 +707,42 @@ function OrderRow({ order }: { order: ShopOrder }) {
   )
 }
 
+function CopyTrackingButton({ trackingNumber }: { trackingNumber: string }) {
+  const [copied, setCopied] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!copied) return
+    const timeout = window.setTimeout(() => setCopied(false), 2000)
+    return () => window.clearTimeout(timeout)
+  }, [copied])
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(trackingNumber)
+      setCopied(true)
+      toast.add({ type: 'success', title: 'Tracking number copied' })
+    } catch {
+      toast.add({ type: 'error', title: 'Could not copy tracking number' })
+    }
+  }
+
+  return (
+    <Button
+      onClick={() => void copy()}
+      size="xs"
+      type="button"
+      variant="ghost"
+    >
+      {copied ? (
+        <CheckIcon data-icon="inline-start" weight="bold" />
+      ) : (
+        <CopyIcon data-icon="inline-start" weight="bold" />
+      )}
+      {copied ? 'Copied' : 'Copy'}
+    </Button>
+  )
+}
+
 function PayNowButton({ order }: { order: ShopOrder }) {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -741,9 +782,19 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
         Back to orders
       </Link>
       <div className="mt-4 flex items-center justify-between gap-3">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">
-          {order.id}
-        </h2>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">
+            {order.id}
+          </h2>
+          <span
+            className={cn(
+              'rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+              orderStatusStyles[order.status],
+            )}
+          >
+            {orderStatusLabel(order.status)}
+          </span>
+        </div>
         {orderNeedsPayment(order) ? <PayNowButton order={order} /> : null}
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -788,20 +839,10 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
 
       <div className="mt-8 grid gap-8 md:grid-cols-3">
         <section>
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
-              <CreditCardIcon className="size-4" weight="bold" />
-              Payment information
-            </h3>
-            <span
-              className={cn(
-                'rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                orderStatusStyles[order.status],
-              )}
-            >
-              {orderStatusLabel(order.status)}
-            </span>
-          </div>
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <CreditCardIcon className="size-4" weight="bold" />
+            Payment information
+          </h3>
           <dl className="mt-4 space-y-3 text-sm">
             {order.payment?.transactionId ? (
               <div>
@@ -815,18 +856,6 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
               <dt className="font-medium">Method</dt>
               <dd className="mt-0.5 text-muted-foreground">
                 {formatPaymentLabel(order)}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Billing address</dt>
-              <dd className="mt-0.5 text-muted-foreground">
-                {orderCustomerName(order)}
-                <br />
-                {order.address}
-                <br />
-                {[order.city, order.province, order.postal]
-                  .filter(Boolean)
-                  .join(' ')}
               </dd>
             </div>
           </dl>
@@ -849,18 +878,10 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
                 <dt className="font-medium">Tracking</dt>
                 <dd className="mt-0.5 text-muted-foreground">
                   {courierLabel(order.courier)}
-                  <br />
-                  <a
-                    className="underline underline-offset-2"
-                    href={courierTrackingUrl(
-                      order.courier,
-                      order.trackingNumber,
-                    )}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {order.trackingNumber}
-                  </a>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <span>{order.trackingNumber}</span>
+                    <CopyTrackingButton trackingNumber={order.trackingNumber} />
+                  </div>
                 </dd>
               </div>
             ) : null}
