@@ -56,6 +56,8 @@ export type ShopOrder = {
   province: string
   postal: string
   shippingLabel: string
+  courier?: string
+  trackingNumber?: string
   lines: ShopOrderLine[]
   subtotal: number
   shipping: number
@@ -106,6 +108,30 @@ export function resolveOrderStatus(
 
 export function orderStatusLabel(status: OrderStatus) {
   return orderStatusLabels[status]
+}
+
+export const couriers = [
+  { id: 'jne', label: 'JNE' },
+  { id: 'tiki', label: 'TIKI' },
+  { id: 'jnt', label: 'J&T Express' },
+] as const
+
+export type CourierId = (typeof couriers)[number]['id']
+
+export const courierIds = ['jne', 'tiki', 'jnt'] as const
+
+export function courierLabel(id: string) {
+  return couriers.find((courier) => courier.id === id)?.label ?? id
+}
+
+export function courierTrackingUrl(courier: string, trackingNumber: string) {
+  const encoded = encodeURIComponent(trackingNumber)
+  if (courier === 'jne') return `https://cekresi.com/?noawb=${encoded}`
+  if (courier === 'tiki') return `https://www.tiki.id/id/tracking?cn=${encoded}`
+  if (courier === 'jnt') {
+    return `https://www.jtexpress.co.id/en/track?billcode=${encoded}`
+  }
+  return `https://cekresi.com/?noawb=${encoded}`
 }
 
 export const SHIPPING_RATES: Record<

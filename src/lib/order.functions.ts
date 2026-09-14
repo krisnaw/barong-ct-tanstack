@@ -3,6 +3,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import {
+  courierIds,
   discountAmount,
   formatInvoiceNumber,
   orderStatuses,
@@ -135,6 +136,8 @@ function mapOrder(
     province: row.province,
     postal: row.postal,
     shippingLabel: row.shippingLabel,
+    courier: row.courier ?? undefined,
+    trackingNumber: row.trackingNumber ?? undefined,
     lines: lines.map(mapLine),
     subtotal: row.subtotal,
     shipping: row.shipping,
@@ -404,6 +407,53 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
       existing.payments,
     )
     if (existing.status !== 'shipped' && data.status === 'shipped') {
+      try {
+        await sendOrderShippedEmail(next)
+      } catch (error) {
+        console.error('Failed to send shipped email', error)
+      }
+    }
+    return next
+  })
+
+export const shipOrder = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      id: z.string().min(1),
+      courier: z.enum(courierIds),
+      trackingNumber: z.string().trim().min(4).max(64),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const existing = await db.query.orders.findFirst({
+      where: eq(orders.number, data.id),
+      with: { lines: true, payments: true },
+    })
+    if (!existing) {
+      throw new Error('Order not found')
+    }
+    const trackingNumber = data.trackingNumber.trim()
+    await db
+      .update(orders)
+      .set({
+        courier: data.courier,
+        trackingNumber,
+        status: 'shipped',
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, existing.id))
+    const next = mapOrder(
+      {
+        ...existing,
+        courier: data.courier,
+        trackingNumber,
+        status: 'shipped',
+      },
+      existing.lines,
+      existing.payments,
+    )
+    if (existing.status !== 'shipped') {
       try {
         await sendOrderShippedEmail(next)
       } catch (error) {

@@ -32,6 +32,8 @@ export const orders = sqliteTable(
     total: integer('total').notNull(),
     discountCode: text('discount_code'),
     status: text('status').default('pending').notNull(),
+    courier: text('courier'),
+    trackingNumber: text('tracking_number'),
     placedAt: integer('placed_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

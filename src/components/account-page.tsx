@@ -3,6 +3,8 @@ import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { ArrowLeftIcon, CreditCardIcon, TruckIcon } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
+  courierLabel,
+  courierTrackingUrl,
   formatOrderDate,
   formatPaymentLabel,
   orderCustomerName,
@@ -842,6 +844,26 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
                 {order.shippingLabel}
               </dd>
             </div>
+            {order.courier && order.trackingNumber ? (
+              <div>
+                <dt className="font-medium">Tracking</dt>
+                <dd className="mt-0.5 text-muted-foreground">
+                  {courierLabel(order.courier)}
+                  <br />
+                  <a
+                    className="underline underline-offset-2"
+                    href={courierTrackingUrl(
+                      order.courier,
+                      order.trackingNumber,
+                    )}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {order.trackingNumber}
+                  </a>
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="font-medium">Address</dt>
               <dd className="mt-0.5 text-muted-foreground">

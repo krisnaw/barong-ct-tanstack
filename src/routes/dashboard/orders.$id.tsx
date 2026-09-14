@@ -2,6 +2,9 @@ import * as React from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { CaretDownIcon } from '@phosphor-icons/react'
 import {
+  courierLabel,
+  courierTrackingUrl,
+  couriers,
   formatOrderDate,
   formatPaymentLabel,
   orderCustomerName,
@@ -10,12 +13,13 @@ import {
   orderStatusLabel,
   orderStatuses,
   orderStatusStyles,
+  type CourierId,
   type OrderPaymentStatus,
   type OrderStatus,
   type ShopOrder,
 } from '~/data/orders'
 import { formatCustomMeasurements, formatShopPrice, shopImageSrc } from '~/data/shop'
-import { getOrderById, updateOrderStatus } from '~/lib/order.functions'
+import { getOrderById, shipOrder, updateOrderStatus } from '~/lib/order.functions'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,6 +29,8 @@ import {
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
 import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import {
   Dialog,
   DialogClose,
@@ -120,7 +126,10 @@ function DashboardOrderDetailPage() {
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
               {order.id}
             </h1>
-            <ChangeStatusDialog order={order} />
+            <div className="flex flex-wrap items-center gap-2">
+              <AddTrackingDialog order={order} />
+              <ChangeStatusDialog order={order} />
+            </div>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {orderCustomerName(order)}
@@ -182,6 +191,27 @@ function DashboardOrderDetailPage() {
             <OrderBlock title="Delivery">
               <dl className="divide-y divide-border text-sm">
                 <InfoRow label="Method" value={order.shippingLabel} />
+                {order.courier && order.trackingNumber ? (
+                  <>
+                    <InfoRow label="Courier" value={courierLabel(order.courier)} />
+                    <div className="flex items-start justify-between gap-4 px-4 py-3">
+                      <dt className="shrink-0 text-muted-foreground">Tracking</dt>
+                      <dd className="text-right break-all">
+                        <a
+                          className="underline underline-offset-2"
+                          href={courierTrackingUrl(
+                            order.courier,
+                            order.trackingNumber,
+                          )}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {order.trackingNumber}
+                        </a>
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
                 <InfoRow
                   label="Address"
                   value={[
@@ -230,6 +260,112 @@ function DashboardOrderDetailPage() {
         </div>
       </div>
     </>
+  )
+}
+
+function AddTrackingDialog({ order }: { order: ShopOrder }) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [courier, setCourier] = React.useState<CourierId>(
+    (order.courier as CourierId | undefined) ?? 'jne',
+  )
+  const [trackingNumber, setTrackingNumber] = React.useState(
+    order.trackingNumber ?? '',
+  )
+  const [saving, setSaving] = React.useState(false)
+  const canShip = order.status !== 'cancelled' && order.status !== 'refunded'
+  const hasTracking = Boolean(order.courier && order.trackingNumber)
+
+  React.useEffect(() => {
+    if (open) {
+      setCourier((order.courier as CourierId | undefined) ?? 'jne')
+      setTrackingNumber(order.trackingNumber ?? '')
+    }
+  }, [open, order.courier, order.trackingNumber])
+
+  async function save() {
+    const nextTracking = trackingNumber.trim()
+    if (nextTracking.length < 4) {
+      toast.add({ type: 'error', title: 'Enter a tracking number' })
+      return
+    }
+    setSaving(true)
+    try {
+      await shipOrder({
+        data: {
+          id: order.id,
+          courier,
+          trackingNumber: nextTracking,
+        },
+      })
+      await router.invalidate()
+      toast.add({
+        type: 'success',
+        title: hasTracking ? 'Tracking updated' : 'Order marked as shipped',
+      })
+      setOpen(false)
+    } catch {
+      toast.add({ type: 'error', title: 'Could not save tracking' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!canShip) return null
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        {hasTracking ? 'Update tracking' : 'Add tracking'}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {hasTracking ? 'Update tracking' : 'Add tracking'}
+          </DialogTitle>
+          <DialogDescription>
+            {hasTracking
+              ? `Update the courier tracking number for ${order.id}.`
+              : `Add a courier tracking number to mark ${order.id} as shipped.`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="courier">Courier</Label>
+            <select
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              id="courier"
+              onChange={(event) => setCourier(event.target.value as CourierId)}
+              value={courier}
+            >
+              {couriers.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="trackingNumber">Tracking number</Label>
+            <Input
+              id="trackingNumber"
+              onChange={(event) => setTrackingNumber(event.target.value)}
+              placeholder="e.g. 882837192001"
+              value={trackingNumber}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <Button
+            disabled={saving || trackingNumber.trim().length < 4}
+            onClick={() => void save()}
+          >
+            {saving ? 'Saving…' : hasTracking ? 'Save tracking' : 'Mark as shipped'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

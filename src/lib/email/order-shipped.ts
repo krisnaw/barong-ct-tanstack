@@ -2,6 +2,7 @@ import { render } from '@react-email/render'
 import { env } from 'cloudflare:workers'
 import { formatCustomMeasurements, formatShopPrice, shopImageSrc } from '~/data/shop'
 import {
+  courierLabel,
   formatInvoiceDateTime,
   formatInvoiceNumber,
   orderCustomerName,
@@ -32,6 +33,8 @@ export async function sendOrderShippedEmail(order: ShopOrder) {
     invoiceNumber: formatInvoiceNumber(order.placedAt),
     invoiceDateTime: formatInvoiceDateTime(order.placedAt),
     shippingLabel: order.shippingLabel,
+    courierLabel: order.courier ? courierLabel(order.courier) : undefined,
+    trackingNumber: order.trackingNumber,
     addressLines: addressLines(order),
     items: order.lines.map((line) => ({
       name: line.name,

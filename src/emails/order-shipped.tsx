@@ -7,7 +7,6 @@ import {
   Heading,
   Html,
   Img,
-  Link,
   Preview,
   Row,
   Section,
@@ -31,6 +30,8 @@ type OrderShippedProps = {
   invoiceNumber: string
   invoiceDateTime: string
   shippingLabel: string
+  courierLabel?: string
+  trackingNumber?: string
   addressLines: string[]
   items: OrderShippedItem[]
   total: string
@@ -46,6 +47,8 @@ export function OrderShipped({
   invoiceNumber,
   invoiceDateTime,
   shippingLabel,
+  courierLabel,
+  trackingNumber,
   addressLines,
   items,
   total,
@@ -66,28 +69,13 @@ export function OrderShipped({
             <Section>
               <Section className="bg-bg mobile:px-2 px-6 py-4">
                 <Section className="mb-3 px-6">
-                  <Row>
-                    <Column
-                      align="left"
-                      className="w-1/2 py-[7px] text-left align-middle"
-                    >
-                      <Img
-                        alt={companyName}
-                        className="block"
-                        height={32}
-                        src={logoUrl}
-                        width={25}
-                      />
-                    </Column>
-                    <Column
-                      align="right"
-                      className="w-1/2 py-[7px] text-right align-middle"
-                    >
-                      <Text className="font-13 text-fg-3 m-0 text-right font-sans">
-                        {companyName}
-                      </Text>
-                    </Column>
-                  </Row>
+                  <Img
+                    alt={companyName}
+                    className="block"
+                    height={32}
+                    src={logoUrl}
+                    width={25}
+                  />
                 </Section>
 
                 <Section className="bg-bg-2 mobile:px-6 mobile:py-12 rounded-[8px] px-[40px] py-[64px] text-center">
@@ -108,6 +96,12 @@ export function OrderShipped({
                     {greeting}
                     <br />
                     Your order has been shipped via {shippingLabel}.
+                    {courierLabel && trackingNumber ? (
+                      <>
+                        <br />
+                        {courierLabel} tracking {trackingNumber}.
+                      </>
+                    ) : null}
                   </Text>
 
                   <Section className="mb-8 text-left">
@@ -191,32 +185,12 @@ export function OrderShipped({
                       View order
                     </Button>
                   </Section>
-
-                  <Text className="font-13 text-fg-3 mx-auto mt-8 mb-0 max-w-[400px] text-center font-sans">
-                    We&apos;ll WhatsApp if the courier needs anything.
-                  </Text>
                 </Section>
 
                 <Section className="bg-bg">
-                  <Row>
-                    <Column className="px-6 py-10 text-center">
-                      <Text className="font-13 text-fg-3 mx-auto mt-0 mb-8 max-w-[280px] text-center font-sans">
-                        Denpasar peloton since 2016. Keep the bunch together.
-                      </Text>
-
-                      <Text className="font-11 text-fg-3 mt-4 mb-5 text-center font-sans">
-                        Barong Cycling Team
-                        <br />
-                        Denpasar, Bali
-                      </Text>
-                      <Text className="font-11 text-fg-3 m-0 text-center font-sans">
-                        <Link href={orderUrl} className="text-fg-3">
-                          View order
-                        </Link>{' '}
-                        on {companyName}.
-                      </Text>
-                    </Column>
-                  </Row>
+                  <Text className="font-11 text-fg-3 m-0 px-6 py-10 text-center font-sans">
+                    Barong Cycling Team, est 2016
+                  </Text>
                 </Section>
               </Section>
             </Section>
@@ -234,6 +208,8 @@ OrderShipped.PreviewProps = {
   invoiceNumber: '20260914-105032',
   invoiceDateTime: '14 Sep 2026, 10:50',
   shippingLabel: 'JNE Regular · 2–4 business days',
+  courierLabel: 'JNE',
+  trackingNumber: '882837192001',
   addressLines: [
     'Jl. Pulau Menjangan.',
     'Buleleng, Bali, 81119',
