@@ -65,16 +65,22 @@ export const jerseySizeGuide = {
 /** Size buttons shown on the PDP. Custom is pre-order only. */
 export function productSizeOptions(product: ShopProduct): string[] {
   if (product.preOrder) {
-    return [...product.sizes, CUSTOM_SIZE]
+    return [...jerseySizeGuide.sizes, CUSTOM_SIZE]
   }
-  return product.sizes.filter((size) => (product.stockBySize[size] ?? 0) > 0)
+  return jerseySizeGuide.sizes.filter((size) => (product.stockBySize[size] ?? 0) > 0)
 }
 
 export function isSizePurchasable(product: ShopProduct, size: string) {
   if (size === CUSTOM_SIZE) return product.preOrder
-  if (!product.sizes.includes(size)) return false
+  if (!jerseySizeGuide.sizes.includes(size)) return false
   if (product.preOrder) return true
   return (product.stockBySize[size] ?? 0) > 0
+}
+
+export function availableSizeCount(product: ShopProduct) {
+  if (product.preOrder) return jerseySizeGuide.sizes.length
+  return jerseySizeGuide.sizes.filter((size) => (product.stockBySize[size] ?? 0) > 0)
+    .length
 }
 
 export function findShopProduct(products: ShopProduct[], slug: string) {

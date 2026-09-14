@@ -1,13 +1,15 @@
 import * as React from 'react'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { ArrowLeftIcon, CreditCardIcon, TruckIcon } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   formatOrderDate,
+  formatPaymentLabel,
+  orderCustomerName,
   orderItemCount,
   orderNeedsPayment,
-  orderPaymentStatus,
-  type OrderPaymentStatus,
-  type OrderStatus,
+  orderStatusLabel,
+  orderStatusStyles,
   type ShopOrder,
 } from '~/data/orders'
 import { formatCustomMeasurements, formatShopPrice, jerseySizeGuide, shopImageSrc } from '~/data/shop'
@@ -27,22 +29,6 @@ import { toast } from '~/components/ui/toast'
 import { listMyOrders } from '~/lib/order.functions'
 import { startPayment } from '~/lib/payment.functions'
 import { cn } from '~/lib/utils'
-
-const orderStatusStyles: Record<OrderStatus, string> = {
-  pending: 'border-amber-200 bg-amber-50 text-amber-800',
-  packed: 'border-sky-200 bg-sky-50 text-sky-800',
-  shipped: 'border-indigo-200 bg-indigo-50 text-indigo-800',
-  completed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  cancelled: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-}
-
-const paymentStatusStyles: Record<OrderPaymentStatus, string> = {
-  unpaid: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-  pending: 'border-amber-200 bg-amber-50 text-amber-800',
-  paid: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  failed: 'border-rose-200 bg-rose-50 text-rose-800',
-  expired: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-}
 
 const sections = [
   { to: '/account', label: 'Profile', exact: true },
@@ -105,7 +91,7 @@ export function AccountLayout() {
         </button>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,40rem)] lg:items-start lg:gap-12 xl:gap-16">
+      <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,52rem)] lg:items-start lg:gap-12 xl:gap-16">
         <AccountSectionNav />
         <div>
           <Outlet />
@@ -703,10 +689,10 @@ function OrderRow({ order }: { order: ShopOrder }) {
           <span
             className={cn(
               'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              paymentStatusStyles[orderPaymentStatus(order)],
+              orderStatusStyles[order.status],
             )}
           >
-            {orderPaymentStatus(order)}
+            {orderStatusLabel(order.status)}
           </span>
         </div>
       </Link>
@@ -731,7 +717,7 @@ function PayNowButton({ order }: { order: ShopOrder }) {
   }
 
   return (
-    <div className="mt-4">
+    <div>
       <Button disabled={pending} onClick={() => void pay()} type="button">
         {pending ? 'Redirecting…' : `Pay ${formatShopPrice(order.total)}`}
       </Button>
@@ -746,120 +732,159 @@ export function AccountOrderDetailPanel({ order }: { order: ShopOrder }) {
   return (
     <div>
       <Link
-        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         to="/account/orders"
       >
+        <ArrowLeftIcon className="size-3.5" weight="bold" />
         Back to orders
       </Link>
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            {order.id}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatOrderDate(order.placedAt)}
-            <span className="text-border"> · </span>
-            {count} {count === 1 ? 'item' : 'items'}
-            <span className="text-border"> · </span>
-            {order.shippingLabel}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span
-            className={cn(
-              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              orderStatusStyles[order.status],
-            )}
-          >
-            {order.status}
-          </span>
-          <span
-            className={cn(
-              'border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              paymentStatusStyles[orderPaymentStatus(order)],
-            )}
-          >
-            {orderPaymentStatus(order)}
-          </span>
-        </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <h2 className="font-heading text-lg font-semibold tracking-tight">
+          {order.id}
+        </h2>
+        {orderNeedsPayment(order) ? <PayNowButton order={order} /> : null}
       </div>
-      {orderNeedsPayment(order) ? <PayNowButton order={order} /> : null}
+      <p className="mt-1 text-sm text-muted-foreground">
+        {formatOrderDate(order.placedAt)}
+        <span className="text-border"> · </span>
+        {count} {count === 1 ? 'item' : 'items'}
+      </p>
 
       <ul className="mt-6 divide-y divide-border border-y border-border">
         {order.lines.map((line) => (
           <li
-            className="flex items-center gap-3 py-4"
+            className="flex items-start gap-4 py-5"
             key={`${order.id}-${line.slug}-${line.size}-${line.custom?.chest ?? ''}`}
           >
             <img
               alt=""
-              className="size-14 object-cover bg-muted"
-              height={112}
-              src={shopImageSrc(line.image, 112)}
-              width={112}
+              className="size-16 shrink-0 object-cover bg-muted sm:size-20"
+              height={160}
+              src={shopImageSrc(line.image, 160)}
+              width={160}
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm">{line.name}</p>
-              <p className="text-xs text-muted-foreground">
-                Size {line.size}
-                <span className="text-border"> · </span>
-                {line.color}
-                <span className="text-border"> · </span>
-                {line.quantity}×
-                {line.preOrder ? (
-                  <>
-                    <span className="text-border"> · </span>
-                    Pre order
-                  </>
-                ) : null}
+              <p className="text-sm font-semibold">
+                {line.quantity} × {line.name}
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {line.color}, size {line.size}
+                {line.preOrder ? ', pre order' : ''}
               </p>
               {line.custom ? (
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-sm text-muted-foreground">
                   {formatCustomMeasurements(line.custom)}
                 </p>
               ) : null}
             </div>
-            <p className="shrink-0 text-sm tabular-nums">
+            <p className="shrink-0 text-sm font-medium tabular-nums">
               {formatShopPrice(line.price * line.quantity)}
             </p>
           </li>
         ))}
       </ul>
 
-      <dl className="mt-6 space-y-2 text-sm">
-        <div>
-          <dt className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-            Ship to
-          </dt>
-          <dd className="mt-1">
-            {order.address}
-            <br />
-            {[order.city, order.province, order.postal].filter(Boolean).join(' ')}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">Subtotal</dt>
-          <dd className="tabular-nums">{formatShopPrice(order.subtotal)}</dd>
-        </div>
-        {order.discount > 0 ? (
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-muted-foreground">Discount</dt>
-            <dd className="tabular-nums">−{formatShopPrice(order.discount)}</dd>
+      <div className="mt-8 grid gap-8 md:grid-cols-3">
+        <section>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <CreditCardIcon className="size-4" weight="bold" />
+              Payment information
+            </h3>
+            <span
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+                orderStatusStyles[order.status],
+              )}
+            >
+              {orderStatusLabel(order.status)}
+            </span>
           </div>
-        ) : null}
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">Shipping</dt>
-          <dd className="tabular-nums">
-            {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 border-t border-border pt-4">
-          <dt className="text-muted-foreground">Total</dt>
-          <dd className="font-medium tabular-nums">
-            {formatShopPrice(order.total)}
-          </dd>
-        </div>
-      </dl>
+          <dl className="mt-4 space-y-3 text-sm">
+            {order.payment?.transactionId ? (
+              <div>
+                <dt className="font-medium">Payment ID</dt>
+                <dd className="mt-0.5 text-muted-foreground">
+                  {order.payment.transactionId}
+                </dd>
+              </div>
+            ) : null}
+            <div>
+              <dt className="font-medium">Method</dt>
+              <dd className="mt-0.5 text-muted-foreground">
+                {formatPaymentLabel(order)}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium">Billing address</dt>
+              <dd className="mt-0.5 text-muted-foreground">
+                {orderCustomerName(order)}
+                <br />
+                {order.address}
+                <br />
+                {[order.city, order.province, order.postal]
+                  .filter(Boolean)
+                  .join(' ')}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <TruckIcon className="size-4" weight="bold" />
+            Delivery information
+          </h3>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div>
+              <dt className="font-medium">Delivery type</dt>
+              <dd className="mt-0.5 text-muted-foreground">
+                {order.shippingLabel}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium">Address</dt>
+              <dd className="mt-0.5 text-muted-foreground">
+                {orderCustomerName(order)}
+                <br />
+                {order.address}
+                <br />
+                {[order.city, order.province, order.postal]
+                  .filter(Boolean)
+                  .join(' ')}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold">Summary</h3>
+          <dl className="mt-4 space-y-2 text-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-muted-foreground">Products</dt>
+              <dd className="tabular-nums">{formatShopPrice(order.subtotal)}</dd>
+            </div>
+            {order.discount > 0 ? (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Discount</dt>
+                <dd className="tabular-nums">
+                  −{formatShopPrice(order.discount)}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-muted-foreground">Delivery</dt>
+              <dd className="tabular-nums">
+                {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 pt-2 font-semibold">
+              <dt>Total</dt>
+              <dd className="tabular-nums">{formatShopPrice(order.total)}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
     </div>
   )
 }

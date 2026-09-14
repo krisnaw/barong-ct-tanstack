@@ -12,7 +12,7 @@ import {
   getProvider,
   getProviderName,
 } from '~/lib/payment/get-provider'
-import { paymentPublicUrl } from '~/lib/payment/public-url'
+import { appOriginUrl } from '~/lib/payment/public-url'
 
 async function requireSession() {
   const headers = getRequestHeaders()
@@ -55,7 +55,7 @@ export const startPayment = createServerFn({ method: 'POST' })
     }
 
     const provider = getProvider()
-    const base = paymentPublicUrl()
+    const base = appOriginUrl()
     const sessionCheckout = await provider.createCheckout({
       orderNumber: order.number,
       amount: order.total,

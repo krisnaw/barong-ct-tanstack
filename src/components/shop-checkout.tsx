@@ -17,7 +17,7 @@ import {
   type ShopProduct,
 } from '~/data/shop'
 import {
-  discountAmount as orderDiscountAmount,
+  discountAmount,
   formatPaymentLabel,
   orderNeedsPayment,
   parseDiscountCode,
@@ -43,6 +43,18 @@ type Discount = {
   value: number
 }
 
+type CheckoutDraft = {
+  email: string
+  firstName: string
+  lastName: string
+  phone: string
+  address: string
+  apartment: string
+  city: string
+  province: string
+  postal: string
+}
+
 const PROVINCES = [
   'Bali',
   'DKI Jakarta',
@@ -52,7 +64,7 @@ const PROVINCES = [
   'Yogyakarta',
 ]
 
-function useCartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
+function cartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
   return items.flatMap((item) => {
     const product = findShopProduct(products, item.slug)
     if (!product) return []
@@ -60,18 +72,43 @@ function useCartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
   })
 }
 
-function discountAmount(subtotal: number, discount: Discount | null) {
-  return orderDiscountAmount(subtotal, discount)
+function checkoutFieldErrors({
+  email,
+  firstName,
+  lastName,
+  phone,
+  useSavedAddress,
+  address,
+  city,
+  postal,
+}: {
+  email: string
+  firstName: string
+  lastName: string
+  phone: string
+  useSavedAddress: boolean
+  address: string
+  city: string
+  postal: string
+}) {
+  const next: Record<string, string> = {}
+  if (!email.includes('@')) next.email = 'Enter a valid email'
+  if (!firstName.trim()) next.firstName = 'Enter a first name'
+  if (!lastName.trim()) next.lastName = 'Enter a last name'
+  if (!phone.trim()) next.phone = 'Enter a phone number'
+  if (!useSavedAddress) {
+    if (!address.trim()) next.address = 'Enter an address'
+    if (!city.trim()) next.city = 'Enter a city'
+    if (!postal.trim()) next.postal = 'Enter a postal code'
+  }
+  return next
 }
 
 function shippingAddressComplete(
   address: AccountShippingAddress | null | undefined,
 ) {
   return Boolean(
-    address &&
-      address.address.trim() &&
-      address.city.trim() &&
-      address.postal.trim(),
+    address?.address.trim() && address.city.trim() && address.postal.trim(),
   )
 }
 
@@ -98,100 +135,92 @@ export function ShopCheckout({
 }) {
   const navigate = useNavigate()
   const { items, clear, ready } = useCart()
-  const {
-    profile,
-    shippingAddress,
-    signedIn,
-    ready: accountReady,
-    updateShippingAddress,
-  } = useAccount()
-  const lines = useCartLines(items, products)
+  const { profile, shippingAddress, updateShippingAddress } = useAccount()
+  const lines = cartLines(items, products)
   const [pending, setPending] = React.useState(false)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
-  const [addressSource, setAddressSource] = React.useState<'saved' | 'new'>(
-    'new',
-  )
-
-  const [email, setEmail] = React.useState('')
+  const [preferNewAddress, setPreferNewAddress] = React.useState(false)
+  const [draft, setDraft] = React.useState<Partial<CheckoutDraft>>({})
   const [marketing, setMarketing] = React.useState(true)
-  const [firstName, setFirstName] = React.useState('')
-  const [lastName, setLastName] = React.useState('')
-  const [address, setAddress] = React.useState('')
-  const [apartment, setApartment] = React.useState('')
-  const [city, setCity] = React.useState('')
-  const [province, setProvince] = React.useState('Bali')
-  const [postal, setPostal] = React.useState('')
-  const [phone, setPhone] = React.useState('')
   const [shippingSpeed, setShippingSpeed] = React.useState<ShippingSpeed>('regular')
   const [discountInput, setDiscountInput] = React.useState('')
-  const [discount, setDiscount] = React.useState<Discount | null>(null)
-  const [discountError, setDiscountError] = React.useState('')
-  const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [appliedDiscountInput, setAppliedDiscountInput] = React.useState('')
+  const [didSubmit, setDidSubmit] = React.useState(false)
+  const [actionError, setActionError] = React.useState<Record<string, string>>(
+    {},
+  )
 
+  const email = draft.email ?? profile?.email ?? ''
+  const firstName = draft.firstName ?? profile?.firstName ?? ''
+  const lastName = draft.lastName ?? profile?.lastName ?? ''
+  const phone = draft.phone ?? profile?.phone ?? ''
+  const address = draft.address ?? ''
+  const apartment = draft.apartment ?? ''
+  const city = draft.city ?? ''
+  const province = draft.province ?? 'Bali'
+  const postal = draft.postal ?? ''
+  const discount = parseDiscountCode(appliedDiscountInput)
+  const discountError =
+    appliedDiscountInput && !discount ? 'Enter a valid discount code' : ''
+  const hasSavedAddress = shippingAddressComplete(shippingAddress)
+  const useSavedAddress = hasSavedAddress && !preferNewAddress
+  const fieldErrors = didSubmit
+    ? checkoutFieldErrors({
+        email,
+        firstName,
+        lastName,
+        phone,
+        useSavedAddress,
+        address,
+        city,
+        postal,
+      })
+    : {}
+  const errors = { ...fieldErrors, ...actionError }
   const subtotal = lines.reduce(
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
-  const hasSavedAddress = shippingAddressComplete(shippingAddress)
-  const useSavedAddress = hasSavedAddress && addressSource === 'saved'
   const shipping = SHIPPING_RATES[shippingSpeed].price
   const savings = discountAmount(subtotal, discount)
   const total = Math.max(subtotal - savings + shipping, 0)
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
+  const savedAddressText = shippingAddress
+    ? formatShippingAddress(shippingAddress)
+    : null
+
+  function patchDraft<K extends keyof CheckoutDraft>(
+    key: K,
+    value: CheckoutDraft[K],
+  ) {
+    setDraft((current) => ({ ...current, [key]: value }))
+  }
 
   React.useEffect(() => {
-    if (ready && items.length === 0) {
-      void navigate({ to: '/shop/cart' })
-    }
-  }, [ready, items.length, navigate])
-
-  React.useEffect(() => {
-    if (!accountReady || !signedIn || !profile) return
-    setEmail(profile.email)
-    setFirstName(profile.firstName)
-    setLastName(profile.lastName)
-    setPhone(profile.phone)
-    if (shippingAddressComplete(shippingAddress)) {
-      setAddressSource('saved')
-      return
-    }
-    setAddressSource('new')
-  }, [accountReady, signedIn, profile, shippingAddress])
+    if (pending || !ready || items.length > 0) return
+    void navigate({ to: '/shop/cart' })
+  }, [pending, ready, items.length, navigate])
 
   function applyDiscount(event: React.FormEvent) {
     event.preventDefault()
-    const next = parseDiscountCode(discountInput)
-    if (!next) {
-      setDiscount(null)
-      setDiscountError('Enter a valid discount code')
-      return
-    }
-    setDiscountError('')
-    setDiscount(next)
-  }
-
-  function validate() {
-    const next: Record<string, string> = {}
-    if (!email.includes('@')) next.email = 'Enter a valid email'
-    if (!firstName.trim()) next.firstName = 'Enter a first name'
-    if (!lastName.trim()) next.lastName = 'Enter a last name'
-    if (!phone.trim()) next.phone = 'Enter a phone number'
-    if (!useSavedAddress) {
-      if (!address.trim()) next.address = 'Enter an address'
-      if (!city.trim()) next.city = 'Enter a city'
-      if (!postal.trim()) next.postal = 'Enter a postal code'
-    }
-    return next
+    setAppliedDiscountInput(discountInput)
   }
 
   async function handlePay(event: React.FormEvent) {
     event.preventDefault()
-    const next = validate()
-    if (Object.keys(next).length > 0) {
-      setErrors(next)
-      return
-    }
-    setErrors({})
+    setDidSubmit(true)
+    setActionError({})
+    const next = checkoutFieldErrors({
+      email,
+      firstName,
+      lastName,
+      phone,
+      useSavedAddress,
+      address,
+      city,
+      postal,
+    })
+    if (Object.keys(next).length > 0) return
 
     const ship = useSavedAddress && shippingAddress
       ? {
@@ -209,7 +238,7 @@ export function ShopCheckout({
         const saved = await updateShippingAddress(ship)
         shippingAddressId = saved?.id
       } catch {
-        setErrors({ address: 'Could not save shipping address' })
+        setActionError({ address: 'Could not save shipping address' })
         return
       }
     }
@@ -238,26 +267,27 @@ export function ShopCheckout({
           })),
         },
       })
-      clear()
       try {
         const started = await startPayment({
           data: { orderNumber: placed.id },
         })
+        clear()
         window.location.assign(started.url)
       } catch {
+        clear()
         window.location.assign(
           `/shop/checkout/return?order=${encodeURIComponent(placed.id)}`,
         )
       }
     } catch (error) {
       setPending(false)
-      setErrors({
+      setActionError({
         form: error instanceof Error ? error.message : 'Could not place order',
       })
     }
   }
 
-  if (!ready || items.length === 0) {
+  if (!pending && (!ready || items.length === 0)) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background text-sm text-muted-foreground">
         Loading checkout…
@@ -345,7 +375,7 @@ export function ShopCheckout({
               error={errors.email}
               id="email"
               label="Email"
-              onChange={setEmail}
+              onChange={(value) => patchDraft('email', value)}
               type="email"
               value={email}
             />
@@ -377,7 +407,7 @@ export function ShopCheckout({
                   error={errors.firstName}
                   id="firstName"
                   label="First name"
-                  onChange={setFirstName}
+                  onChange={(value) => patchDraft('firstName', value)}
                   value={firstName}
                 />
                 <CheckoutField
@@ -385,7 +415,7 @@ export function ShopCheckout({
                   error={errors.lastName}
                   id="lastName"
                   label="Last name"
-                  onChange={setLastName}
+                  onChange={(value) => patchDraft('lastName', value)}
                   value={lastName}
                 />
               </div>
@@ -394,11 +424,11 @@ export function ShopCheckout({
                 error={errors.phone}
                 id="phone"
                 label="Phone"
-                onChange={setPhone}
+                onChange={(value) => patchDraft('phone', value)}
                 type="tel"
                 value={phone}
               />
-              {hasSavedAddress && shippingAddress ? (
+              {hasSavedAddress && shippingAddress && savedAddressText ? (
                 <div className="overflow-hidden rounded-md border border-neutral-300">
                   <label
                     className={cn(
@@ -410,7 +440,7 @@ export function ShopCheckout({
                       checked={useSavedAddress}
                       className="mt-1 size-4"
                       name="address-source"
-                      onChange={() => setAddressSource('saved')}
+                      onChange={() => setPreferNewAddress(false)}
                       type="radio"
                     />
                     <span>
@@ -418,9 +448,9 @@ export function ShopCheckout({
                         {shippingAddress.label || 'Saved address'}
                       </span>
                       <span className="mt-0.5 block text-sm text-muted-foreground">
-                        {formatShippingAddress(shippingAddress).street}
+                        {savedAddressText.street}
                         <br />
-                        {formatShippingAddress(shippingAddress).locality}
+                        {savedAddressText.locality}
                       </span>
                     </span>
                   </label>
@@ -434,7 +464,7 @@ export function ShopCheckout({
                       checked={!useSavedAddress}
                       className="mt-1 size-4"
                       name="address-source"
-                      onChange={() => setAddressSource('new')}
+                      onChange={() => setPreferNewAddress(true)}
                       type="radio"
                     />
                     <span className="text-sm font-medium">New address</span>
@@ -448,14 +478,14 @@ export function ShopCheckout({
                     error={errors.address}
                     id="address"
                     label="Address"
-                    onChange={setAddress}
+                    onChange={(value) => patchDraft('address', value)}
                     value={address}
                   />
                   <CheckoutField
                     autoComplete="address-line2"
                     id="apartment"
                     label="Apartment, suite, etc. (optional)"
-                    onChange={setApartment}
+                    onChange={(value) => patchDraft('apartment', value)}
                     value={apartment}
                   />
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -464,13 +494,13 @@ export function ShopCheckout({
                       error={errors.city}
                       id="city"
                       label="City"
-                      onChange={setCity}
+                      onChange={(value) => patchDraft('city', value)}
                       value={city}
                     />
                     <CheckoutSelect
                       id="province"
                       label="Province"
-                      onChange={setProvince}
+                      onChange={(value) => patchDraft('province', value)}
                       value={province}
                     >
                       {PROVINCES.map((option) => (
@@ -482,7 +512,7 @@ export function ShopCheckout({
                       error={errors.postal}
                       id="postal"
                       label="Postal code"
-                      onChange={setPostal}
+                      onChange={(value) => patchDraft('postal', value)}
                       value={postal}
                     />
                   </div>

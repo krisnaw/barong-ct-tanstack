@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
-import { payment } from '~/lib/order-schema'
+import { orders, payment } from '~/lib/order-schema'
 import type { PaymentEvent } from '~/lib/payment/types'
 
 export async function applyPaymentEvent(
@@ -27,6 +27,21 @@ export async function applyPaymentEvent(
       updatedAt: new Date(),
     })
     .where(eq(payment.id, row.id))
+
+  if (event.status === 'paid') {
+    const orderRow = await db.query.orders.findFirst({
+      where: eq(orders.id, row.orderId),
+    })
+    if (
+      orderRow &&
+      (orderRow.status === 'pending' || orderRow.status === 'packed')
+    ) {
+      await db
+        .update(orders)
+        .set({ status: 'paid', updatedAt: new Date() })
+        .where(eq(orders.id, row.orderId))
+    }
+  }
 
   return {
     ...row,

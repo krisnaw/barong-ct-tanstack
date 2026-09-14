@@ -359,29 +359,14 @@ function ProductDetailsAccordion({
         <p className="text-sm leading-relaxed text-muted-foreground">
           {product.description}
         </p>
-        <dl className="mt-4 space-y-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Color</dt>
-            <dd className="flex items-center gap-2 font-medium">
-              <span
-                aria-hidden
-                className="size-2.5 rounded-full border border-border"
-                style={{ backgroundColor: product.colorHex }}
-              />
-              {product.color}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Fabric</dt>
-            <dd className="text-right font-medium">{product.fabric}</dd>
-          </div>
-          {product.preOrder ? (
+        {product.preOrder ? (
+          <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Availability</dt>
               <dd className="font-medium">Pre order</dd>
             </div>
-          ) : null}
-        </dl>
+          </dl>
+        ) : null}
       </AccordionItem>
 
       <AccordionItem

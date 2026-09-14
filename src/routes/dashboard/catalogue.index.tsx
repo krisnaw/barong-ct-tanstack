@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
+  availableSizeCount,
   formatShopPrice,
   shopImageSrc,
 } from '~/data/shop'
@@ -87,8 +88,6 @@ function DashboardCataloguePage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{product.name}</p>
                   <p className="mt-0.5 truncate text-muted-foreground">
-                    {product.color}
-                    <span className="text-border"> · </span>
                     {formatShopPrice(product.price)}
                     {product.preOrder ? (
                       <>
@@ -105,7 +104,9 @@ function DashboardCataloguePage() {
                   </p>
                 </div>
                 <span className="shrink-0 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                  {product.sizes.length} sizes
+                  {product.preOrder
+                    ? 'Any size'
+                    : `${availableSizeCount(product)} sizes`}
                 </span>
               </Link>
             </li>

@@ -41,11 +41,11 @@ export function LoginForm({
       return
     }
 
-    if (redirectTo === '/shop/checkout') {
-      void navigate({ to: '/shop/checkout' })
-    } else {
-      void navigate({ to: '/account' })
+    if (redirectTo?.startsWith('/')) {
+      window.location.assign(redirectTo)
+      return
     }
+    void navigate({ to: '/account' })
   }
 
   return (

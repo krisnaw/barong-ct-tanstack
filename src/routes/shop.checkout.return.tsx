@@ -1,24 +1,21 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import {
   CheckoutAwaitingPayment,
   CheckoutConfirmation,
 } from '~/components/shop-checkout'
 import { orderPaymentStatus } from '~/data/orders'
 import { getOrderById } from '~/lib/order.functions'
+import { checkoutOrderSearch } from '~/lib/payment/order-search'
 import { seo } from '~/utils/seo'
 
-const searchSchema = z.object({
-  order: z.string().min(1),
-})
-
 export const Route = createFileRoute('/shop/checkout/return')({
-  validateSearch: searchSchema,
-  loader: async ({ location }) => {
-    const parsed = searchSchema.safeParse(location.search)
-    if (!parsed.success) throw notFound()
-    const order = await getOrderById({ data: { id: parsed.data.order } })
-    if (!order) throw notFound()
+  validateSearch: checkoutOrderSearch,
+  loader: async ({ search }) => {
+    if (!search.order) {
+      throw redirect({ to: '/account/orders' })
+    }
+    const order = await getOrderById({ data: { id: search.order } })
+    if (!order) throw redirect({ to: '/account/orders' })
     return { order }
   },
   head: ({ loaderData }) => ({

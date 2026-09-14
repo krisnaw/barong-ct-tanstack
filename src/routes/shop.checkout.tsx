@@ -3,12 +3,12 @@ import { getSession } from '~/lib/auth.functions'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/shop/checkout')({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const session = await getSession()
     if (!session) {
       throw redirect({
         to: '/auth/login',
-        search: { redirect: '/shop/checkout' },
+        search: { redirect: location.href },
       })
     }
   },

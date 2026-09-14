@@ -4,9 +4,11 @@ import { desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   discountAmount,
+  formatInvoiceNumber,
+  orderStatuses,
   parseDiscountCode,
+  resolveOrderStatus,
   SHIPPING_RATES,
-  type OrderStatus,
   type PaymentStatus,
   type ShopOrder,
   type ShopOrderLine,
@@ -21,7 +23,9 @@ import {
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { db } from '~/lib/db'
+import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
 import { lineItems, orders, payment } from '~/lib/order-schema'
+import { orderLookupIds } from '~/lib/payment/order-search'
 import { product } from '~/lib/shop-schema'
 
 const customSchema = z.object({
@@ -136,7 +140,7 @@ function mapOrder(
     shipping: row.shipping,
     discount: row.discount,
     total: row.total,
-    status: row.status as OrderStatus,
+    status: resolveOrderStatus(row.status, current?.status as PaymentStatus | undefined),
     payment: current ? mapPayment(current) : null,
   }
 }
@@ -195,13 +199,9 @@ async function requireAdmin() {
   return session
 }
 
-function generateOrderNumber() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let suffix = ''
-  for (let i = 0; i < 4; i += 1) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)]
-  }
-  return `BCT-${suffix}`
+function generateOrderNumber(attempt = 0) {
+  const base = formatInvoiceNumber(new Date().toISOString())
+  return attempt === 0 ? base : `${base}-${attempt + 1}`
 }
 
 export const placeOrder = createServerFn({ method: 'POST' })
@@ -284,7 +284,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         where: eq(orders.number, number),
       })
       if (!clash) break
-      number = generateOrderNumber()
+      number = generateOrderNumber(attempt + 1)
     }
 
     await db.batch([
@@ -355,10 +355,22 @@ export const getOrderById = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().min(1) }))
   .handler(async ({ data }) => {
     const session = await requireSession()
-    const row = await db.query.orders.findFirst({
-      where: eq(orders.number, data.id),
+    const candidates = orderLookupIds(data.id)
+    let row = await db.query.orders.findFirst({
+      where: inArray(orders.number, candidates),
       with: { lines: true, payments: true },
     })
+    if (!row) {
+      const pay = await db.query.payment.findFirst({
+        where: inArray(payment.transactionId, candidates),
+      })
+      if (pay) {
+        row = await db.query.orders.findFirst({
+          where: eq(orders.id, pay.orderId),
+          with: { lines: true, payments: true },
+        })
+      }
+    }
     if (!row) return null
     if (row.userId !== session.user.id && !hasAdminRole(session.user.role)) {
       throw new Error('Unauthorized')
@@ -370,7 +382,7 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
   .validator(
     z.object({
       id: z.string().min(1),
-      status: z.enum(['pending', 'packed', 'shipped', 'completed', 'cancelled']),
+      status: z.enum(orderStatuses),
     }),
   )
   .handler(async ({ data }) => {
@@ -386,7 +398,19 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
       .update(orders)
       .set({ status: data.status, updatedAt: new Date() })
       .where(eq(orders.id, existing.id))
-    return mapOrder({ ...existing, status: data.status }, existing.lines, existing.payments)
+    const next = mapOrder(
+      { ...existing, status: data.status },
+      existing.lines,
+      existing.payments,
+    )
+    if (existing.status !== 'shipped' && data.status === 'shipped') {
+      try {
+        await sendOrderShippedEmail(next)
+      } catch (error) {
+        console.error('Failed to send shipped email', error)
+      }
+    }
+    return next
   })
 
 export const updateOrderPayment = createServerFn({ method: 'POST' })
@@ -432,6 +456,12 @@ export const updateOrderPayment = createServerFn({ method: 'POST' })
           amount: existing.total,
           paidAt: new Date(),
         })
+      }
+      if (existing.status === 'pending' || existing.status === 'packed') {
+        await db
+          .update(orders)
+          .set({ status: 'paid', updatedAt: new Date() })
+          .where(eq(orders.id, existing.id))
       }
     } else {
       const paidRows = existing.payments.filter((row) => row.status === 'paid')

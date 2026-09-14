@@ -5,7 +5,9 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPaymentStatus,
+  orderStatusLabel,
   orderStatuses,
+  orderStatusStyles,
   type OrderStatus,
 } from '~/data/orders'
 import { formatShopPrice } from '~/data/shop'
@@ -18,15 +20,15 @@ import {
 } from '~/components/ui/breadcrumb'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
 import { cn } from '~/lib/utils'
-
-const orderStatusStyles: Record<OrderStatus, string> = {
-  pending: 'border-amber-200 bg-amber-50 text-amber-800',
-  packed: 'border-sky-200 bg-sky-50 text-sky-800',
-  shipped: 'border-indigo-200 bg-indigo-50 text-indigo-800',
-  completed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  cancelled: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-}
 
 export const Route = createFileRoute('/dashboard/orders/')({
   loader: async () => (await listOrders()) ?? [],
@@ -41,8 +43,10 @@ function DashboardOrdersPage() {
   const openCount = orders.filter(
     (order) =>
       order.status === 'pending' ||
-      order.status === 'packed' ||
-      order.status === 'shipped',
+      order.status === 'paid' ||
+      order.status === 'processing' ||
+      order.status === 'shipped' ||
+      order.status === 'delivered',
   ).length
 
   return (
@@ -87,7 +91,7 @@ function DashboardOrdersPage() {
               key={status}
               onClick={() => setFilter(status)}
             >
-              {status}
+              {orderStatusLabel(status)}
             </FilterButton>
           ))}
         </div>
@@ -97,44 +101,64 @@ function DashboardOrdersPage() {
             No orders in this status.
           </p>
         ) : (
-          <ul className="divide-y divide-border border border-border">
-            {visible.map((order) => (
-              <li key={order.id}>
-                <Link
-                  className="flex items-center gap-4 px-4 py-3 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50"
-                  params={{ id: order.id }}
-                  to="/dashboard/orders/$id"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {order.id}
-                      <span className="text-border"> · </span>
-                      {orderCustomerName(order)}
-                    </p>
-                    <p className="mt-0.5 truncate text-muted-foreground">
-                      {formatOrderDate(order.placedAt)}
-                      <span className="text-border"> · </span>
-                      {orderItemCount(order)}{' '}
-                      {orderItemCount(order) === 1 ? 'item' : 'items'}
-                      <span className="text-border"> · </span>
-                      {formatShopPrice(order.total)}
-                    </p>
-                  </div>
-                  <span className="hidden shrink-0 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase sm:inline">
-                    {orderPaymentStatus(order)}
-                  </span>
-                  <span
-                    className={cn(
-                      'shrink-0 border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                      orderStatusStyles[order.status],
-                    )}
-                  >
-                    {order.status}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="border border-border">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4">Order</TableHead>
+                  <TableHead className="px-4">Customer</TableHead>
+                  <TableHead className="px-4">Date</TableHead>
+                  <TableHead className="px-4 text-right">Items</TableHead>
+                  <TableHead className="px-4 text-right">Total</TableHead>
+                  <TableHead className="px-4">Payment</TableHead>
+                  <TableHead className="px-4">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visible.map((order) => {
+                  const count = orderItemCount(order)
+                  return (
+                    <TableRow className="relative" key={order.id}>
+                      <TableCell className="px-4 py-3 font-medium">
+                        <Link
+                          className="after:absolute after:inset-0"
+                          params={{ id: order.id }}
+                          to="/dashboard/orders/$id"
+                        >
+                          {order.id}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {orderCustomerName(order)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-muted-foreground">
+                        {formatOrderDate(order.placedAt)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right tabular-nums">
+                        {count}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right tabular-nums">
+                        {formatShopPrice(order.total)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                        {orderPaymentStatus(order)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <span
+                          className={cn(
+                            'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+                            orderStatusStyles[order.status],
+                          )}
+                        >
+                          {orderStatusLabel(order.status)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </>

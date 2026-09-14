@@ -1,9 +1,15 @@
-export type OrderStatus =
-  | 'pending'
-  | 'packed'
-  | 'shipped'
-  | 'completed'
-  | 'cancelled'
+export const orderStatuses = [
+  'pending',
+  'paid',
+  'processing',
+  'shipped',
+  'delivered',
+  'completed',
+  'cancelled',
+  'refunded',
+] as const
+
+export type OrderStatus = (typeof orderStatuses)[number]
 
 export type OrderPayment = 'unpaid' | 'paid'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'expired'
@@ -59,13 +65,48 @@ export type ShopOrder = {
   payment: ShopPayment | null
 }
 
-export const orderStatuses: OrderStatus[] = [
-  'pending',
-  'packed',
-  'shipped',
-  'completed',
-  'cancelled',
-]
+export const orderStatusLabels: Record<OrderStatus, string> = {
+  pending: 'Pending',
+  paid: 'Paid',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+}
+
+export const orderStatusStyles: Record<OrderStatus, string> = {
+  pending: 'border-amber-200 bg-amber-50 text-amber-800',
+  paid: 'border-teal-200 bg-teal-50 text-teal-800',
+  processing: 'border-sky-200 bg-sky-50 text-sky-800',
+  shipped: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+  delivered: 'border-violet-200 bg-violet-50 text-violet-800',
+  completed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  cancelled: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+  refunded: 'border-rose-200 bg-rose-50 text-rose-800',
+}
+
+export function normalizeOrderStatus(status: string): OrderStatus {
+  if (status === 'packed') return 'processing'
+  if ((orderStatuses as readonly string[]).includes(status)) {
+    return status as OrderStatus
+  }
+  return 'pending'
+}
+
+export function resolveOrderStatus(
+  status: string,
+  paymentStatus?: PaymentStatus | null,
+): OrderStatus {
+  const mapped = normalizeOrderStatus(status)
+  if (mapped === 'pending' && paymentStatus === 'paid') return 'paid'
+  return mapped
+}
+
+export function orderStatusLabel(status: OrderStatus) {
+  return orderStatusLabels[status]
+}
 
 export const SHIPPING_RATES: Record<
   ShippingSpeed,
@@ -118,8 +159,7 @@ export function orderPaymentStatus(order: ShopOrder): OrderPaymentStatus {
 }
 
 export function orderNeedsPayment(order: ShopOrder) {
-  const status = orderPaymentStatus(order)
-  return status !== 'paid'
+  return order.status === 'pending'
 }
 
 const paymentProviderLabels: Record<string, string> = {
@@ -146,4 +186,32 @@ export function formatOrderDate(iso: string) {
     year: 'numeric',
     timeZone: 'Asia/Makassar',
   }).format(new Date(iso))
+}
+
+export function formatInvoiceDateTime(iso: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'Asia/Makassar',
+  }).format(new Date(iso))
+}
+
+export function formatInvoiceNumber(iso: string) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Makassar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+  return `${value('year')}${value('month')}${value('day')}-${value('hour')}${value('minute')}${value('second')}`
 }
