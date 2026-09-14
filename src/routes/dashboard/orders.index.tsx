@@ -6,8 +6,8 @@ import {
   orderItemCount,
   orderPaymentStatus,
   orderStatusLabel,
-  orderStatuses,
-  type OrderStatus,
+  adminStatusOptions,
+  type AdminOrderStatus,
 } from '~/data/orders'
 import { formatShopPrice } from '~/data/shop'
 import { listOrders } from '~/lib/order.functions'
@@ -19,6 +19,13 @@ import {
   BreadcrumbPage,
 } from '~/components/ui/breadcrumb'
 import { Label } from '~/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import {
@@ -38,7 +45,7 @@ export const Route = createFileRoute('/dashboard/orders/')({
 function DashboardOrdersPage() {
   const orders = Route.useLoaderData()
   const statusFilterId = React.useId()
-  const [filter, setFilter] = React.useState<OrderStatus | 'all'>('all')
+  const [filter, setFilter] = React.useState<AdminOrderStatus | 'all'>('all')
   const visible =
     filter === 'all' ? orders : orders.filter((order) => order.status === filter)
   const openCount = orders.filter(
@@ -81,21 +88,25 @@ function DashboardOrdersPage() {
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor={statusFilterId}>Status</Label>
-            <select
-              className="h-8 min-w-44 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              id={statusFilterId}
-              onChange={(event) =>
-                setFilter(event.target.value as OrderStatus | 'all')
-              }
+            <Select
+              onValueChange={(value) => {
+                if (value == null) return
+                setFilter(value as AdminOrderStatus | 'all')
+              }}
               value={filter}
             >
-              <option value="all">All</option>
-              {orderStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {orderStatusLabel(status)}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="min-w-44" id={statusFilterId}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="all">All</SelectItem>
+                {adminStatusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {orderStatusLabel(status)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

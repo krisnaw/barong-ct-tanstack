@@ -31,12 +31,12 @@ function pickupHours(order: ShopOrder) {
   return parts.slice(1).join(' · ') || undefined
 }
 
-function pickupAddressLines(order: ShopOrder) {
+function pickupAddressLines(order: ShopOrder): string[] {
   return [
     orderPickupPointName(order),
     order.address,
     [order.city, order.province, order.postal].filter(Boolean).join(', '),
-  ].filter(Boolean)
+  ].filter((line): line is string => Boolean(line))
 }
 
 export async function sendOrderShippedEmail(order: ShopOrder) {

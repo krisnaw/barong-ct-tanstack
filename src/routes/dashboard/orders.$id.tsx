@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
-import { CaretDownIcon } from '@phosphor-icons/react'
 import {
   courierLabel,
   courierTrackingUrl,
@@ -43,12 +42,12 @@ import {
   DialogTrigger,
 } from '~/components/ui/dialog'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
@@ -123,7 +122,7 @@ function DashboardOrderDetailPage() {
               {order.delivery === 'pickup' ? null : (
                 <AddTrackingDialog order={order} />
               )}
-              <ChangeStatusMenu order={order} />
+              <ChangeStatusSelect order={order} />
             </div>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -351,18 +350,24 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor="courier">Courier</Label>
-            <select
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              id="courier"
-              onChange={(event) => setCourier(event.target.value as CourierId)}
+            <Select
+              onValueChange={(value) => {
+                if (value == null) return
+                setCourier(value as CourierId)
+              }}
               value={courier}
             >
-              {couriers.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full" id="courier">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {couriers.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="trackingNumber">Tracking number</Label>
@@ -394,7 +399,7 @@ function asAdminStatus(status: ShopOrder['status']): AdminOrderStatus {
     : 'pending'
 }
 
-function ChangeStatusMenu({ order }: { order: ShopOrder }) {
+function ChangeStatusSelect({ order }: { order: ShopOrder }) {
   const router = useRouter()
   const [saving, setSaving] = React.useState(false)
   const current = asAdminStatus(order.status)
@@ -414,27 +419,25 @@ function ChangeStatusMenu({ order }: { order: ShopOrder }) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        disabled={saving}
-        render={<Button size="sm" variant="outline" />}
-      >
-        Change status
-        <CaretDownIcon data-icon="inline-end" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuRadioGroup
-          onValueChange={(value) => void save(value as AdminOrderStatus)}
-          value={current}
-        >
-          {adminStatusOptions.map((status) => (
-            <DropdownMenuRadioItem key={status} value={status}>
-              {orderStatusLabel(status)}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Select
+      disabled={saving}
+      onValueChange={(value) => {
+        if (value == null) return
+        void save(value as AdminOrderStatus)
+      }}
+      value={current}
+    >
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {adminStatusOptions.map((status) => (
+          <SelectItem key={status} value={status}>
+            {orderStatusLabel(status)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
