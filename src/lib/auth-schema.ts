@@ -105,6 +105,7 @@ export const userProfile = sqliteTable('user_profile', {
   city: text('city'),
   province: text('province').default('Bali'),
   postal: text('postal'),
+  verifiedAt: integer('verified_at', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .notNull(),

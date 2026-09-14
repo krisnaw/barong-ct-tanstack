@@ -362,6 +362,13 @@ export const listOrders = createServerFn({ method: 'GET' }).handler(async () => 
   return loadMappedOrders()
 })
 
+export const listOrdersByUser = createServerFn({ method: 'GET' })
+  .validator(z.object({ userId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    return loadMappedOrders(data.userId)
+  })
+
 export const getOrderById = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().min(1) }))
   .handler(async ({ data }) => {
