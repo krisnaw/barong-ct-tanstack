@@ -8,23 +8,20 @@ import {
   discountAmount,
   formatInvoiceNumber,
   parseDiscountCode,
-  resolveOrderStatus,
-  type PaymentStatus,
   type ShopOrder,
-  type ShopOrderLine,
-  type ShopPayment,
 } from '~/data/orders'
 import { formatPickupLabel } from '~/data/pickup-points'
 import {
   CUSTOM_SIZE,
   customMeasurementsComplete,
   isSizePurchasable,
-  type CustomMeasurements,
 } from '~/data/shop'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { db } from '~/lib/db'
+import { sendOrderPaidEmail } from '~/lib/email/order-paid'
 import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
+import { loadShopOrderByDbId, mapOrder } from '~/lib/order-load'
 import { lineItems, orders, payment } from '~/lib/order-schema'
 import { orderLookupIds } from '~/lib/payment/order-search'
 import { pickupPoint, product } from '~/lib/shop-schema'
@@ -54,94 +51,6 @@ const placeOrderSchema = z.object({
     )
     .min(1),
 })
-
-function parseCustom(value: string | null): CustomMeasurements | undefined {
-  if (!value) return undefined
-  try {
-    const parsed = customSchema.parse(JSON.parse(value))
-    return parsed
-  } catch {
-    return undefined
-  }
-}
-
-function toIso(value: Date | number | string | null | undefined) {
-  if (!value) return undefined
-  const date = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
-}
-
-function pickCurrentPayment(
-  rows: (typeof payment.$inferSelect)[],
-): typeof payment.$inferSelect | null {
-  const paid = rows.find((row) => row.status === 'paid')
-  if (paid) return paid
-  return (
-    [...rows].sort((a, b) => {
-      const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : Number(a.createdAt)
-      const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : Number(b.createdAt)
-      return bTime - aTime
-    })[0] ?? null
-  )
-}
-
-function mapPayment(row: typeof payment.$inferSelect): ShopPayment {
-  return {
-    provider: row.provider,
-    transactionId: row.transactionId,
-    status: row.status as PaymentStatus,
-    method: row.method ?? undefined,
-    amount: row.amount,
-    paidAt: toIso(row.paidAt),
-  }
-}
-
-function mapLine(row: typeof lineItems.$inferSelect): ShopOrderLine {
-  const custom = parseCustom(row.custom)
-  return {
-    slug: row.slug,
-    name: row.name,
-    color: row.color,
-    size: row.size,
-    quantity: row.quantity,
-    price: row.price,
-    image: row.image,
-    custom,
-    preOrder: row.preOrder,
-  }
-}
-
-function mapOrder(
-  row: typeof orders.$inferSelect,
-  lines: (typeof lineItems.$inferSelect)[],
-  payments: (typeof payment.$inferSelect)[] = [],
-): ShopOrder {
-  const current = pickCurrentPayment(payments)
-  return {
-    id: row.number,
-    placedAt: toIso(row.placedAt) ?? new Date().toISOString(),
-    email: row.email,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    phone: row.phone,
-    delivery: row.pickupPointId || row.shippingSpeed === 'pickup' ? 'pickup' : 'ship',
-    pickupPointId: row.pickupPointId ?? undefined,
-    address: [row.address, row.apartment].filter(Boolean).join(', '),
-    city: row.city,
-    province: row.province,
-    postal: row.postal,
-    shippingLabel: row.shippingLabel,
-    courier: row.courier ?? undefined,
-    trackingNumber: row.trackingNumber ?? undefined,
-    lines: lines.map(mapLine),
-    subtotal: row.subtotal,
-    shipping: row.shipping,
-    discount: row.discount,
-    total: row.total,
-    status: resolveOrderStatus(row.status, current?.status as PaymentStatus | undefined),
-    payment: current ? mapPayment(current) : null,
-  }
-}
 
 async function loadPayments(orderIds: string[]) {
   if (orderIds.length === 0) return []
@@ -505,6 +414,7 @@ export const updateOrderPayment = createServerFn({ method: 'POST' })
     )
 
     if (data.payment === 'paid') {
+      const alreadyPaid = existing.payments.some((row) => row.status === 'paid')
       if (existingManual) {
         await db
           .update(payment)
@@ -531,6 +441,16 @@ export const updateOrderPayment = createServerFn({ method: 'POST' })
           .update(orders)
           .set({ status: 'paid', updatedAt: new Date() })
           .where(eq(orders.id, existing.id))
+      }
+      if (!alreadyPaid) {
+        const paidOrder = await loadShopOrderByDbId(existing.id)
+        if (paidOrder) {
+          try {
+            await sendOrderPaidEmail(paidOrder)
+          } catch (error) {
+            console.error('Failed to send order paid email', error)
+          }
+        }
       }
     } else {
       const paidRows = existing.payments.filter((row) => row.status === 'paid')

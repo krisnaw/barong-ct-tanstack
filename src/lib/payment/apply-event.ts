@@ -1,5 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
+import { sendOrderPaidEmail } from '~/lib/email/order-paid'
+import { loadShopOrderByDbId } from '~/lib/order-load'
 import { orders, payment } from '~/lib/order-schema'
 import { mergePaymentPayload } from '~/lib/payment/checkout-payload'
 import type { PaymentEvent } from '~/lib/payment/types'
@@ -46,6 +48,15 @@ export async function applyPaymentEvent(
           updatedAt: new Date(),
         })
         .where(eq(orders.id, row.orderId))
+    }
+  }
+
+  if (event.status === 'paid') {
+    try {
+      const order = await loadShopOrderByDbId(row.orderId)
+      if (order) await sendOrderPaidEmail(order)
+    } catch (error) {
+      console.error('Failed to send order paid email', error)
     }
   }
 
