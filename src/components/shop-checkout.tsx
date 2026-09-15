@@ -410,12 +410,6 @@ export function ShopCheckout({
 
         <footer className="mx-auto mt-10 max-w-xl border-t border-border pt-4 text-xs text-sky-800">
           <nav className="flex flex-wrap gap-x-4 gap-y-1">
-            <a className="hover:underline" href="#privacy">
-              Privacy policy
-            </a>
-            <a className="hover:underline" href="#terms">
-              Terms of service
-            </a>
             <Link className="hover:underline" to="/shop">
               Continue shopping
             </Link>
@@ -456,8 +450,7 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
             Thank you, {order.firstName}!
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your order is confirmed. We’ll email {order.email} and follow up on
-            WhatsApp.
+            Your order is confirmed.
           </p>
 
           <div className="mt-8 overflow-hidden rounded-md border border-neutral-300">
