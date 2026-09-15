@@ -83,7 +83,7 @@ export function ShopCheckout({
   pickupPoints: PickupPoint[]
 }) {
   const navigate = useNavigate()
-  const { items, clear, ready } = useCart()
+  const { items, clear, ready, openSheet } = useCart()
   const { profile } = useAccount()
   const lines = cartLines(items, products)
   const [pending, setPending] = React.useState(false)
@@ -202,6 +202,7 @@ export function ShopCheckout({
 
   const summary = (
     <OrderSummary
+      delivery="pickup"
       lines={lines}
       subtotal={subtotal}
       total={total}
@@ -243,14 +244,15 @@ export function ShopCheckout({
               Barong
             </span>
           </Link>
-          <Link
+          <button
             aria-label={
               bagCount > 0
                 ? `Bag, ${bagCount} ${bagCount === 1 ? 'item' : 'items'}`
                 : 'Bag'
             }
             className="relative text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-            to="/shop/cart"
+            onClick={openSheet}
+            type="button"
           >
             <ShoppingBagIcon
               aria-hidden
@@ -262,7 +264,7 @@ export function ShopCheckout({
                 {bagCount}
               </span>
             ) : null}
-          </Link>
+          </button>
         </header>
 
         <form className="mx-auto max-w-xl space-y-8" onSubmit={handlePay}>
@@ -376,11 +378,7 @@ export function ShopCheckout({
 
           <section>
             <h2 className="text-[1.35rem] font-semibold tracking-tight">Payment</h2>
-            <p className="mt-1 mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <LockSimpleIcon className="size-3.5" />
-              Pay securely with {paymentDisplay.displayName}.
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
               {paymentDisplay.methods.map((method) => {
                 const Icon =
                   method.id === 'qris'
@@ -488,9 +486,11 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
                 <p className="text-muted-foreground">Delivery information</p>
                 <dl className="mt-3 space-y-3">
                   <div>
-                    <dt className="text-muted-foreground">Delivery type</dt>
+                    <dt className="text-muted-foreground">Delivery</dt>
                     <dd className="mt-1">
-                      {order.delivery === 'pickup' ? 'Pick up' : order.shippingLabel}
+                      {order.delivery === 'pickup'
+                        ? 'Pickup point'
+                        : order.shippingLabel}
                     </dd>
                   </div>
                   {order.delivery === 'pickup' ? (
@@ -601,10 +601,12 @@ function OrderSummary({
   lines,
   subtotal,
   total,
+  delivery,
 }: {
   lines: CartLine[]
   subtotal: number
   total: number
+  delivery: 'pickup' | 'ship'
 }) {
   return (
     <div>
@@ -651,7 +653,7 @@ function OrderSummary({
           <dd className="tabular-nums">{formatShopPrice(subtotal)}</dd>
         </div>
         <div className="flex justify-between">
-          <dt>Pickup</dt>
+          <dt>{delivery === 'pickup' ? 'Pickup point' : 'Shipping'}</dt>
           <dd className="tabular-nums">Free</dd>
         </div>
       </dl>
@@ -719,7 +721,9 @@ function ConfirmationSummary({ order }: { order: ShopOrder }) {
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt>{order.delivery === 'pickup' ? 'Pickup' : 'Shipping'}</dt>
+          <dt>
+            {order.delivery === 'pickup' ? 'Pickup point' : 'Shipping'}
+          </dt>
           <dd className="tabular-nums">
             {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
           </dd>

@@ -36,7 +36,7 @@ const emptyCustom: CustomMeasurements = {
 }
 
 export function ShopProductDetail({ product }: { product: ShopProduct }) {
-  const { addItem } = useCart()
+  const { addItem, openSheet } = useCart()
   const { profile, signedIn } = useAccount()
   const { data: session } = authClient.useSession()
   const [size, setSize] = React.useState('')
@@ -63,6 +63,7 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
     if (!canAdd || membersLocked) return
     addItem(product.slug, size, 1, isCustom ? custom : undefined)
     setAdded(true)
+    openSheet()
     toast.add({
       type: 'success',
       title: 'Added to bag',
@@ -296,9 +297,13 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
             <p className="mt-3 flex items-center justify-center gap-2 text-sm text-foreground">
               <CheckIcon aria-hidden className="size-4" weight="bold" />
               Added to bag
-              <Link className="underline-offset-4 hover:underline" to="/shop/cart">
+              <button
+                className="underline-offset-4 hover:underline"
+                onClick={openSheet}
+                type="button"
+              >
                 View bag
-              </Link>
+              </button>
             </p>
           ) : (
             <p className="mt-3 text-center text-xs text-muted-foreground">

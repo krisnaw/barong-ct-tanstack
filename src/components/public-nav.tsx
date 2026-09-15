@@ -9,7 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '~/components/ui/sheet'
-import { useCartCount } from '~/lib/cart'
+import { useCart, useCartCount } from '~/lib/cart'
 import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
@@ -20,6 +20,7 @@ export function PublicNav() {
   const onShop = pathname === '/shop' || pathname.startsWith('/shop/')
   const onCart = pathname === '/shop/cart'
   const { count, ready } = useCartCount()
+  const { openSheet } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
 
   const linkClass = (active: boolean) =>
@@ -68,13 +69,14 @@ export function PublicNav() {
           </nav>
 
           <div className="flex items-center gap-4 sm:gap-5">
-            <Link
+            <button
               aria-label={bagLabel}
               className={cn(
                 'relative text-muted-foreground transition-colors hover:text-foreground',
-                onCart && 'text-foreground',
+                (onCart || (ready && count > 0)) && 'text-foreground',
               )}
-              to="/shop/cart"
+              onClick={openSheet}
+              type="button"
             >
               <ShoppingBagIcon
                 aria-hidden
@@ -86,7 +88,7 @@ export function PublicNav() {
                   {count}
                 </span>
               ) : null}
-            </Link>
+            </button>
             <AccountMenu />
 
             <Sheet onOpenChange={setMenuOpen} open={menuOpen}>

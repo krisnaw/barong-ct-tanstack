@@ -31,6 +31,10 @@ type CartContextValue = {
   ) => void
   clear: () => void
   ready: boolean
+  sheetOpen: boolean
+  setSheetOpen: (open: boolean) => void
+  openSheet: () => void
+  closeSheet: () => void
 }
 
 const CartContext = React.createContext<CartContextValue | null>(null)
@@ -109,6 +113,7 @@ function readCart(): CartItem[] {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = React.useState<CartItem[]>([])
   const [ready, setReady] = React.useState(false)
+  const [sheetOpen, setSheetOpen] = React.useState(false)
 
   React.useEffect(() => {
     setItems(readCart())
@@ -180,10 +185,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   )
 
   const clear = React.useCallback(() => setItems([]), [])
+  const openSheet = React.useCallback(() => setSheetOpen(true), [])
+  const closeSheet = React.useCallback(() => setSheetOpen(false), [])
 
   const value = React.useMemo(
-    () => ({ items, addItem, setQuantity, removeItem, clear, ready }),
-    [items, addItem, setQuantity, removeItem, clear, ready],
+    () => ({
+      items,
+      addItem,
+      setQuantity,
+      removeItem,
+      clear,
+      ready,
+      sheetOpen,
+      setSheetOpen,
+      openSheet,
+      closeSheet,
+    }),
+    [
+      items,
+      addItem,
+      setQuantity,
+      removeItem,
+      clear,
+      ready,
+      sheetOpen,
+      openSheet,
+      closeSheet,
+    ],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

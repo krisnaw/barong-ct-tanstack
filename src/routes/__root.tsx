@@ -8,6 +8,7 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import * as React from 'react'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
+import { CartSheet } from '~/components/cart-sheet'
 import { Footer } from '~/components/footer'
 import { NotFound } from '~/components/NotFound'
 import { PublicNav } from '~/components/public-nav'
@@ -77,6 +78,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <SiteNav />
                 <div className="flex-1">{children}</div>
                 <SiteFooter />
+                <CartSheet />
               </AccountProvider>
             </CartProvider>
           </LocaleProvider>

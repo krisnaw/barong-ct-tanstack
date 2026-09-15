@@ -12,9 +12,12 @@ import {
 import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
 import { cn } from '~/lib/utils'
 
-type CartLine = CartItem & { product: ShopProduct }
+export type CartLine = CartItem & { product: ShopProduct }
 
-function useCartLines(items: CartItem[], products: ShopProduct[]): CartLine[] {
+export function useCartLines(
+  items: CartItem[],
+  products: ShopProduct[],
+): CartLine[] {
   return items.flatMap((item) => {
     const product = findShopProduct(products, item.slug)
     if (!product) return []
@@ -99,25 +102,38 @@ export function ShopCart({ products }: { products: ShopProduct[] }) {
   )
 }
 
-function CartRow({
+export function CartRow({
   line,
   onQuantity,
   onRemove,
+  onNavigate,
+  compact = false,
 }: {
   line: CartLine
   onQuantity: (quantity: number) => void
   onRemove: () => void
+  onNavigate?: () => void
+  compact?: boolean
 }) {
   return (
-    <li className="flex gap-4 py-3 sm:gap-4 sm:py-4">
+    <li
+      className={cn(
+        'flex gap-4',
+        compact ? 'py-4' : 'py-3 sm:gap-4 sm:py-4',
+      )}
+    >
       <Link
         className="shrink-0 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        onClick={onNavigate}
         params={{ slug: line.slug }}
         to="/shop/$slug"
       >
         <img
           alt=""
-          className="size-16 object-cover sm:size-20"
+          className={cn(
+            'object-cover',
+            compact ? 'size-20' : 'size-16 sm:size-20',
+          )}
           decoding="async"
           height={160}
           src={shopImageSrc(line.product.image, 160)}
@@ -130,6 +146,7 @@ function CartRow({
           <div>
             <Link
               className="font-heading text-base font-semibold tracking-tight hover:underline"
+              onClick={onNavigate}
               params={{ slug: line.slug }}
               to="/shop/$slug"
             >
@@ -203,10 +220,7 @@ function EmptyBag() {
       <p className="mt-1 text-sm text-muted-foreground">
         Browse club jerseys and add a size.
       </p>
-      <Link
-        className={cn(buttonVariants(), 'mt-6')}
-        to="/shop"
-      >
+      <Link className={cn(buttonVariants(), 'mt-6')} to="/shop">
         Shop jerseys
       </Link>
     </div>
