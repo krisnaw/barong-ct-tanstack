@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import {
   dokuCheckoutHeaders,
+  dokuRequestHeaders,
   dokuVerifyWebhookSignature,
 } from '~/lib/payment/doku-sign'
 import { paymentPublicUrl } from '~/lib/payment/public-url'
@@ -24,7 +25,7 @@ type DokuCheckoutResponse = {
 }
 
 type DokuNotification = {
-  order?: { invoice_number?: string; amount?: number }
+  order?: { invoice_number?: string; amount?: number; status?: string }
   transaction?: { status?: string }
   channel?: { id?: string; name?: string }
   service?: { id?: string }
@@ -101,10 +102,34 @@ function mapMethod(channel?: string) {
 
 function mapStatus(status?: string): PaymentEventStatus | null {
   const value = (status ?? '').toUpperCase()
-  if (value === 'SUCCESS') return 'paid'
-  if (value === 'EXPIRED') return 'expired'
-  if (value === 'PENDING' || value === 'FAILED') return 'pending'
+  if (value === 'SUCCESS' || value === 'ORDER_RECOVERED') return 'paid'
+  if (value === 'EXPIRED' || value === 'ORDER_EXPIRED') return 'expired'
+  if (value === 'PENDING' || value === 'FAILED' || value === 'ORDER_GENERATED') {
+    return 'pending'
+  }
   return null
+}
+
+function eventFromNotification(
+  payload: DokuNotification,
+  fallbackId: string,
+): PaymentEvent | null {
+  const transactionId = payload.order?.invoice_number ?? fallbackId
+  const fromTx = mapStatus(payload.transaction?.status)
+  const fromOrder = mapStatus(payload.order?.status)
+  const status =
+    fromTx === 'paid' || fromOrder === 'paid'
+      ? 'paid'
+      : fromTx === 'expired' || fromOrder === 'expired'
+        ? 'expired'
+        : (fromTx ?? fromOrder)
+  if (!transactionId || !status) return null
+  return {
+    transactionId,
+    status,
+    method: mapMethod(payload.channel?.id ?? payload.service?.id),
+    payload,
+  }
 }
 
 function header(request: Request, name: string) {
@@ -218,15 +243,23 @@ export const dokuProvider: PaymentProvider = {
       return null
     }
 
-    const transactionId = payload.order?.invoice_number
-    const status = mapStatus(payload.transaction?.status)
-    if (!transactionId || !status) return null
-
-    return {
-      transactionId,
-      status,
-      method: mapMethod(payload.channel?.id ?? payload.service?.id),
-      payload,
-    } satisfies PaymentEvent
+    return eventFromNotification(payload, '')
   },
+}
+
+export async function checkDokuPaymentStatus(invoiceNumber: string) {
+  const { apiUrl, clientId, secret } = dokuEnv()
+  const path = `/orders/v1/status/${encodeURIComponent(invoiceNumber)}`
+  const { headers } = dokuRequestHeaders({
+    clientId,
+    secret,
+    requestTarget: path,
+  })
+  const response = await fetch(`${apiUrl}${path}`, { method: 'GET', headers })
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new Error(`DOKU status check failed (${response.status})`)
+  }
+  const payload = (await response.json()) as DokuNotification
+  return eventFromNotification(payload, invoiceNumber)
 }

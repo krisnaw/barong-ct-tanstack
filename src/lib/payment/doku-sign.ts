@@ -34,35 +34,48 @@ export function dokuSign(secret: string, component: string) {
   return `HMACSHA256=${value}`
 }
 
-export function dokuCheckoutHeaders(input: {
+export function dokuRequestHeaders(input: {
   clientId: string
   secret: string
-  body: string
+  requestTarget: string
+  body?: string
   requestId?: string
 }) {
   const requestId = input.requestId ?? crypto.randomUUID()
   const timestamp = dokuRequestTimestamp()
-  const digest = dokuDigest(input.body)
+  const digest = input.body !== undefined ? dokuDigest(input.body) : undefined
   const signature = dokuSign(
     input.secret,
     dokuSignatureComponents({
       clientId: input.clientId,
       requestId,
       timestamp,
-      requestTarget: CHECKOUT_PATH,
+      requestTarget: input.requestTarget,
       digest,
     }),
   )
   return {
     requestId,
     headers: {
-      'Content-Type': 'application/json',
+      ...(input.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       'Client-Id': input.clientId,
       'Request-Id': requestId,
       'Request-Timestamp': timestamp,
       Signature: signature,
     },
   }
+}
+
+export function dokuCheckoutHeaders(input: {
+  clientId: string
+  secret: string
+  body: string
+  requestId?: string
+}) {
+  return dokuRequestHeaders({
+    ...input,
+    requestTarget: CHECKOUT_PATH,
+  })
 }
 
 export function dokuVerifyWebhookSignature(input: {

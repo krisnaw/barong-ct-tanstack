@@ -1,11 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prod-barong-ct",
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
+  },
+  "triggers": {
+    "crons": ["0 * * * *"]
   },
   "vars": {
     "EMAIL_PROVIDER": "cloudflare",
@@ -47,6 +50,9 @@
         "EMAIL_FROM_NAME": "Barong Cycling Team",
         "PAYMENT_PROVIDER": "doku",
         "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com",
+      },
+      "triggers": {
+        "crons": ["0 * * * *"]
       },
       "send_email": [
         {
