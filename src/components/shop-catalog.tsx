@@ -4,18 +4,13 @@ import { formatShopPrice, shopImageSrc, type ShopProduct } from '~/data/shop'
 export function ShopCatalog({ products }: { products: ShopProduct[] }) {
   return (
     <section className="px-5 py-10 sm:px-8 sm:py-12 lg:px-12">
-      <div className="mb-8 flex flex-col gap-2 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
-            Shop
-          </p>
-          <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-            Club kit
-          </h1>
-        </div>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {products.length} jerseys · Cut for Bali heat, three rides a week.
+      <div className="mb-8 sm:mb-10">
+        <p className="text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
+          Shop
         </p>
+        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+          Club kit
+        </h1>
       </div>
 
       <ul className="grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-12">

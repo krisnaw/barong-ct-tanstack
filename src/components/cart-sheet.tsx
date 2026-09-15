@@ -62,14 +62,14 @@ export function CartSheet() {
       >
         <SheetHeader className="shrink-0 border-b border-border px-4 py-3.5">
           <div className="flex items-center justify-between gap-3">
-            <button
+            <Link
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
               onClick={closeSheet}
-              type="button"
+              to="/shop"
             >
               <ArrowLeftIcon aria-hidden className="size-3.5" weight="bold" />
               Continue shopping
-            </button>
+            </Link>
             <SheetTitle className="text-sm font-medium tracking-[0.14em] text-muted-foreground uppercase">
               Bag{itemCount > 0 ? `: ${itemCount}` : ''}
             </SheetTitle>
