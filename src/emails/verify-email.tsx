@@ -52,13 +52,6 @@ export function VerifyEmail({
 
                 <Section className="bg-bg-2 mobile:px-6 mobile:py-12 rounded-[8px] px-[40px] py-[64px] text-center">
                   <Section className="mb-3">
-                    <Img
-                      alt={companyName}
-                      className="mx-auto mb-5 block"
-                      height={72}
-                      src={logoUrl}
-                      width={56}
-                    />
                     <Heading as="h1" className="font-28 text-fg m-0 font-sans">
                       We&apos;re almost there!
                     </Heading>
