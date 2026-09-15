@@ -739,11 +739,16 @@ function CopyTrackingButton({ trackingNumber }: { trackingNumber: string }) {
 function PayNowButton({ order }: { order: ShopOrder }) {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState('')
+  const checkoutUrl = order.payment?.checkoutUrl
 
   async function pay() {
     setPending(true)
     setError('')
     try {
+      if (checkoutUrl) {
+        window.location.assign(checkoutUrl)
+        return
+      }
       const started = await startPayment({ data: { orderNumber: order.id } })
       window.location.assign(started.url)
     } catch (caught) {

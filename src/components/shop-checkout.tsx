@@ -530,6 +530,10 @@ export function CheckoutAwaitingPayment({
     setPending(true)
     setError('')
     try {
+      if (order.payment?.checkoutUrl) {
+        window.location.assign(order.payment.checkoutUrl)
+        return
+      }
       const started = await startPayment({ data: { orderNumber: order.id } })
       window.location.assign(started.url)
     } catch (caught) {

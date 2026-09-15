@@ -27,6 +27,7 @@ export type ShopPayment = {
   status: PaymentStatus
   method?: string
   amount: number
+  checkoutUrl?: string
   paidAt?: string
 }
 
