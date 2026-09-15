@@ -177,11 +177,12 @@ export function ShopCheckout({
         })
         clear()
         window.location.assign(started.url)
-      } catch {
-        clear()
-        window.location.assign(
-          `/shop/checkout/return?order=${encodeURIComponent(placed.id)}`,
-        )
+      } catch (error) {
+        setPending(false)
+        setActionError({
+          form:
+            error instanceof Error ? error.message : 'Could not start payment',
+        })
       }
     } catch (error) {
       setPending(false)
