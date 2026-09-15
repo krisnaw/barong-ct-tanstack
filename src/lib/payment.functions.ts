@@ -8,10 +8,16 @@ import { db } from '~/lib/db'
 import { orders, payment } from '~/lib/order-schema'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
 import {
+  checkoutPayloadJson,
+  isCheckoutExpired,
+  parseCheckoutPayload,
+} from '~/lib/payment/checkout-payload'
+import {
   getPaymentDisplay as readPaymentDisplay,
   getProvider,
   getProviderName,
 } from '~/lib/payment/get-provider'
+import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
 import { appOriginUrl } from '~/lib/payment/public-url'
 
 async function requireSession() {
@@ -37,6 +43,40 @@ async function loadOwnedOrder(orderNumber: string, userId: string, role?: string
   return row
 }
 
+function paymentCreatedAt(row: typeof payment.$inferSelect) {
+  return row.createdAt instanceof Date ? row.createdAt.getTime() : Number(row.createdAt)
+}
+
+function latestPendingPayment(
+  rows: (typeof payment.$inferSelect)[],
+  providerName: string,
+) {
+  return (
+    [...rows]
+      .filter((row) => row.provider === providerName && row.status === 'pending')
+      .sort((a, b) => paymentCreatedAt(b) - paymentCreatedAt(a))[0] ?? null
+  )
+}
+
+function reusableCheckoutUrl(
+  row: typeof payment.$inferSelect,
+  orderNumber: string,
+  providerName: string,
+) {
+  const stored = parseCheckoutPayload(row.payload)
+  const fallbackMinutes =
+    providerName === 'doku' ? DOKU_PAYMENT_DUE_MINUTES : 60
+  if (isCheckoutExpired(stored.expiresAt, row.createdAt, fallbackMinutes)) {
+    return null
+  }
+  if (stored.checkoutUrl) return stored.checkoutUrl
+  if (providerName === 'stub') {
+    const base = appOriginUrl()
+    return `${base}/shop/checkout/simulate?order=${encodeURIComponent(orderNumber)}`
+  }
+  return null
+}
+
 export const getPaymentDisplay = createServerFn({ method: 'GET' }).handler(
   async () => readPaymentDisplay(),
 )
@@ -55,6 +95,18 @@ export const startPayment = createServerFn({ method: 'POST' })
     }
 
     const provider = getProvider()
+    const existing = latestPendingPayment(order.payments, provider.name)
+    if (existing) {
+      const url = reusableCheckoutUrl(existing, order.number, provider.name)
+      if (url) {
+        return { url }
+      }
+      await db
+        .update(payment)
+        .set({ status: 'expired', updatedAt: new Date() })
+        .where(eq(payment.id, existing.id))
+    }
+
     const base = appOriginUrl()
     const sessionCheckout = await provider.createCheckout({
       orderNumber: order.number,
@@ -82,6 +134,10 @@ export const startPayment = createServerFn({ method: 'POST' })
       transactionId: sessionCheckout.transactionId,
       status: 'pending',
       amount: order.total,
+      payload: checkoutPayloadJson({
+        checkoutUrl: sessionCheckout.url,
+        expiresAt: sessionCheckout.expiresAt,
+      }),
     })
 
     return { url: sessionCheckout.url }

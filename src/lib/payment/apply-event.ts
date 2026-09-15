@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
 import { orders, payment } from '~/lib/order-schema'
+import { mergePaymentPayload } from '~/lib/payment/checkout-payload'
 import type { PaymentEvent } from '~/lib/payment/types'
 
 export async function applyPaymentEvent(
@@ -22,7 +23,9 @@ export async function applyPaymentEvent(
     .set({
       status: event.status,
       method: event.method ?? row.method,
-      payload: event.payload ? JSON.stringify(event.payload) : row.payload,
+      payload: event.payload
+        ? mergePaymentPayload(row.payload, event.payload)
+        : row.payload,
       paidAt,
       updatedAt: new Date(),
     })
