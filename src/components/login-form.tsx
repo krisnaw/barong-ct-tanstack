@@ -12,7 +12,7 @@ import {
   FieldSeparator,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
-import { authClient } from '~/lib/auth-client'
+import { authClient, PASSWORD_AUTH_ENABLED } from '~/lib/auth-client'
 
 function magicLinkErrorMessage(code?: string) {
   if (!code) return null
@@ -43,6 +43,11 @@ export function LoginForm({
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
+    if (!PASSWORD_AUTH_ENABLED) {
+      await onMagicLink()
+      return
+    }
+
     setError(null)
     setPending('password')
 
@@ -73,11 +78,14 @@ export function LoginForm({
     }
 
     setPending('magic')
+    const name = email.split('@')[0] || 'Rider'
     const { error: authError } = await authClient.signIn.magicLink({
       email,
+      name,
       callbackURL,
+      newUserCallbackURL: callbackURL,
       errorCallbackURL: '/auth/login',
-      metadata: { name: email.split('@')[0] || 'Rider' },
+      metadata: { name },
     })
     setPending(null)
 
@@ -140,12 +148,18 @@ export function LoginForm({
               <span className="sr-only">Barong Cycling Team</span>
             </Link>
             <h1 className="text-xl font-bold">Welcome to Barong CT</h1>
-            <FieldDescription>
-              Don&apos;t have an account?{' '}
-              <Link className="underline" to="/auth/signup">
-                Sign up
-              </Link>
-            </FieldDescription>
+            {PASSWORD_AUTH_ENABLED ? (
+              <FieldDescription>
+                Don&apos;t have an account?{' '}
+                <Link className="underline" to="/auth/signup">
+                  Sign up
+                </Link>
+              </FieldDescription>
+            ) : (
+              <FieldDescription>
+                Sign in or create an account with your email.
+              </FieldDescription>
+            )}
           </div>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -160,45 +174,59 @@ export function LoginForm({
               value={email}
             />
           </Field>
-          <Field>
-            <div className="flex items-center justify-between gap-2">
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Link
-                className="text-sm text-muted-foreground underline underline-offset-4"
-                to="/auth/forgot-password"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              minLength={8}
-              name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </Field>
+          {PASSWORD_AUTH_ENABLED ? (
+            <Field>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Link
+                  className="text-sm text-muted-foreground underline underline-offset-4"
+                  to="/auth/forgot-password"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                minLength={8}
+                name="password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+            </Field>
+          ) : null}
           {error ? (
             <p className="text-center text-sm text-destructive">{error}</p>
           ) : null}
-          <Field>
-            <Button disabled={pending !== null} type="submit">
-              {pending === 'password' ? 'Please wait…' : 'Login'}
-            </Button>
-          </Field>
-          <FieldSeparator>or</FieldSeparator>
-          <Field>
-            <Button
-              disabled={pending !== null}
-              onClick={() => void onMagicLink()}
-              type="button"
-              variant="outline"
-            >
-              {pending === 'magic' ? 'Please wait…' : 'Email me a sign-in link'}
-            </Button>
-          </Field>
+          {PASSWORD_AUTH_ENABLED ? (
+            <>
+              <Field>
+                <Button disabled={pending !== null} type="submit">
+                  {pending === 'password' ? 'Please wait…' : 'Login'}
+                </Button>
+              </Field>
+              <FieldSeparator>or</FieldSeparator>
+              <Field>
+                <Button
+                  disabled={pending !== null}
+                  onClick={() => void onMagicLink()}
+                  type="button"
+                  variant="outline"
+                >
+                  {pending === 'magic'
+                    ? 'Please wait…'
+                    : 'Email me a sign-in link'}
+                </Button>
+              </Field>
+            </>
+          ) : (
+            <Field>
+              <Button disabled={pending !== null} type="submit">
+                {pending === 'magic' ? 'Please wait…' : 'Email me a sign-in link'}
+              </Button>
+            </Field>
+          )}
         </FieldGroup>
       </form>
       {/* <FieldDescription className="px-6 text-center">
