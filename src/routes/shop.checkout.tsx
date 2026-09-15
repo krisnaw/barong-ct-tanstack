@@ -4,6 +4,16 @@ import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/shop/checkout')({
   beforeLoad: async ({ location }) => {
+    // Return/cancel must stay reachable after DOKU redirects back.
+    // Auth is enforced on the checkout form route and by order loaders.
+    const path = location.pathname.replace(/\/$/, '') || '/'
+    if (
+      path.endsWith('/shop/checkout/return') ||
+      path.endsWith('/shop/checkout/cancel') ||
+      path.endsWith('/shop/checkout/simulate')
+    ) {
+      return
+    }
     const session = await getSession()
     if (!session) {
       throw redirect({

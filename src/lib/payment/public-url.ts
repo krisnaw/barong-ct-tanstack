@@ -15,6 +15,17 @@ export function appOriginUrl() {
   return paymentPublicUrl()
 }
 
+/**
+ * Origin for payment return/cancel URLs sent to DOKU.
+ * Prefer PAYMENT_PUBLIC_URL so staging/prod redirects match the public host
+ * even if BETTER_AUTH_URL differs.
+ */
+export function checkoutOriginUrl() {
+  const payment = env.PAYMENT_PUBLIC_URL?.trim()
+  if (payment && !isLocalHost(payment)) return stripSlash(payment)
+  return appOriginUrl()
+}
+
 /** Origin DOKU servers can reach for webhooks (must be public). */
 export function paymentPublicUrl() {
   const explicit = env.PAYMENT_PUBLIC_URL?.trim()

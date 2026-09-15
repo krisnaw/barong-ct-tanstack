@@ -18,7 +18,7 @@ import {
   getProviderName,
 } from '~/lib/payment/get-provider'
 import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
-import { appOriginUrl } from '~/lib/payment/public-url'
+import { appOriginUrl, checkoutOriginUrl } from '~/lib/payment/public-url'
 
 async function requireSession() {
   const headers = getRequestHeaders()
@@ -107,7 +107,9 @@ export const startPayment = createServerFn({ method: 'POST' })
         .where(eq(payment.id, existing.id))
     }
 
-    const base = appOriginUrl()
+    const base = checkoutOriginUrl()
+    const returnUrl = `${base}/shop/checkout/return?order=${encodeURIComponent(order.number)}`
+    const cancelUrl = `${base}/shop/checkout/cancel?order=${encodeURIComponent(order.number)}`
     const sessionCheckout = await provider.createCheckout({
       orderNumber: order.number,
       amount: order.total,
@@ -123,8 +125,8 @@ export const startPayment = createServerFn({ method: 'POST' })
         quantity: line.quantity,
         price: line.price,
       })),
-      returnUrl: `${base}/shop/checkout/return?order=${encodeURIComponent(order.number)}`,
-      cancelUrl: `${base}/shop/checkout/cancel?order=${encodeURIComponent(order.number)}`,
+      returnUrl,
+      cancelUrl,
     })
 
     await db.insert(payment).values({

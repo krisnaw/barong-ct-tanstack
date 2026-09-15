@@ -187,6 +187,9 @@ export const dokuProvider: PaymentProvider = {
         email: input.customer.email,
         phone: idPhone(input.customer.phone),
       },
+      callbacks: {
+        url: input.returnUrl,
+      },
       additional_info: {
         override_notification_url: notifyUrl,
       },
