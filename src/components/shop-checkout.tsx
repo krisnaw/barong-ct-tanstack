@@ -89,7 +89,6 @@ export function ShopCheckout({
   const [pending, setPending] = React.useState(false)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
   const [draft, setDraft] = React.useState<Partial<CheckoutDraft>>({})
-  const [marketing, setMarketing] = React.useState(true)
   const [pickupPointId, setPickupPointId] = React.useState(
     pickupPoints[0]?.id ?? '',
   )
@@ -234,15 +233,16 @@ export function ShopCheckout({
       <div className="px-5 py-6 sm:px-10 lg:px-16 lg:py-10">
         <header className="mb-8 flex items-center justify-between gap-4">
           <Link
-            className="flex items-center gap-2.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             to="/"
           >
-            <span className="grid size-8 place-items-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">
-              B
-            </span>
-            <span className="font-heading text-lg font-semibold tracking-tight">
-              Barong
-            </span>
+            <img
+              alt="Barong Cycling Team"
+              className="h-9 w-auto"
+              height={36}
+              src="/barong_logo.png"
+              width={28}
+            />
           </Link>
           <button
             aria-label={
@@ -308,15 +308,6 @@ export function ShopCheckout({
                 value={phone}
               />
             </div>
-            <label className="mt-3 flex items-start gap-2 text-sm">
-              <input
-                checked={marketing}
-                className="mt-0.5 size-4 rounded-sm border-neutral-300"
-                onChange={(event) => setMarketing(event.target.checked)}
-                type="checkbox"
-              />
-              Email me with news and offers
-            </label>
           </section>
 
           <section>
@@ -443,15 +434,16 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
     <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
       <div className="px-5 py-8 sm:px-10 lg:px-16 lg:py-12">
         <Link
-          className="mb-10 flex items-center gap-2.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="mb-10 inline-block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           to="/"
         >
-          <span className="grid size-8 place-items-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">
-            B
-          </span>
-          <span className="font-heading text-lg font-semibold tracking-tight">
-            Barong
-          </span>
+          <img
+            alt="Barong Cycling Team"
+            className="h-9 w-auto"
+            height={36}
+            src="/barong_logo.png"
+            width={28}
+          />
         </Link>
 
         <div className="mx-auto max-w-xl">
@@ -557,15 +549,16 @@ export function CheckoutAwaitingPayment({
   return (
     <div className="min-h-dvh bg-background px-5 py-8 sm:px-10 lg:px-16 lg:py-12">
       <Link
-        className="mb-10 flex items-center gap-2.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="mb-10 inline-block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         to="/"
       >
-        <span className="grid size-8 place-items-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">
-          B
-        </span>
-        <span className="font-heading text-lg font-semibold tracking-tight">
-          Barong
-        </span>
+        <img
+          alt="Barong Cycling Team"
+          className="h-9 w-auto"
+          height={36}
+          src="/barong_logo.png"
+          width={28}
+        />
       </Link>
       <div className="mx-auto max-w-xl">
         <p className="text-sm text-muted-foreground">Order #{order.id}</p>

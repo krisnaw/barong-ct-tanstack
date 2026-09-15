@@ -161,11 +161,6 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
             <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
               Jersey
             </p>
-            {product.preOrder ? (
-              <span className="rounded-sm border border-border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-foreground uppercase">
-                Pre order
-              </span>
-            ) : null}
             {product.membersOnly ? (
               <span className="rounded-sm border border-border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-foreground uppercase">
                 Members
