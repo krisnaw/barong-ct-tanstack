@@ -87,6 +87,7 @@ export const payment = sqliteTable(
     status: text('status').default('pending').notNull(),
     method: text('method'),
     amount: integer('amount').notNull(),
+    checkoutUrl: text('checkout_url'),
     payload: text('payload'),
     paidAt: integer('paid_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })

@@ -1,5 +1,4 @@
 export type CheckoutPayload = {
-  checkoutUrl?: string
   expiresAt?: string
 }
 
@@ -12,8 +11,6 @@ export function parseCheckoutPayload(
     if (!parsed || typeof parsed !== 'object') return {}
     const record = parsed as Record<string, unknown>
     return {
-      checkoutUrl:
-        typeof record.checkoutUrl === 'string' ? record.checkoutUrl : undefined,
       expiresAt:
         typeof record.expiresAt === 'string' ? record.expiresAt : undefined,
     }
@@ -22,15 +19,10 @@ export function parseCheckoutPayload(
   }
 }
 
-export function checkoutPayloadJson(input: {
-  checkoutUrl: string
-  expiresAt?: Date
-}) {
+export function checkoutPayloadJson(input: { expiresAt?: Date }) {
+  if (!input.expiresAt) return null
   const payload: CheckoutPayload = {
-    checkoutUrl: input.checkoutUrl,
-  }
-  if (input.expiresAt) {
-    payload.expiresAt = input.expiresAt.toISOString()
+    expiresAt: input.expiresAt.toISOString(),
   }
   return JSON.stringify(payload)
 }
@@ -53,7 +45,7 @@ export function mergePaymentPayload(
       next = {}
     }
   }
-  if (checkout.checkoutUrl) next.checkoutUrl = checkout.checkoutUrl
+  delete next.checkoutUrl
   if (checkout.expiresAt) next.expiresAt = checkout.expiresAt
   return JSON.stringify(next)
 }

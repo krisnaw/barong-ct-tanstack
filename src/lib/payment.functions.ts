@@ -69,7 +69,7 @@ function reusableCheckoutUrl(
   if (isCheckoutExpired(stored.expiresAt, row.createdAt, fallbackMinutes)) {
     return null
   }
-  if (stored.checkoutUrl) return stored.checkoutUrl
+  if (row.checkoutUrl) return row.checkoutUrl
   if (providerName === 'stub') {
     const base = appOriginUrl()
     return `${base}/shop/checkout/simulate?order=${encodeURIComponent(orderNumber)}`
@@ -134,8 +134,8 @@ export const startPayment = createServerFn({ method: 'POST' })
       transactionId: sessionCheckout.transactionId,
       status: 'pending',
       amount: order.total,
+      checkoutUrl: sessionCheckout.url,
       payload: checkoutPayloadJson({
-        checkoutUrl: sessionCheckout.url,
         expiresAt: sessionCheckout.expiresAt,
       }),
     })
