@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { PlusIcon } from '@phosphor-icons/react'
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { Button } from '~/components/ui/button'
 import { Field, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
@@ -38,6 +38,11 @@ export function ProductImageUrlFields({
     )
   }
 
+  function removeAt(fieldId: string) {
+    const next = values.filter((field) => field.id !== fieldId)
+    onChange(next.length > 0 ? next : [newImageField()])
+  }
+
   return (
     <Field>
       <div className="flex items-center justify-between gap-2">
@@ -56,15 +61,26 @@ export function ProductImageUrlFields({
       </div>
       <div className="flex flex-col gap-2">
         {values.map((field, index) => (
-          <Input
-            id={`${id}-${field.id}`}
-            key={field.id}
-            onChange={(event) => setAt(field.id, event.target.value)}
-            placeholder={`https://… · image ${index + 1}`}
-            required={index === 0}
-            type="url"
-            value={field.url}
-          />
+          <div className="flex items-center gap-2" key={field.id}>
+            <Input
+              id={`${id}-${field.id}`}
+              onChange={(event) => setAt(field.id, event.target.value)}
+              placeholder={`https://… · image ${index + 1}`}
+              required={index === 0}
+              type="url"
+              value={field.url}
+            />
+            <Button
+              aria-label={`Remove image ${index + 1}`}
+              disabled={values.length <= 1}
+              onClick={() => removeAt(field.id)}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <TrashIcon aria-hidden className="size-3.5" weight="bold" />
+            </Button>
+          </div>
         ))}
       </div>
     </Field>

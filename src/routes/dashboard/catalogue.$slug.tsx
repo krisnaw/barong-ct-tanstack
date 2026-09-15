@@ -219,6 +219,25 @@ function DashboardProductDetailPage() {
               />
             </Field>
 
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Switch
+                  aria-label={active ? 'Active' : 'Inactive'}
+                  checked={active}
+                  onCheckedChange={setActive}
+                />
+                <span className="text-sm">{active ? 'Active' : 'Inactive'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  aria-label="Member only"
+                  checked={membersOnly}
+                  onCheckedChange={setMembersOnly}
+                />
+                <span className="text-sm">Member only</span>
+              </div>
+            </div>
+
             <Field>
               <FieldLabel>Availability</FieldLabel>
               <div className="flex flex-wrap gap-2">
@@ -253,29 +272,6 @@ function DashboardProductDetailPage() {
                   : 'Enter stock for each size. 0 means that size is not available.'}
               </FieldDescription>
             </Field>
-
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Switch
-                  aria-label={active ? 'Active' : 'Inactive'}
-                  checked={active}
-                  onCheckedChange={setActive}
-                />
-                <span className="text-sm">{active ? 'Active' : 'Inactive'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  aria-label={
-                    membersOnly ? 'Verified members only' : 'Anyone can buy'
-                  }
-                  checked={membersOnly}
-                  onCheckedChange={setMembersOnly}
-                />
-                <span className="text-sm">
-                  {membersOnly ? 'Verified members only' : 'Anyone can buy'}
-                </span>
-              </div>
-            </div>
 
             {!preOrder ? (
               <Field>

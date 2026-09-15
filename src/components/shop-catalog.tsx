@@ -30,28 +30,25 @@ export function ShopCatalog({ products }: { products: ShopProduct[] }) {
                   src={shopImageSrc(product.image, 900)}
                   width={900}
                 />
-                {product.preOrder ? (
-                  <span className="absolute top-3 left-3 bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
-                    Pre order
-                  </span>
+                {product.preOrder || product.membersOnly ? (
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                    {product.preOrder ? (
+                      <span className="bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
+                        Pre order
+                      </span>
+                    ) : null}
+                    {product.membersOnly ? (
+                      <span className="bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
+                        Verified members only
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
               <div className="mt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-heading text-sm font-medium tracking-tight">
-                    {product.name}
-                  </h2>
-                {product.preOrder ? (
-                  <span className="text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                    Pre order
-                  </span>
-                ) : null}
-                {product.membersOnly ? (
-                  <span className="text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                    Members
-                  </span>
-                ) : null}
-                </div>
+                <h2 className="font-heading text-sm font-medium tracking-tight">
+                  {product.name}
+                </h2>
                 <p className="mt-0.5 text-sm tabular-nums">
                   {formatShopPrice(product.price)}
                 </p>

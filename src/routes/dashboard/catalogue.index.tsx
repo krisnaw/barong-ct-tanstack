@@ -89,7 +89,7 @@ function DashboardCataloguePage() {
                   <TableHead className="px-4">Product</TableHead>
                   <TableHead className="px-4">Price</TableHead>
                   <TableHead className="px-4">Stock</TableHead>
-                  <TableHead className="px-4">Members</TableHead>
+                  <TableHead className="px-4">Member Only</TableHead>
                   <TableHead className="px-4">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,7 +131,7 @@ function DashboardCataloguePage() {
                         : `${availableSizeCount(product)} sizes`}
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      {product.membersOnly ? 'Verified only' : 'Anyone'}
+                      {product.membersOnly ? 'Yes' : 'No'}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
                       {product.active === false ? 'Hidden' : 'Active'}

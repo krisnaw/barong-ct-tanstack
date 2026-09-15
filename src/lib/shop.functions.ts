@@ -86,6 +86,12 @@ async function requireAdmin() {
   return session
 }
 
+async function isVerifiedMember() {
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  return Boolean(session?.user?.emailVerified)
+}
+
 function slugify(name: string) {
   return name
     .toLowerCase()
@@ -118,7 +124,9 @@ export const listProducts = createServerFn({ method: 'GET' })
       await requireAdmin()
       return loadAllProducts(false)
     }
-    return loadAllProducts(data?.activeOnly !== false)
+    const products = await loadAllProducts(data?.activeOnly !== false)
+    if (await isVerifiedMember()) return products
+    return products.filter((item) => !item.membersOnly)
   })
 
 export const getProductBySlug = createServerFn({ method: 'GET' })
@@ -137,6 +145,9 @@ export const getProductBySlug = createServerFn({ method: 'GET' })
     if (!row.active && !data.includeInactive) return null
     if (!row.active && data.includeInactive) {
       await requireAdmin()
+    }
+    if (row.membersOnly && !data.includeInactive) {
+      if (!(await isVerifiedMember())) return null
     }
     return mapProduct(row, row.sizes)
   })

@@ -106,10 +106,19 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
               src={shopImageSrc(currentImage, 900)}
               width={900}
             />
-            {product.preOrder ? (
-              <span className="absolute top-3 left-3 bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
-                Pre order
-              </span>
+            {product.preOrder || product.membersOnly ? (
+              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                {product.preOrder ? (
+                  <span className="bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
+                    Pre order
+                  </span>
+                ) : null}
+                {product.membersOnly ? (
+                  <span className="bg-foreground px-2.5 py-1 text-[0.65rem] font-medium tracking-[0.16em] text-background uppercase">
+                    Verified members only
+                  </span>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -148,16 +157,9 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
         </div>
 
         <aside className="h-fit lg:sticky lg:top-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-              Jersey
-            </p>
-            {product.membersOnly ? (
-              <span className="rounded-sm border border-border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-foreground uppercase">
-                Members
-              </span>
-            ) : null}
-          </div>
+          <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+            Jersey
+          </p>
           <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em]">
             {product.name}
           </h1>
