@@ -208,14 +208,10 @@ const paymentProviderLabels: Record<string, string> = {
 }
 
 export function formatPaymentLabel(order: ShopOrder) {
-  if (!order.payment) return 'Unpaid'
-  const provider =
-    paymentProviderLabels[order.payment.provider] ?? order.payment.provider
-  const method = order.payment.method
-  if (order.payment.status === 'paid') {
-    return [provider, method].filter(Boolean).join(' · ')
-  }
-  return order.payment.status
+  const payment = order.payment
+  if (!payment?.method) return '-'
+  const provider = paymentProviderLabels[payment.provider] ?? payment.provider
+  return [provider, payment.method].filter(Boolean).join(' · ')
 }
 
 export function formatOrderDate(iso: string) {
