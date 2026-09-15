@@ -9,6 +9,7 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { authClient } from '~/lib/auth-client'
@@ -22,21 +23,25 @@ export function SignUpForm({
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
-  const [pending, setPending] = React.useState(false)
+  const [pending, setPending] = React.useState<'password' | 'magic' | null>(
+    null,
+  )
+  const [magicLinkSent, setMagicLinkSent] = React.useState(false)
+
+  const displayName = name.trim() || email.split('@')[0] || 'Rider'
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
-    setPending(true)
+    setPending('password')
 
-    const displayName = name.trim() || email.split('@')[0] || 'Rider'
     const { error: authError } = await authClient.signUp.email({
       name: displayName,
       email,
       password,
     })
 
-    setPending(false)
+    setPending(null)
 
     if (authError) {
       setError(authError.message || 'Could not create account.')
@@ -44,6 +49,68 @@ export function SignUpForm({
     }
 
     void navigate({ to: '/account' })
+  }
+
+  async function onMagicLink() {
+    setError(null)
+    if (!email.trim()) {
+      setError('Enter your email to receive a sign-up link.')
+      return
+    }
+
+    setPending('magic')
+    const { error: authError } = await authClient.signIn.magicLink({
+      email,
+      name: displayName,
+      callbackURL: '/account',
+      newUserCallbackURL: '/account',
+      errorCallbackURL: '/auth/login',
+      metadata: { name: displayName },
+    })
+    setPending(null)
+
+    if (authError) {
+      setError(authError.message || 'Could not send a sign-up link.')
+      return
+    }
+
+    setMagicLinkSent(true)
+  }
+
+  if (magicLinkSent) {
+    return (
+      <div className={cn('flex flex-col gap-6', className)} {...props}>
+        <FieldGroup>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Link
+              to="/"
+              className="flex flex-col items-center gap-2 font-medium"
+            >
+              <div className="flex size-8 items-center justify-center rounded-md">
+                <RowsIcon className="size-6" />
+              </div>
+              <span className="sr-only">Barong Cycling Team</span>
+            </Link>
+            <h1 className="text-xl font-bold">Check your email</h1>
+            <FieldDescription>
+              We sent a sign-up link to {email}. It expires in 15 minutes.
+            </FieldDescription>
+          </div>
+          <Field>
+            <Button
+              onClick={() => {
+                setMagicLinkSent(false)
+                setPassword('')
+              }}
+              type="button"
+              variant="outline"
+            >
+              Use a different email
+            </Button>
+          </Field>
+        </FieldGroup>
+      </div>
+    )
   }
 
   return (
@@ -108,8 +175,19 @@ export function SignUpForm({
             <p className="text-center text-sm text-destructive">{error}</p>
           ) : null}
           <Field>
-            <Button disabled={pending} type="submit">
-              {pending ? 'Please wait…' : 'Create account'}
+            <Button disabled={pending !== null} type="submit">
+              {pending === 'password' ? 'Please wait…' : 'Create account'}
+            </Button>
+          </Field>
+          <FieldSeparator>or</FieldSeparator>
+          <Field>
+            <Button
+              disabled={pending !== null}
+              onClick={() => void onMagicLink()}
+              type="button"
+              variant="outline"
+            >
+              {pending === 'magic' ? 'Please wait…' : 'Email me a sign-up link'}
             </Button>
           </Field>
         </FieldGroup>

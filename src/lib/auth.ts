@@ -1,11 +1,11 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
-import { admin } from 'better-auth/plugins'
+import { admin, magicLink } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { waitUntil } from 'cloudflare:workers'
 import { db } from '~/lib/db'
 import * as schema from '~/lib/auth-schema'
-import { sendVerificationEmail } from '~/lib/email'
+import { sendMagicLinkEmail, sendVerificationEmail } from '~/lib/email'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -34,5 +34,23 @@ export const auth = betterAuth({
     'https://staging.barongcycling.com',
     'https://barongcycling.com',
   ],
-  plugins: [admin(), tanstackStartCookies()],
+  plugins: [
+    admin(),
+    magicLink({
+      expiresIn: 60 * 15,
+      storeToken: 'hashed',
+      sendMagicLink: async ({ email, url, metadata }) => {
+        const name =
+          typeof metadata?.name === 'string' && metadata.name.trim()
+            ? metadata.name.trim()
+            : 'Rider'
+        await sendMagicLinkEmail({
+          to: email,
+          name,
+          url,
+        })
+      },
+    }),
+    tanstackStartCookies(),
+  ],
 })
