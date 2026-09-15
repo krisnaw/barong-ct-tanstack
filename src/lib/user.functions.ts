@@ -44,6 +44,13 @@ export type AdminUserDetail = {
     firstName: string
     lastName: string
     phone: string
+    gender: string
+    bloodType: string
+    dateOfBirth: string
+    nationality: string
+    idNumber: string
+    emergencyContactName: string
+    emergencyContactPhone: string
     jerseySize: string
   }
   shippingAddresses: AdminUserAddress[]
@@ -134,6 +141,13 @@ export const getUserById = createServerFn({ method: 'GET' })
         firstName: row.profile?.firstName?.trim() || '',
         lastName: row.profile?.lastName?.trim() || '',
         phone: row.profile?.phone?.trim() || '',
+        gender: row.profile?.gender?.trim() || '',
+        bloodType: row.profile?.bloodType?.trim() || '',
+        dateOfBirth: row.profile?.dateOfBirth?.trim() || '',
+        nationality: row.profile?.nationality?.trim() || '',
+        idNumber: row.profile?.idNumber?.trim() || '',
+        emergencyContactName: row.profile?.emergencyContactName?.trim() || '',
+        emergencyContactPhone: row.profile?.emergencyContactPhone?.trim() || '',
         jerseySize: row.profile?.jerseySize || 'M',
       },
       shippingAddresses: addresses.map((address) => ({

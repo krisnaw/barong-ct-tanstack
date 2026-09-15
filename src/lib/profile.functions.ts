@@ -10,6 +10,13 @@ const profilePatchSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   phone: z.string().optional(),
+  gender: z.string().optional(),
+  bloodType: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  nationality: z.string().optional(),
+  idNumber: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
   jerseySize: z.string().optional(),
   address: z.string().optional(),
   apartment: z.string().optional(),
@@ -22,6 +29,13 @@ export type UserProfileRow = {
   firstName: string
   lastName: string
   phone: string
+  gender: string
+  bloodType: string
+  dateOfBirth: string
+  nationality: string
+  idNumber: string
+  emergencyContactName: string
+  emergencyContactPhone: string
   jerseySize: string
   address: string
   apartment: string
@@ -35,6 +49,13 @@ function emptyProfile(): UserProfileRow {
     firstName: '',
     lastName: '',
     phone: '',
+    gender: '',
+    bloodType: '',
+    dateOfBirth: '',
+    nationality: '',
+    idNumber: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
     jerseySize: 'M',
     address: '',
     apartment: '',
@@ -67,6 +88,13 @@ function mapRow(
     firstName: row.firstName?.trim() || split.firstName,
     lastName: row.lastName?.trim() || split.lastName,
     phone: row.phone ?? '',
+    gender: row.gender ?? '',
+    bloodType: row.bloodType ?? '',
+    dateOfBirth: row.dateOfBirth ?? '',
+    nationality: row.nationality ?? '',
+    idNumber: row.idNumber ?? '',
+    emergencyContactName: row.emergencyContactName ?? '',
+    emergencyContactPhone: row.emergencyContactPhone ?? '',
     jerseySize: row.jerseySize || 'M',
     address: row.address ?? '',
     apartment: row.apartment ?? '',
@@ -116,6 +144,27 @@ export const upsertMyProfile = createServerFn({ method: 'POST' })
       lastName:
         data.lastName !== undefined ? data.lastName.trim() : current.lastName,
       phone: data.phone !== undefined ? data.phone.trim() : current.phone,
+      gender: data.gender !== undefined ? data.gender.trim() : current.gender,
+      bloodType:
+        data.bloodType !== undefined ? data.bloodType.trim() : current.bloodType,
+      dateOfBirth:
+        data.dateOfBirth !== undefined
+          ? data.dateOfBirth.trim()
+          : current.dateOfBirth,
+      nationality:
+        data.nationality !== undefined
+          ? data.nationality.trim()
+          : current.nationality,
+      idNumber:
+        data.idNumber !== undefined ? data.idNumber.trim() : current.idNumber,
+      emergencyContactName:
+        data.emergencyContactName !== undefined
+          ? data.emergencyContactName.trim()
+          : current.emergencyContactName,
+      emergencyContactPhone:
+        data.emergencyContactPhone !== undefined
+          ? data.emergencyContactPhone.trim()
+          : current.emergencyContactPhone,
       jerseySize:
         data.jerseySize !== undefined ? data.jerseySize : current.jerseySize,
       address: data.address !== undefined ? data.address.trim() : current.address,
@@ -132,6 +181,13 @@ export const upsertMyProfile = createServerFn({ method: 'POST' })
       firstName: next.firstName || null,
       lastName: next.lastName || null,
       phone: next.phone || null,
+      gender: next.gender || null,
+      bloodType: next.bloodType || null,
+      dateOfBirth: next.dateOfBirth || null,
+      nationality: next.nationality || null,
+      idNumber: next.idNumber || null,
+      emergencyContactName: next.emergencyContactName || null,
+      emergencyContactPhone: next.emergencyContactPhone || null,
       jerseySize: next.jerseySize || 'M',
       address: next.address || null,
       apartment: next.apartment || null,

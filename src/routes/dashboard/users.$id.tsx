@@ -118,6 +118,28 @@ function DashboardUserDetailPage() {
                 <InfoRow label="First name" value={account.profile.firstName} />
                 <InfoRow label="Last name" value={account.profile.lastName} />
                 <InfoRow label="Phone" value={account.profile.phone} />
+                <InfoRow label="Gender" value={account.profile.gender} />
+                <InfoRow label="Blood type" value={account.profile.bloodType} />
+                <InfoRow
+                  label="Date of birth"
+                  value={account.profile.dateOfBirth}
+                />
+                <InfoRow
+                  label="Nationality"
+                  value={account.profile.nationality}
+                />
+                <InfoRow label="KTP or ID" value={account.profile.idNumber} />
+                <InfoRow
+                  label="Emergency contact"
+                  value={
+                    [
+                      account.profile.emergencyContactName,
+                      account.profile.emergencyContactPhone,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'
+                  }
+                />
                 <InfoRow label="Kit size" value={account.profile.jerseySize} />
               </dl>
             </UserBlock>
