@@ -291,11 +291,7 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
                 View bag
               </button>
             </p>
-          ) : (
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Same jersey, another size — add it as a second line.
-            </p>
-          )}
+          ) : null}
 
           <ProductDetailsAccordion
             onSectionChange={setSection}

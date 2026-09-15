@@ -271,17 +271,17 @@ OrderShipped.PreviewProps = {
       detail: 'XXL · ×1',
       image:
         'https://cdn.shopify.com/s/files/1/1431/8222/products/MENS_TrainingJersey_MAP-MAJ226_CAP_Cappuccino_PRODUCT_CARD_HERO.jpg?width=96',
-      price: 'Rp 890.000',
+      price: 'Rp890.000',
     },
     {
       name: 'Sawangan Navy',
       detail: 'M · ×1',
       image:
         'https://cdn.shopify.com/s/files/1/1431/8222/products/MENS_TrainingJersey_MAP-MAJ328_NVY_PRODUCT_CARD_HERO.jpg?width=96',
-      price: 'Rp 850.000',
+      price: 'Rp850.000',
     },
   ],
-  total: 'Rp 1.775.000',
+  total: 'Rp1.775.000',
   orderUrl: 'https://barongcycling.com/account/orders/20260914-105032',
 } satisfies OrderShippedProps
 

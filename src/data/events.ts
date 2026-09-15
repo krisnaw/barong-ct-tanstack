@@ -142,5 +142,7 @@ export function formatIdr(amount: number) {
     style: 'currency',
     currency: 'IDR',
     maximumFractionDigits: 0,
-  }).format(amount)
+  })
+    .format(amount)
+    .replace(/Rp\s+/, 'Rp')
 }
