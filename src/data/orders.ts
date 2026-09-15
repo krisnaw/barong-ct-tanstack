@@ -7,6 +7,7 @@ export const orderStatuses = [
   'completed',
   'cancelled',
   'refunded',
+  'expire_payment',
 ] as const
 
 export type OrderStatus = (typeof orderStatuses)[number]
@@ -80,6 +81,7 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   completed: 'Completed',
   cancelled: 'Cancelled',
   refunded: 'Refunded',
+  expire_payment: 'Expire Payment',
 }
 
 export const orderStatusStyles: Record<OrderStatus, string> = {
@@ -91,6 +93,7 @@ export const orderStatusStyles: Record<OrderStatus, string> = {
   completed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   cancelled: 'border-zinc-200 bg-zinc-100 text-zinc-600',
   refunded: 'border-rose-200 bg-rose-50 text-rose-800',
+  expire_payment: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
 export function normalizeOrderStatus(status: string): OrderStatus {
@@ -107,6 +110,7 @@ export function resolveOrderStatus(
 ): OrderStatus {
   const mapped = normalizeOrderStatus(status)
   if (mapped === 'pending' && paymentStatus === 'paid') return 'paid'
+  if (mapped === 'pending' && paymentStatus === 'expired') return 'expire_payment'
   return mapped
 }
 

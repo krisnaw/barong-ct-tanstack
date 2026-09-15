@@ -28,7 +28,7 @@ export async function applyPaymentEvent(
     })
     .where(eq(payment.id, row.id))
 
-  if (event.status === 'paid') {
+  if (event.status === 'paid' || event.status === 'expired') {
     const orderRow = await db.query.orders.findFirst({
       where: eq(orders.id, row.orderId),
     })
@@ -38,7 +38,10 @@ export async function applyPaymentEvent(
     ) {
       await db
         .update(orders)
-        .set({ status: 'paid', updatedAt: new Date() })
+        .set({
+          status: event.status === 'paid' ? 'paid' : 'expire_payment',
+          updatedAt: new Date(),
+        })
         .where(eq(orders.id, row.orderId))
     }
   }

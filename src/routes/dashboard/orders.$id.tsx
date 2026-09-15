@@ -291,7 +291,10 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
     order.trackingNumber ?? '',
   )
   const [saving, setSaving] = React.useState(false)
-  const canShip = order.status !== 'cancelled' && order.status !== 'refunded'
+  const canShip =
+    order.status !== 'cancelled' &&
+    order.status !== 'refunded' &&
+    order.status !== 'expire_payment'
   const hasTracking = Boolean(order.courier && order.trackingNumber)
 
   React.useEffect(() => {
