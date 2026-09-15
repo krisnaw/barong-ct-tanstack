@@ -12,6 +12,7 @@ import type {
 } from '~/lib/payment/types'
 
 const CHECKOUT_PATH = '/checkout/v1/payment'
+export const DOKU_PAYMENT_DUE_MINUTES = 5
 
 type DokuCheckoutResponse = {
   error_messages?: string[]
@@ -152,7 +153,7 @@ export const dokuProvider: PaymentProvider = {
         line_items: lineItems(input),
       },
       payment: {
-        payment_due_date: 24 * 60,
+        payment_due_date: DOKU_PAYMENT_DUE_MINUTES,
         payment_method_types: ['QRIS', 'VIRTUAL_ACCOUNT_BNI', 'CREDIT_CARD'],
       },
       customer: {

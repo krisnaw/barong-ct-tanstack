@@ -161,7 +161,15 @@ export function LoginForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <div className="flex items-center justify-between gap-2">
+              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <Link
+                className="text-sm text-muted-foreground underline underline-offset-4"
+                to="/auth/forgot-password"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               minLength={8}
@@ -193,10 +201,10 @@ export function LoginForm({
           </Field>
         </FieldGroup>
       </form>
-      <FieldDescription className="px-6 text-center">
+      {/* <FieldDescription className="px-6 text-center">
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
         and <a href="#">Privacy Policy</a>.
-      </FieldDescription>
+      </FieldDescription> */}
     </div>
   )
 }

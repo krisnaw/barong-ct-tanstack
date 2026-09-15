@@ -5,7 +5,11 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { waitUntil } from 'cloudflare:workers'
 import { db } from '~/lib/db'
 import * as schema from '~/lib/auth-schema'
-import { sendMagicLinkEmail, sendVerificationEmail } from '~/lib/email'
+import {
+  sendMagicLinkEmail,
+  sendResetPasswordEmail,
+  sendVerificationEmail,
+} from '~/lib/email'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -14,6 +18,16 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      waitUntil(
+        sendResetPasswordEmail({
+          to: user.email,
+          name: user.name || 'Rider',
+          url,
+        }),
+      )
+    },
   },
   emailVerification: {
     sendOnSignUp: true,

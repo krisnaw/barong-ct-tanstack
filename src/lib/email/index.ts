@@ -1,6 +1,7 @@
 export { sendEmail } from '~/lib/email/send'
 export { sendMagicLinkEmail } from '~/lib/email/magic-link'
 export { sendOrderShippedEmail } from '~/lib/email/order-shipped'
+export { sendResetPasswordEmail } from '~/lib/email/reset-password'
 export { sendVerificationEmail } from '~/lib/email/verification'
 export type {
   EmailAddress,
