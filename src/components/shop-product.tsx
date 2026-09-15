@@ -12,7 +12,6 @@ import { Label } from '~/components/ui/label'
 import {
   CUSTOM_SIZE,
   customMeasurementsComplete,
-  formatCustomMeasurements,
   formatShopPrice,
   jerseySizeGuide,
   productSizeOptions,
@@ -24,7 +23,6 @@ import { useAccount } from '~/lib/account'
 import { authClient } from '~/lib/auth-client'
 import { useCart } from '~/lib/cart'
 import { cn } from '~/lib/utils'
-import { toast } from '~/components/ui/toast'
 
 type AccordionSection = 'information' | 'features' | 'size-guide' | null
 
@@ -64,13 +62,6 @@ export function ShopProductDetail({ product }: { product: ShopProduct }) {
     addItem(product.slug, size, 1, isCustom ? custom : undefined)
     setAdded(true)
     openSheet()
-    toast.add({
-      type: 'success',
-      title: 'Added to bag',
-      description: isCustom
-        ? `${product.name} · Custom (${formatCustomMeasurements(custom)})`
-        : `${product.name} · Size ${size}`,
-    })
   }
 
   React.useEffect(() => {
