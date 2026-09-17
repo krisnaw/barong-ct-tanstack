@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ProductImageUrlFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
+import { ProductImageFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import { jerseySizeGuide } from '~/data/shop'
 import {
   Breadcrumb,
@@ -259,7 +259,7 @@ function DashboardCreateProductPage() {
               </Field>
             ) : null}
 
-            <ProductImageUrlFields onChange={setImageUrls} values={imageUrls} />
+            <ProductImageFields onChange={setImageUrls} values={imageUrls} />
 
             <Field>
               <FieldLabel htmlFor="imageAlt">Image alt text</FieldLabel>

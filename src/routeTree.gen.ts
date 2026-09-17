@@ -38,6 +38,7 @@ import { Route as AccountOrdersIndexRouteImport } from './routes/account.orders.
 import { Route as AccountOrdersIdRouteImport } from './routes/account.orders.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAvatarsUserIdRouteImport } from './routes/api/avatars.$userId'
+import { Route as ApiCatalogueImagesImageIdRouteImport } from './routes/api/catalogue-images.$imageId'
 import { Route as DashboardCatalogueIndexRouteImport } from './routes/dashboard/catalogue.index'
 import { Route as DashboardCatalogueSlugRouteImport } from './routes/dashboard/catalogue.$slug'
 import { Route as DashboardCatalogueNewRouteImport } from './routes/dashboard/catalogue.new'
@@ -204,6 +205,12 @@ const ApiAvatarsUserIdRoute = ApiAvatarsUserIdRouteImport.update({
   path: '/api/avatars/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCatalogueImagesImageIdRoute =
+  ApiCatalogueImagesImageIdRouteImport.update({
+    id: '/api/catalogue-images/$imageId',
+    path: '/api/catalogue-images/$imageId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardCatalogueIndexRoute = DashboardCatalogueIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -337,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
+  '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -376,6 +384,7 @@ export interface FileRoutesByTo {
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
+  '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -428,6 +437,7 @@ export interface FileRoutesById {
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
+  '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
@@ -481,6 +491,7 @@ export interface FileRouteTypes {
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
+    | '/api/catalogue-images/$imageId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -520,6 +531,7 @@ export interface FileRouteTypes {
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
+    | '/api/catalogue-images/$imageId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -571,6 +583,7 @@ export interface FileRouteTypes {
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
+    | '/api/catalogue-images/$imageId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
@@ -607,6 +620,7 @@ export interface RootRouteChildren {
   RecapsSlugRoute: typeof RecapsSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarsUserIdRoute: typeof ApiAvatarsUserIdRoute
+  ApiCatalogueImagesImageIdRoute: typeof ApiCatalogueImagesImageIdRoute
   ApiPaymentsWebhookProviderRoute: typeof ApiPaymentsWebhookProviderRoute
 }
 
@@ -813,6 +827,13 @@ declare module '@tanstack/react-router' {
       path: '/api/avatars/$userId'
       fullPath: '/api/avatars/$userId'
       preLoaderRoute: typeof ApiAvatarsUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/catalogue-images/$imageId': {
+      id: '/api/catalogue-images/$imageId'
+      path: '/api/catalogue-images/$imageId'
+      fullPath: '/api/catalogue-images/$imageId'
+      preLoaderRoute: typeof ApiCatalogueImagesImageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/catalogue/': {
@@ -1159,6 +1180,7 @@ const rootRouteChildren: RootRouteChildren = {
   RecapsSlugRoute: RecapsSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarsUserIdRoute: ApiAvatarsUserIdRoute,
+  ApiCatalogueImagesImageIdRoute: ApiCatalogueImagesImageIdRoute,
   ApiPaymentsWebhookProviderRoute: ApiPaymentsWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,9 +1,8 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
-import { ProductImageUrlFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
+import { ProductImageFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import {
   jerseySizeGuide,
-  shopImageSrc,
 } from '~/data/shop'
 import {
   Breadcrumb,
@@ -78,7 +77,6 @@ function DashboardProductDetailPage() {
       ),
   )
   const [saving, setSaving] = React.useState(false)
-  const previewImage = collectImageUrls(imageUrls)[0]
 
   React.useEffect(() => {
     setName(product.name)
@@ -304,18 +302,7 @@ function DashboardProductDetailPage() {
               </Field>
             ) : null}
 
-            {previewImage ? (
-              <img
-                alt={imageAlt || product.imageAlt}
-                className="size-16 object-cover bg-muted"
-                decoding="async"
-                height={64}
-                src={shopImageSrc(previewImage, 128)}
-                width={64}
-              />
-            ) : null}
-
-            <ProductImageUrlFields onChange={setImageUrls} values={imageUrls} />
+            <ProductImageFields onChange={setImageUrls} values={imageUrls} />
 
             <Field>
               <FieldLabel htmlFor="imageAlt">Image alt text</FieldLabel>
