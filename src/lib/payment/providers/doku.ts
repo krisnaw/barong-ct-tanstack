@@ -9,8 +9,14 @@ import type {
   CreateCheckoutInput,
   PaymentEvent,
   PaymentEventStatus,
+  PaymentMethodId,
   PaymentProvider,
 } from '~/lib/payment/types'
+
+const DOKU_METHOD_TYPES: Record<PaymentMethodId, string[]> = {
+  qris_va: ['QRIS', 'VIRTUAL_ACCOUNT_BNI'],
+  card: ['CREDIT_CARD'],
+}
 
 const CHECKOUT_PATH = '/checkout/v1/payment'
 export const DOKU_PAYMENT_DUE_MINUTES = 5
@@ -146,19 +152,15 @@ export const dokuProvider: PaymentProvider = {
   displayName: 'DOKU',
   methods: [
     {
-      id: 'qris',
-      label: 'QRIS',
-      detail: 'Scan QRIS on the DOKU payment page.',
-    },
-    {
-      id: 'bni_va',
-      label: 'BNI Virtual Account',
-      detail: 'Pay to a BNI VA number on the DOKU payment page.',
+      id: 'qris_va',
+      label: 'QRIS / BNI VA',
+      detail: 'Pay with QRIS or BNI Virtual Account on the DOKU payment page.',
     },
     {
       id: 'card',
       label: 'Credit card',
-      detail: 'Visa, Mastercard, and other cards via DOKU.',
+      detail:
+        'Visa, Mastercard, and other cards via DOKU. A service fee applies.',
     },
   ],
   async createCheckout(input) {
@@ -179,7 +181,7 @@ export const dokuProvider: PaymentProvider = {
       },
       payment: {
         payment_due_date: DOKU_PAYMENT_DUE_MINUTES,
-        payment_method_types: ['QRIS', 'VIRTUAL_ACCOUNT_BNI', 'CREDIT_CARD'],
+        payment_method_types: DOKU_METHOD_TYPES[input.methodId],
       },
       customer: {
         name: input.customer.firstName,

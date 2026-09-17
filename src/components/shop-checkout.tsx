@@ -31,7 +31,8 @@ import { useAccount } from '~/lib/account'
 import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
 import { placeOrder } from '~/lib/order.functions'
 import { startPayment } from '~/lib/payment.functions'
-import type { PaymentDisplay } from '~/lib/payment/types'
+import { dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
+import type { PaymentDisplay, PaymentMethodId } from '~/lib/payment/types'
 import { cn } from '~/lib/utils'
 
 type CartLine = CartItem & { product: ShopProduct }
@@ -57,12 +58,14 @@ function checkoutFieldErrors({
   lastName,
   phone,
   pickupPointId,
+  methodId,
 }: {
   email: string
   firstName: string
   lastName: string
   phone: string
   pickupPointId: string
+  methodId: string
 }) {
   const next: Record<string, string> = {}
   if (!email.includes('@')) next.email = 'Enter a valid email'
@@ -70,6 +73,7 @@ function checkoutFieldErrors({
   if (!lastName.trim()) next.lastName = 'Enter a last name'
   if (!phone.trim()) next.phone = 'Enter a phone number'
   if (!pickupPointId) next.pickup = 'Select a pickup location'
+  if (!methodId) next.payment = 'Select a payment method'
   return next
 }
 
@@ -92,6 +96,9 @@ export function ShopCheckout({
   const [pickupPointId, setPickupPointId] = React.useState(
     pickupPoints[0]?.id ?? '',
   )
+  const [methodId, setMethodId] = React.useState<PaymentMethodId>(
+    paymentDisplay.methods[0]?.id ?? 'qris_va',
+  )
   const [didSubmit, setDidSubmit] = React.useState(false)
   const [actionError, setActionError] = React.useState<Record<string, string>>(
     {},
@@ -108,6 +115,7 @@ export function ShopCheckout({
         lastName,
         phone,
         pickupPointId,
+        methodId,
       })
     : {}
   const errors = { ...fieldErrors, ...actionError }
@@ -115,7 +123,9 @@ export function ShopCheckout({
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
-  const total = subtotal
+  const serviceFee =
+    methodId === 'card' ? dokuCardServiceFee(subtotal) : 0
+  const total = subtotal + serviceFee
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
   const selectedPickup =
     pickupPoints.find((point) => point.id === pickupPointId) ?? null
@@ -137,6 +147,11 @@ export function ShopCheckout({
     setPickupPointId(pickupPoints[0]?.id ?? '')
   }, [pickupPoints, pickupPointId])
 
+  React.useEffect(() => {
+    if (paymentDisplay.methods.some((method) => method.id === methodId)) return
+    setMethodId(paymentDisplay.methods[0]?.id ?? 'qris_va')
+  }, [paymentDisplay.methods, methodId])
+
   async function handlePay(event: React.FormEvent) {
     event.preventDefault()
     setDidSubmit(true)
@@ -147,6 +162,7 @@ export function ShopCheckout({
       lastName,
       phone,
       pickupPointId,
+      methodId,
     })
     if (Object.keys(next).length > 0) return
     if (!selectedPickup) {
@@ -173,7 +189,7 @@ export function ShopCheckout({
       })
       try {
         const started = await startPayment({
-          data: { orderNumber: placed.id },
+          data: { orderNumber: placed.id, methodId },
         })
         clear()
         window.location.assign(started.url)
@@ -204,6 +220,7 @@ export function ShopCheckout({
     <OrderSummary
       delivery="pickup"
       lines={lines}
+      serviceFee={serviceFee}
       subtotal={subtotal}
       total={total}
     />
@@ -370,24 +387,51 @@ export function ShopCheckout({
 
           <section>
             <h2 className="text-[1.35rem] font-semibold tracking-tight">Payment</h2>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <div className="mt-3 space-y-2">
               {paymentDisplay.methods.map((method) => {
+                const active = method.id === methodId
                 const Icon =
-                  method.id === 'qris'
+                  method.id === 'qris_va'
                     ? QrCodeIcon
                     : method.id === 'card'
                       ? CreditCardIcon
-                      : method.id === 'bni_va'
-                        ? BankIcon
-                        : LockSimpleIcon
+                      : LockSimpleIcon
                 return (
-                  <span className="inline-flex items-center gap-1.5" key={method.id}>
-                    <Icon className="size-4 shrink-0" />
-                    {method.label}
-                  </span>
+                  <label
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-md border border-border px-3 py-3',
+                      active && 'bg-neutral-50',
+                    )}
+                    key={method.id}
+                  >
+                    <input
+                      checked={active}
+                      className="mt-1 size-4"
+                      name="payment"
+                      onChange={() => setMethodId(method.id)}
+                      type="radio"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                        <Icon className="size-4 shrink-0" />
+                        {method.label}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">
+                        {method.id === 'card'
+                          ? 'Visa, Mastercard, and other cards via DOKU. A service fee applies.'
+                          : method.detail}
+                      </span>
+                    </span>
+                    {method.id === 'qris_va' ? (
+                      <BankIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    ) : null}
+                  </label>
                 )
               })}
             </div>
+            {errors.payment ? (
+              <p className="mt-1.5 text-xs text-red-600">{errors.payment}</p>
+            ) : null}
           </section>
 
           {errors.form ? (
@@ -500,9 +544,9 @@ export function CheckoutConfirmation({ order }: { order: ShopOrder }) {
 
           <Link
             className="mt-8 inline-flex h-12 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground"
-            to="/shop"
+            to="/account/orders"
           >
-            Continue shopping
+            View orders
           </Link>
         </div>
       </div>
@@ -593,11 +637,13 @@ function OrderSummary({
   subtotal,
   total,
   delivery,
+  serviceFee = 0,
 }: {
   lines: CartLine[]
   subtotal: number
   total: number
   delivery: 'pickup' | 'ship'
+  serviceFee?: number
 }) {
   return (
     <div>
@@ -647,6 +693,12 @@ function OrderSummary({
           <dt>{delivery === 'pickup' ? 'Pickup point' : 'Shipping'}</dt>
           <dd className="tabular-nums">Free</dd>
         </div>
+        {serviceFee > 0 ? (
+          <div className="flex justify-between">
+            <dt>Card service fee</dt>
+            <dd className="tabular-nums">{formatShopPrice(serviceFee)}</dd>
+          </div>
+        ) : null}
       </dl>
       <div className="mt-4 flex items-baseline justify-between border-t border-neutral-300 pt-4">
         <span className="text-base font-medium">Total</span>
@@ -662,6 +714,12 @@ function OrderSummary({
 }
 
 function ConfirmationSummary({ order }: { order: ShopOrder }) {
+  const goodsTotal = Math.max(
+    order.subtotal - order.discount + order.shipping,
+    0,
+  )
+  const serviceFee = Math.max(order.total - goodsTotal, 0)
+
   return (
     <div>
       <ul className="space-y-4">
@@ -719,6 +777,12 @@ function ConfirmationSummary({ order }: { order: ShopOrder }) {
             {order.shipping === 0 ? 'Free' : formatShopPrice(order.shipping)}
           </dd>
         </div>
+        {serviceFee > 0 ? (
+          <div className="flex justify-between">
+            <dt>Card service fee</dt>
+            <dd className="tabular-nums">{formatShopPrice(serviceFee)}</dd>
+          </div>
+        ) : null}
       </dl>
       <div className="mt-4 flex items-baseline justify-between border-t border-neutral-300 pt-4">
         <span className="text-base font-medium">Total</span>

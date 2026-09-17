@@ -10,6 +10,8 @@ export type {
   CreateCheckoutInput,
   PaymentDisplay,
   PaymentEvent,
+  PaymentMethodId,
   PaymentProvider,
   PaymentProviderName,
 } from '~/lib/payment/types'
+export { PAYMENT_METHOD_IDS } from '~/lib/payment/types'

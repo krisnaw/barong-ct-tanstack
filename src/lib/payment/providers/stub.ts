@@ -14,19 +14,15 @@ export const stubProvider: PaymentProvider = {
   displayName: 'Test payment',
   methods: [
     {
-      id: 'qris',
-      label: 'QRIS',
-      detail: 'Scan QRIS on the test payment page.',
-    },
-    {
-      id: 'bni_va',
-      label: 'BNI Virtual Account',
-      detail: 'Pay to a BNI VA number on the test payment page.',
+      id: 'qris_va',
+      label: 'QRIS / BNI VA',
+      detail: 'Pay with QRIS or BNI Virtual Account on the test payment page.',
     },
     {
       id: 'card',
       label: 'Credit card',
-      detail: 'Visa, Mastercard, and other cards on the test payment page.',
+      detail:
+        'Visa, Mastercard, and other cards on the test payment page. A service fee applies.',
     },
   ],
   async createCheckout(input) {

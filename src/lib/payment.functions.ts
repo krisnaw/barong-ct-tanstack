@@ -12,6 +12,7 @@ import {
   isCheckoutExpired,
   parseCheckoutPayload,
 } from '~/lib/payment/checkout-payload'
+import { chargeAmountForMethod, dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import {
   getPaymentDisplay as readPaymentDisplay,
   getProvider,
@@ -19,6 +20,7 @@ import {
 } from '~/lib/payment/get-provider'
 import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
 import { appOriginUrl, checkoutOriginUrl } from '~/lib/payment/public-url'
+import { PAYMENT_METHOD_IDS } from '~/lib/payment/types'
 
 async function requireSession() {
   const headers = getRequestHeaders()
@@ -82,7 +84,12 @@ export const getPaymentDisplay = createServerFn({ method: 'GET' }).handler(
 )
 
 export const startPayment = createServerFn({ method: 'POST' })
-  .validator(z.object({ orderNumber: z.string().min(1) }))
+  .validator(
+    z.object({
+      orderNumber: z.string().min(1),
+      methodId: z.enum(PAYMENT_METHOD_IDS).default('qris_va'),
+    }),
+  )
   .handler(async ({ data }) => {
     const session = await requireSession()
     const order = await loadOwnedOrder(
@@ -95,9 +102,30 @@ export const startPayment = createServerFn({ method: 'POST' })
     }
 
     const provider = getProvider()
+    const goodsTotal = Math.max(
+      order.subtotal - order.discount + order.shipping,
+      0,
+    )
+    const serviceFee =
+      data.methodId === 'card' ? dokuCardServiceFee(goodsTotal) : 0
+    const chargeAmount = chargeAmountForMethod(goodsTotal, data.methodId)
+
     const existing = latestPendingPayment(order.payments, provider.name)
     if (existing) {
-      const url = reusableCheckoutUrl(existing, order.number, provider.name)
+      const sameMethod =
+        !existing.method ||
+        existing.method === data.methodId ||
+        // Legacy rows may store channel names from older checkouts
+        (data.methodId === 'qris_va' &&
+          (existing.method === 'qris' ||
+            existing.method === 'va' ||
+            existing.method === 'bni_va')) ||
+        (data.methodId === 'card' && existing.method === 'card')
+      const sameAmount = existing.amount === chargeAmount
+      const url =
+        sameMethod && sameAmount
+          ? reusableCheckoutUrl(existing, order.number, provider.name)
+          : null
       if (url) {
         return { url }
       }
@@ -107,24 +135,44 @@ export const startPayment = createServerFn({ method: 'POST' })
         .where(eq(payment.id, existing.id))
     }
 
+    if (order.total !== chargeAmount) {
+      await db
+        .update(orders)
+        .set({ total: chargeAmount, updatedAt: new Date() })
+        .where(eq(orders.id, order.id))
+    }
+
     const base = checkoutOriginUrl()
     const returnUrl = `${base}/shop/checkout/return?order=${encodeURIComponent(order.number)}`
     const cancelUrl = `${base}/shop/checkout/cancel?order=${encodeURIComponent(order.number)}`
+    const items = [
+      ...order.lines.map((line) => ({
+        name: line.name,
+        quantity: line.quantity,
+        price: line.price,
+      })),
+      ...(serviceFee > 0
+        ? [
+            {
+              name: 'Card service fee',
+              quantity: 1,
+              price: serviceFee,
+            },
+          ]
+        : []),
+    ]
     const sessionCheckout = await provider.createCheckout({
       orderNumber: order.number,
-      amount: order.total,
+      amount: chargeAmount,
       currency: 'IDR',
+      methodId: data.methodId,
       customer: {
         email: order.email,
         firstName: order.firstName,
         lastName: order.lastName,
         phone: order.phone,
       },
-      items: order.lines.map((line) => ({
-        name: line.name,
-        quantity: line.quantity,
-        price: line.price,
-      })),
+      items,
       returnUrl,
       cancelUrl,
     })
@@ -135,7 +183,8 @@ export const startPayment = createServerFn({ method: 'POST' })
       provider: provider.name,
       transactionId: sessionCheckout.transactionId,
       status: 'pending',
-      amount: order.total,
+      method: data.methodId,
+      amount: chargeAmount,
       checkoutUrl: sessionCheckout.url,
       payload: checkoutPayloadJson({
         expiresAt: sessionCheckout.expiresAt,
@@ -171,7 +220,7 @@ export const simulateStubPayment = createServerFn({ method: 'POST' })
     await applyPaymentEvent('stub', {
       transactionId: current.transactionId,
       status: 'paid',
-      method: 'qris',
+      method: current.method ?? 'qris_va',
       payload: { source: 'simulate' },
     })
     return { ok: true as const }
