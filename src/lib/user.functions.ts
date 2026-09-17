@@ -195,3 +195,31 @@ export const markUserVerified = createServerFn({ method: 'POST' })
 
     return { verifiedAt: toIso(verifiedAt) }
   })
+
+export const adminUserRoles = ['user', 'admin'] as const
+export type AdminUserRole = (typeof adminUserRoles)[number]
+
+export const updateUserRole = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      id: z.string().min(1),
+      role: z.enum(adminUserRoles),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const session = await requireAdmin()
+    if (session.user.id === data.id && data.role !== 'admin') {
+      throw new Error('You cannot remove your own admin role')
+    }
+
+    const headers = getRequestHeaders()
+    await auth.api.setRole({
+      body: {
+        userId: data.id,
+        role: data.role,
+      },
+      headers,
+    })
+
+    return { id: data.id, role: data.role }
+  })

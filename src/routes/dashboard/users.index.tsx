@@ -16,7 +16,25 @@ import {
   BreadcrumbPage,
 } from '~/components/ui/breadcrumb'
 import { Button } from '~/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import {
@@ -29,9 +47,12 @@ import {
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
 import {
+  adminUserRoles,
   listUsers,
   markUserVerified,
+  updateUserRole,
   type AdminUserListItem,
+  type AdminUserRole,
 } from '~/lib/user.functions'
 
 const features = tableFeatures({
@@ -52,11 +73,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor('role', {
     header: 'Role',
     enableColumnFilter: false,
-    cell: ({ getValue }) => (
-      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        {getValue()}
-      </span>
-    ),
+    cell: ({ row }) => <RoleCell account={row.original} />,
   }),
   columnHelper.display({
     id: 'member',
@@ -136,7 +153,8 @@ function DashboardUsersPage() {
                     {row.getAllCells().map((cell) => (
                       <TableCell
                         className={
-                          cell.column.id === 'member'
+                          cell.column.id === 'member' ||
+                          cell.column.id === 'role'
                             ? 'relative z-10 px-4 py-3'
                             : 'px-4 py-3'
                         }
@@ -197,6 +215,110 @@ function UserCell({ account }: { account: AdminUserListItem }) {
       </span>
     </Link>
   )
+}
+
+function RoleCell({ account }: { account: AdminUserListItem }) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [role, setRole] = React.useState<AdminUserRole>(
+    normalizeRole(account.role),
+  )
+  const [saving, setSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    if (open) setRole(normalizeRole(account.role))
+  }, [open, account.role])
+
+  async function save() {
+    if (role === normalizeRole(account.role)) {
+      setOpen(false)
+      return
+    }
+    setSaving(true)
+    try {
+      await updateUserRole({ data: { id: account.id, role } })
+      await router.invalidate()
+      toast.add({ type: 'success', title: `Role updated to ${role}` })
+      setOpen(false)
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error ? error.message : 'Could not update role',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        {account.role}
+      </span>
+      <Dialog onOpenChange={setOpen} open={open}>
+        <DialogTrigger
+          render={
+            <Button
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            />
+          }
+        >
+          Change
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change role</DialogTitle>
+            <DialogDescription>
+              Update the dashboard role for {account.name} ({account.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-1.5">
+            <Label htmlFor={`role-${account.id}`}>Role</Label>
+            <Select
+              onValueChange={(value) => {
+                if (value == null) return
+                setRole(value as AdminUserRole)
+              }}
+              value={role}
+            >
+              <SelectTrigger className="w-full" id={`role-${account.id}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {adminUserRoles.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option === 'admin' ? 'Admin' : 'User'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              disabled={saving || role === normalizeRole(account.role)}
+              onClick={() => void save()}
+            >
+              {saving ? 'Saving…' : 'Save role'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function normalizeRole(role: string): AdminUserRole {
+  return role === 'admin' ? 'admin' : 'user'
 }
 
 function MemberCell({ account }: { account: AdminUserListItem }) {
