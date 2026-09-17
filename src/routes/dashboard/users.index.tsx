@@ -294,7 +294,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
               <SelectContent>
                 {adminUserRoles.map((option) => (
                   <SelectItem key={option} value={option}>
-                    {option === 'admin' ? 'Admin' : 'User'}
+                    {roleLabel(option)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -318,7 +318,15 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
 }
 
 function normalizeRole(role: string): AdminUserRole {
-  return role === 'admin' ? 'admin' : 'user'
+  return adminUserRoles.includes(role as AdminUserRole)
+    ? (role as AdminUserRole)
+    : 'user'
+}
+
+function roleLabel(role: AdminUserRole) {
+  if (role === 'admin') return 'Admin'
+  if (role === 'staff') return 'Staff'
+  return 'User'
 }
 
 function MemberCell({ account }: { account: AdminUserListItem }) {

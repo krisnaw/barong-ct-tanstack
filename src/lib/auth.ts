@@ -5,6 +5,7 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { waitUntil } from 'cloudflare:workers'
 import { db } from '~/lib/db'
 import * as schema from '~/lib/auth-schema'
+import { ac, authRoles } from '~/lib/auth-permissions'
 import {
   sendMagicLinkEmail,
   sendResetPasswordEmail,
@@ -49,7 +50,10 @@ export const auth = betterAuth({
     'https://barongcycling.com',
   ],
   plugins: [
-    admin(),
+    admin({
+      ac,
+      roles: authRoles,
+    }),
     magicLink({
       expiresIn: 60 * 15,
       storeToken: 'hashed',

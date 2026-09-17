@@ -196,7 +196,7 @@ export const markUserVerified = createServerFn({ method: 'POST' })
     return { verifiedAt: toIso(verifiedAt) }
   })
 
-export const adminUserRoles = ['user', 'admin'] as const
+export const adminUserRoles = ['user', 'staff', 'admin'] as const
 export type AdminUserRole = (typeof adminUserRoles)[number]
 
 export const updateUserRole = createServerFn({ method: 'POST' })
