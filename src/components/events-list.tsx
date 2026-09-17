@@ -89,7 +89,7 @@ function ActiveEventsRows() {
   }
 
   return (
-    <ul className="divide-y divide-border border-y border-border">
+    <ul className="divide-y divide-border border-b border-border">
       {activeEvents.map((event) => (
         <li key={event.slug}>
           <Link
@@ -153,7 +153,7 @@ function PastEventsRows() {
   }
 
   return (
-    <ul className="divide-y divide-border border-y border-border">
+    <ul className="divide-y divide-border border-b border-border">
       {pastEvents.map((event) => (
         <li key={event.slug}>
           <Link

@@ -276,9 +276,6 @@ export function AccountProfilePanel() {
       <h2 className="font-heading text-lg font-semibold tracking-tight">
         Profile
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Used at checkout and when we WhatsApp about pickup.
-      </p>
 
       <div className="mt-6 flex items-center gap-4">
         <Avatar className="size-20 after:rounded-full data-[size=default]:size-20">
@@ -446,9 +443,6 @@ export function AccountProfilePanel() {
       <h3 className="mt-8 font-heading text-lg font-semibold tracking-tight">
         Address
       </h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Used for event information. Shipping stays on the Shipping Address page.
-      </p>
       <AddressFields
         idPrefix="profile"
         onChange={(key, value) => setField(key, value)}
@@ -540,9 +534,6 @@ export function AccountAddressPanel() {
       <h2 className="font-heading text-lg font-semibold tracking-tight">
         Shipping address
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        For shipped kit orders. One address for now — more can be added later.
-      </p>
       <AddressFields
         idPrefix="shipping"
         onChange={(key, value) => setField(key, value)}
@@ -592,9 +583,6 @@ export function AccountOrdersPanel({
       <h2 className="font-heading text-lg font-semibold tracking-tight">
         Order history
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Kit placed on this account.
-      </p>
       {!ready ? (
         <p className="mt-6 text-sm text-muted-foreground">Loading orders…</p>
       ) : orders.length === 0 ? (
@@ -631,7 +619,7 @@ function SaveBar({
   label?: string
 }) {
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-4">
+    <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
       <Button disabled={pending} size="lg" type="submit">
         {pending ? 'Saving…' : label}
       </Button>
