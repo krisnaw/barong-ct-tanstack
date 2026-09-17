@@ -217,6 +217,17 @@ function UserCell({ account }: { account: AdminUserListItem }) {
   )
 }
 
+function roleLabel(role: AdminUserRole) {
+  if (role === 'admin') return 'Admin'
+  if (role === 'staff') return 'Staff'
+  return 'User'
+}
+
+const roleSelectItems = adminUserRoles.map((option) => ({
+  value: option,
+  label: roleLabel(option),
+}))
+
 function RoleCell({ account }: { account: AdminUserListItem }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
@@ -282,6 +293,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
           <div className="grid gap-1.5">
             <Label htmlFor={`role-${account.id}`}>Role</Label>
             <Select
+              items={roleSelectItems}
               onValueChange={(value) => {
                 if (value == null) return
                 setRole(value as AdminUserRole)
@@ -292,9 +304,9 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {adminUserRoles.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {roleLabel(option)}
+                {roleSelectItems.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -321,12 +333,6 @@ function normalizeRole(role: string): AdminUserRole {
   return adminUserRoles.includes(role as AdminUserRole)
     ? (role as AdminUserRole)
     : 'user'
-}
-
-function roleLabel(role: AdminUserRole) {
-  if (role === 'admin') return 'Admin'
-  if (role === 'staff') return 'Staff'
-  return 'User'
 }
 
 function MemberCell({ account }: { account: AdminUserListItem }) {

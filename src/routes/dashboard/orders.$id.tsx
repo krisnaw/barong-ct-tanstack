@@ -354,6 +354,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
           <div className="grid gap-1.5">
             <Label htmlFor="courier">Courier</Label>
             <Select
+              items={courierSelectItems}
               onValueChange={(value) => {
                 if (value == null) return
                 setCourier(value as CourierId)
@@ -364,8 +365,8 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {couriers.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
+                {courierSelectItems.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
                 ))}
@@ -402,6 +403,16 @@ function asAdminStatus(status: ShopOrder['status']): AdminOrderStatus {
     : 'pending'
 }
 
+const courierSelectItems = couriers.map((option) => ({
+  value: option.id,
+  label: option.label,
+}))
+
+const orderStatusSelectItems = adminStatusOptions.map((status) => ({
+  value: status,
+  label: orderStatusLabel(status),
+}))
+
 function ChangeStatusSelect({ order }: { order: ShopOrder }) {
   const router = useRouter()
   const [saving, setSaving] = React.useState(false)
@@ -424,6 +435,7 @@ function ChangeStatusSelect({ order }: { order: ShopOrder }) {
   return (
     <Select
       disabled={saving}
+      items={orderStatusSelectItems}
       onValueChange={(value) => {
         if (value == null) return
         void save(value as AdminOrderStatus)
@@ -434,9 +446,9 @@ function ChangeStatusSelect({ order }: { order: ShopOrder }) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
-        {adminStatusOptions.map((status) => (
-          <SelectItem key={status} value={status}>
-            {orderStatusLabel(status)}
+        {orderStatusSelectItems.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
           </SelectItem>
         ))}
       </SelectContent>

@@ -37,6 +37,14 @@ import {
   TableRow,
 } from '~/components/ui/table'
 
+const orderStatusFilterItems = [
+  { value: 'all' as const, label: 'All' },
+  ...adminStatusOptions.map((status) => ({
+    value: status,
+    label: orderStatusLabel(status),
+  })),
+]
+
 export const Route = createFileRoute('/dashboard/orders/')({
   loader: async () => (await listOrders()) ?? [],
   component: DashboardOrdersPage,
@@ -89,6 +97,7 @@ function DashboardOrdersPage() {
           <div className="grid gap-1.5">
             <Label htmlFor={statusFilterId}>Status</Label>
             <Select
+              items={orderStatusFilterItems}
               onValueChange={(value) => {
                 if (value == null) return
                 setFilter(value as AdminOrderStatus | 'all')
@@ -99,10 +108,9 @@ function DashboardOrdersPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
-                <SelectItem value="all">All</SelectItem>
-                {adminStatusOptions.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {orderStatusLabel(status)}
+                {orderStatusFilterItems.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
