@@ -80,6 +80,7 @@ async function loadMappedOrders(userId?: string) {
   }
   const paymentsByOrder = new Map<string, (typeof payment.$inferSelect)[]>()
   for (const row of payments) {
+    if (!row.orderId) continue
     const current = paymentsByOrder.get(row.orderId) ?? []
     current.push(row)
     paymentsByOrder.set(row.orderId, current)
@@ -291,7 +292,7 @@ export const getOrderById = createServerFn({ method: 'GET' })
       const pay = await db.query.payment.findFirst({
         where: inArray(payment.transactionId, candidates),
       })
-      if (pay) {
+      if (pay?.orderId) {
         row = await db.query.orders.findFirst({
           where: eq(orders.id, pay.orderId),
           with: { lines: true, payments: true },

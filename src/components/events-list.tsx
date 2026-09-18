@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { events, type EventStatus } from '~/data/events'
+import { type ClubEvent, type EventStatus } from '~/data/events'
 import { pastEvents } from '~/data/recaps'
 import { cn } from '~/lib/utils'
 
@@ -17,10 +17,15 @@ const statusStyles: Record<EventStatus, string> = {
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
-const activeEvents = events.filter((event) => event.status === 'open')
-
-export function EventsList({ tab }: { tab: EventsTab }) {
+export function EventsList({
+  tab,
+  events,
+}: {
+  tab: EventsTab
+  events: ClubEvent[]
+}) {
   const isPast = tab === 'past'
+  const activeEvents = events.filter((event) => event.status === 'open')
   const count = isPast ? pastEvents.length : activeEvents.length
 
   return (
@@ -54,7 +59,11 @@ export function EventsList({ tab }: { tab: EventsTab }) {
         </TabLink>
       </div>
 
-      {isPast ? <PastEventsRows /> : <ActiveEventsRows />}
+      {isPast ? (
+        <PastEventsRows />
+      ) : (
+        <ActiveEventsRows events={activeEvents} />
+      )}
     </section>
   )
 }
@@ -86,14 +95,14 @@ function TabLink({
   )
 }
 
-function ActiveEventsRows() {
-  if (activeEvents.length === 0) {
+function ActiveEventsRows({ events }: { events: ClubEvent[] }) {
+  if (events.length === 0) {
     return <EmptyState message="No active or upcoming events right now." />
   }
 
   return (
     <ul className="divide-y divide-border border-b border-border">
-      {activeEvents.map((event) => (
+      {events.map((event) => (
         <li key={event.slug}>
           <Link
             className="group flex items-center gap-4 py-3 outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 sm:gap-5 sm:py-3.5"

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { EventsList, type EventsTab } from '~/components/events-list'
+import { listEvents } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
 const eventsSearchSchema = z.object({
@@ -9,6 +10,7 @@ const eventsSearchSchema = z.object({
 
 export const Route = createFileRoute('/events/')({
   validateSearch: eventsSearchSchema,
+  loader: () => listEvents({ data: { status: 'open' } }),
   head: () => ({
     meta: seo({
       title: 'Events | Barong Cycling Team',
@@ -21,5 +23,6 @@ export const Route = createFileRoute('/events/')({
 
 function EventsPage() {
   const { tab } = Route.useSearch()
-  return <EventsList tab={(tab ?? 'active') as EventsTab} />
+  const events = Route.useLoaderData()
+  return <EventsList events={events} tab={(tab ?? 'active') as EventsTab} />
 }

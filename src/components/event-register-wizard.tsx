@@ -31,6 +31,7 @@ import {
   saveCreatedGroup,
   saveDraft,
 } from '~/lib/event-register-draft'
+import { registerForEvent } from '~/lib/event.functions'
 import {
   type UserProfileRow,
   upsertMyProfile,
@@ -201,27 +202,29 @@ export function EventRegisterWizard({
         </Link>
       </div>
 
-      <ol className="mb-8 flex flex-wrap gap-2 border-b border-border pb-4">
-        {steps.map((item, index) => {
-          const active = item === step
-          const done = index < stepIndex
-          return (
-            <li key={item}>
-              <span
-                className={cn(
-                  'inline-flex items-center gap-2 px-2.5 py-1 text-xs font-medium tracking-[0.12em] uppercase',
-                  active && 'bg-foreground text-background',
-                  done && !active && 'text-foreground',
-                  !active && !done && 'text-muted-foreground',
-                )}
-              >
-                <span className="tabular-nums">{index + 1}</span>
-                {stepLabel[item]}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
+      {steps.length > 1 ? (
+        <ol className="mb-8 flex flex-wrap gap-2 border-b border-border pb-4">
+          {steps.map((item, index) => {
+            const active = item === step
+            const done = index < stepIndex
+            return (
+              <li key={item}>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-2 px-2.5 py-1 text-xs font-medium tracking-[0.12em] uppercase',
+                    active && 'bg-foreground text-background',
+                    done && !active && 'text-foreground',
+                    !active && !done && 'text-muted-foreground',
+                  )}
+                >
+                  <span className="tabular-nums">{index + 1}</span>
+                  {stepLabel[item]}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      ) : null}
 
       {event.kind === 'flagship' && step === 'group' ? (
         <GroupStep
@@ -256,13 +259,26 @@ export function EventRegisterWizard({
 
       {step === 'profile' ? (
         <ProfileStep
+          confirmLabel={event.kind === 'free' ? 'Join event' : 'Continue'}
           draft={draft}
           onBack={
             event.kind === 'flagship' ? () => goTo('jersey') : undefined
           }
-          onContinue={() =>
-            goTo(event.kind === 'free' ? 'done' : 'payment')
-          }
+          onContinue={async () => {
+            if (event.kind === 'free') {
+              await registerForEvent({
+                data: {
+                  eventSlug: event.slug,
+                  categoryId: event.courses?.[0]?.id,
+                  status: 'confirmed',
+                },
+              })
+              update({ profileConfirmed: true, status: 'confirmed' })
+              goTo('done')
+              return
+            }
+            goTo('payment')
+          }}
           onUpdate={update}
         />
       ) : null}
@@ -272,7 +288,17 @@ export function EventRegisterWizard({
           draft={draft}
           event={event}
           onBack={() => goTo('profile')}
-          onPaid={() => {
+          onPaid={async () => {
+            await registerForEvent({
+              data: {
+                eventSlug: event.slug,
+                categoryId: draft.courseId || event.courses?.[0]?.id,
+                groupId: draft.groupId || undefined,
+                groupName: draft.groupName || undefined,
+                jerseySize: draft.jerseySize || undefined,
+                status: 'confirmed',
+              },
+            })
             const next = { ...draft, status: 'confirmed' as const }
             saveDraft(event.slug, next)
             setDraft(next)
@@ -580,14 +606,16 @@ function JerseyStep({
 
 function ProfileStep({
   draft,
+  confirmLabel = 'Continue',
   onUpdate,
   onBack,
   onContinue,
 }: {
   draft: RegisterDraft
+  confirmLabel?: string
   onUpdate: (partial: Partial<RegisterDraft>) => void
   onBack?: () => void
-  onContinue: () => void
+  onContinue: () => void | Promise<void>
 }) {
   const { signedIn, updateProfile } = useAccount()
   const [saving, setSaving] = React.useState(false)
@@ -617,7 +645,11 @@ function ProfileStep({
         await upsertMyProfile({ data: patch })
       }
       onUpdate({ profileConfirmed: true })
-      onContinue()
+      try {
+        await onContinue()
+      } catch {
+        setError('Could not complete registration. Try again.')
+      }
     } catch {
       setError('Could not save your profile. Try again.')
     } finally {
@@ -803,7 +835,7 @@ function ProfileStep({
           }}
           type="button"
         >
-          {saving ? 'Saving…' : 'Continue'}
+          {saving ? 'Saving…' : confirmLabel}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -821,7 +853,7 @@ function PaymentStep({
   event: ClubEvent
   draft: RegisterDraft
   onBack: () => void
-  onPaid: () => void
+  onPaid: () => void | Promise<void>
   onUpdate: (partial: Partial<RegisterDraft>) => void
 }) {
   const course = event.courses?.find((item) => item.id === draft.courseId)
@@ -829,7 +861,20 @@ function PaymentStep({
   const serviceFee =
     draft.paymentMethod === 'card' ? dokuCardServiceFee(amount) : 0
   const total = amount + serviceFee
+  const [paying, setPaying] = React.useState(false)
+  const [error, setError] = React.useState('')
 
+  async function handlePay() {
+    if (!draft.paymentMethod || paying) return
+    setPaying(true)
+    setError('')
+    try {
+      await onPaid()
+    } catch {
+      setError('Could not complete registration. Try again.')
+      setPaying(false)
+    }
+  }
   return (
     <section className="space-y-6">
       <div>
@@ -902,13 +947,16 @@ function PaymentStep({
           Back
         </Button>
         <Button
-          disabled={!draft.paymentMethod}
-          onClick={onPaid}
+          disabled={!draft.paymentMethod || paying}
+          onClick={() => {
+            void handlePay()
+          }}
           type="button"
         >
-          Pay {formatIdr(total)}
+          {paying ? 'Confirming…' : `Pay ${formatIdr(total)}`}
         </Button>
       </div>
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </section>
   )
 }

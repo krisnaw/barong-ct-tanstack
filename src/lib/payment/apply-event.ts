@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
+import { eventParticipant } from '~/lib/event-schema'
 import { loadShopOrderByDbId } from '~/lib/order-load'
 import { orders, payment } from '~/lib/order-schema'
 import { mergePaymentPayload } from '~/lib/payment/checkout-payload'
@@ -34,24 +35,36 @@ export async function applyPaymentEvent(
     .where(eq(payment.id, row.id))
 
   if (event.status === 'paid' || event.status === 'expired') {
-    const orderRow = await db.query.orders.findFirst({
-      where: eq(orders.id, row.orderId),
-    })
-    if (
-      orderRow &&
-      (orderRow.status === 'pending' || orderRow.status === 'packed')
-    ) {
+    if (row.orderId) {
+      const orderRow = await db.query.orders.findFirst({
+        where: eq(orders.id, row.orderId),
+      })
+      if (
+        orderRow &&
+        (orderRow.status === 'pending' || orderRow.status === 'packed')
+      ) {
+        await db
+          .update(orders)
+          .set({
+            status: event.status === 'paid' ? 'paid' : 'expire_payment',
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, row.orderId))
+      }
+    }
+
+    if (row.participantId) {
       await db
-        .update(orders)
+        .update(eventParticipant)
         .set({
-          status: event.status === 'paid' ? 'paid' : 'expire_payment',
+          status: event.status === 'paid' ? 'confirmed' : 'cancelled',
           updatedAt: new Date(),
         })
-        .where(eq(orders.id, row.orderId))
+        .where(eq(eventParticipant.id, row.participantId))
     }
   }
 
-  if (event.status === 'paid') {
+  if (event.status === 'paid' && row.orderId) {
     try {
       const order = await loadShopOrderByDbId(row.orderId)
       if (order) await sendOrderPaidEmail(order)

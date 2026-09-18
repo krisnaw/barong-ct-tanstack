@@ -36,6 +36,7 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { cn } from '~/lib/utils'
 import { type EventKind, type EventStatus, registerCtaCopy } from '~/data/events'
+import { createEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
 const statusOptions: { value: Extract<EventStatus, 'draft' | 'open'>; label: string }[] =
@@ -113,9 +114,12 @@ function DashboardCreateEventPage() {
   const [groupCapacity, setGroupCapacity] = React.useState('8')
   const [description, setDescription] = React.useState('')
   const [regulation, setRegulation] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
 
   const isFree = kind === 'free'
   const priceAmount = Number(price.replace(/\D/g, '') || 0)
+  const serviceFeeAmount = Number(serviceFee.replace(/\D/g, '') || 0)
   const displayPrice = isFree
     ? 'Free'
     : price.trim()
@@ -134,11 +138,61 @@ function DashboardCreateEventPage() {
     if (priceAmount === 0) setPrice('')
   }
 
-  function onSubmit(event: React.FormEvent) {
+  async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!isFree && priceAmount <= 0) return
-    // Stub only — wire persistence later.
-    void navigate({ to: '/dashboard/events' })
+    if (!date) {
+      setSubmitError('Pick an event date.')
+      return
+    }
+    if (!isFree && priceAmount <= 0) {
+      setSubmitError('Paid and flagship events need a price greater than 0.')
+      return
+    }
+
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      const slotsValue = slots.replace(/\D/g, '')
+      const created = await createEvent({
+        data: {
+          name: name.trim(),
+          slug: slug.trim(),
+          description: description.trim(),
+          regulation: regulation.trim() || undefined,
+          kind,
+          status,
+          eventDate: format(date, 'yyyy-MM-dd'),
+          eventTime: time,
+          timeZone: timezone,
+          locationName: location.trim(),
+          locationAddress: locationAddress.trim() || undefined,
+          registrationClosesAt: registrationClosesAt
+            ? format(registrationClosesAt, 'yyyy-MM-dd')
+            : undefined,
+          hasJersey: requireJersey,
+          isGroupRide: requireGroup,
+          groupCapacity: requireGroup
+            ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
+            : null,
+          category: {
+            name: (categoryName.trim() || name.trim() || 'Open').trim(),
+            distance: distance.trim(),
+            price: isFree ? 0 : priceAmount,
+            serviceFee: isFree ? 0 : serviceFeeAmount,
+            maxParticipants: slotsValue ? Number(slotsValue) : null,
+          },
+        },
+      })
+      void navigate({
+        to: '/dashboard/events/$slug',
+        params: { slug: created.slug },
+      })
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : 'Failed to create event.',
+      )
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -172,8 +226,7 @@ function DashboardCreateEventPage() {
             Create event
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Draft a free ride, paid session, or flagship event. Saving is
-            stubbed for now.
+            Draft a free ride, paid session, or flagship event.
           </p>
         </div>
 
@@ -557,14 +610,19 @@ function DashboardCreateEventPage() {
             </Field>
           </FormSection>
 
-          <div className="flex items-center justify-between gap-3 border-t border-border pt-8">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-8">
+            {submitError ? (
+              <p className="mr-auto text-sm text-destructive">{submitError}</p>
+            ) : null}
             <Link
               className={cn(buttonVariants({ variant: 'outline' }))}
               to="/dashboard/events"
             >
               Cancel
             </Link>
-            <Button type="submit">Create event</Button>
+            <Button disabled={submitting} type="submit">
+              {submitting ? 'Creating…' : 'Create event'}
+            </Button>
           </div>
         </form>
 

@@ -59,6 +59,10 @@ import { Route as ShopCheckoutCancelRouteImport } from './routes/shop.checkout.c
 import { Route as ShopCheckoutReturnRouteImport } from './routes/shop.checkout.return'
 import { Route as ShopCheckoutSimulateRouteImport } from './routes/shop.checkout.simulate'
 import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
+import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard/events.$slug.index'
+import { Route as DashboardEventsSlugEditRouteImport } from './routes/dashboard/events.$slug.edit'
+import { Route as DashboardEventsSlugGroupsRouteImport } from './routes/dashboard/events.$slug.groups'
+import { Route as DashboardEventsSlugPromosRouteImport } from './routes/dashboard/events.$slug.promos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -314,6 +318,29 @@ const ApiPaymentsWebhookProviderRoute =
     path: '/api/payments/webhook/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardEventsSlugIndexRoute =
+  DashboardEventsSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
+const DashboardEventsSlugEditRoute = DashboardEventsSlugEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => DashboardEventsSlugRoute,
+} as any)
+const DashboardEventsSlugGroupsRoute =
+  DashboardEventsSlugGroupsRouteImport.update({
+    id: '/groups',
+    path: '/groups',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
+const DashboardEventsSlugPromosRoute =
+  DashboardEventsSlugPromosRouteImport.update({
+    id: '/promos',
+    path: '/promos',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -347,7 +374,7 @@ export interface FileRoutesByFullPath {
   '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
-  '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
+  '/dashboard/events/$slug': typeof DashboardEventsSlugRouteWithChildren
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
@@ -366,6 +393,10 @@ export interface FileRoutesByFullPath {
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
+  '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
+  '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -387,7 +418,6 @@ export interface FileRoutesByTo {
   '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
-  '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
@@ -406,6 +436,10 @@ export interface FileRoutesByTo {
   '/events/$slug': typeof EventsSlugIndexRoute
   '/shop/checkout': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
+  '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
+  '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/dashboard/events/$slug': typeof DashboardEventsSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -440,7 +474,7 @@ export interface FileRoutesById {
   '/api/catalogue-images/$imageId': typeof ApiCatalogueImagesImageIdRoute
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
-  '/dashboard/events/$slug': typeof DashboardEventsSlugRoute
+  '/dashboard/events/$slug': typeof DashboardEventsSlugRouteWithChildren
   '/dashboard/events/new': typeof DashboardEventsNewRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
@@ -459,6 +493,10 @@ export interface FileRoutesById {
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
+  '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
+  '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -513,6 +551,10 @@ export interface FileRouteTypes {
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/edit'
+    | '/dashboard/events/$slug/groups'
+    | '/dashboard/events/$slug/promos'
+    | '/dashboard/events/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -534,7 +576,6 @@ export interface FileRouteTypes {
     | '/api/catalogue-images/$imageId'
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
-    | '/dashboard/events/$slug'
     | '/dashboard/events/new'
     | '/dashboard/orders/$id'
     | '/dashboard/pickup-points/$id'
@@ -553,6 +594,10 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/shop/checkout'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/edit'
+    | '/dashboard/events/$slug/groups'
+    | '/dashboard/events/$slug/promos'
+    | '/dashboard/events/$slug'
   id:
     | '__root__'
     | '/'
@@ -605,6 +650,10 @@ export interface FileRouteTypes {
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/edit'
+    | '/dashboard/events/$slug/groups'
+    | '/dashboard/events/$slug/promos'
+    | '/dashboard/events/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -976,6 +1025,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentsWebhookProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/events/$slug/': {
+      id: '/dashboard/events/$slug/'
+      path: '/'
+      fullPath: '/dashboard/events/$slug/'
+      preLoaderRoute: typeof DashboardEventsSlugIndexRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
+    '/dashboard/events/$slug/edit': {
+      id: '/dashboard/events/$slug/edit'
+      path: '/edit'
+      fullPath: '/dashboard/events/$slug/edit'
+      preLoaderRoute: typeof DashboardEventsSlugEditRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
+    '/dashboard/events/$slug/groups': {
+      id: '/dashboard/events/$slug/groups'
+      path: '/groups'
+      fullPath: '/dashboard/events/$slug/groups'
+      preLoaderRoute: typeof DashboardEventsSlugGroupsRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
+    '/dashboard/events/$slug/promos': {
+      id: '/dashboard/events/$slug/promos'
+      path: '/promos'
+      fullPath: '/dashboard/events/$slug/promos'
+      preLoaderRoute: typeof DashboardEventsSlugPromosRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
   }
 }
 
@@ -994,14 +1071,31 @@ const DashboardCatalogueRouteChildren: DashboardCatalogueRouteChildren = {
 const DashboardCatalogueRouteWithChildren =
   DashboardCatalogueRoute._addFileChildren(DashboardCatalogueRouteChildren)
 
+interface DashboardEventsSlugRouteChildren {
+  DashboardEventsSlugEditRoute: typeof DashboardEventsSlugEditRoute
+  DashboardEventsSlugGroupsRoute: typeof DashboardEventsSlugGroupsRoute
+  DashboardEventsSlugPromosRoute: typeof DashboardEventsSlugPromosRoute
+  DashboardEventsSlugIndexRoute: typeof DashboardEventsSlugIndexRoute
+}
+
+const DashboardEventsSlugRouteChildren: DashboardEventsSlugRouteChildren = {
+  DashboardEventsSlugEditRoute: DashboardEventsSlugEditRoute,
+  DashboardEventsSlugGroupsRoute: DashboardEventsSlugGroupsRoute,
+  DashboardEventsSlugPromosRoute: DashboardEventsSlugPromosRoute,
+  DashboardEventsSlugIndexRoute: DashboardEventsSlugIndexRoute,
+}
+
+const DashboardEventsSlugRouteWithChildren =
+  DashboardEventsSlugRoute._addFileChildren(DashboardEventsSlugRouteChildren)
+
 interface DashboardEventsRouteChildren {
-  DashboardEventsSlugRoute: typeof DashboardEventsSlugRoute
+  DashboardEventsSlugRoute: typeof DashboardEventsSlugRouteWithChildren
   DashboardEventsNewRoute: typeof DashboardEventsNewRoute
   DashboardEventsIndexRoute: typeof DashboardEventsIndexRoute
 }
 
 const DashboardEventsRouteChildren: DashboardEventsRouteChildren = {
-  DashboardEventsSlugRoute: DashboardEventsSlugRoute,
+  DashboardEventsSlugRoute: DashboardEventsSlugRouteWithChildren,
   DashboardEventsNewRoute: DashboardEventsNewRoute,
   DashboardEventsIndexRoute: DashboardEventsIndexRoute,
 }

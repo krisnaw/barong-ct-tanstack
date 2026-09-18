@@ -65,10 +65,12 @@ function EventRegisterPage() {
     event.kind === 'flagship' && groupId
       ? 'course'
       : firstStepForKind(event.kind)
-  const step =
-    requestedStep && allowed.includes(requestedStep)
-      ? requestedStep
-      : defaultStep
+  const step: RegisterStep =
+    requestedStep === 'done'
+      ? 'done'
+      : requestedStep && allowed.includes(requestedStep)
+        ? requestedStep
+        : defaultStep
 
   React.useEffect(() => {
     if (event.status !== 'open') {

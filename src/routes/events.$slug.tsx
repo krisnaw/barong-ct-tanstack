@@ -1,10 +1,10 @@
 import { Outlet, createFileRoute, notFound } from '@tanstack/react-router'
-import { getEvent } from '~/data/events'
+import { getEventBySlug } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/events/$slug')({
-  loader: ({ params }) => {
-    const event = getEvent(params.slug)
+  loader: async ({ params }) => {
+    const event = await getEventBySlug({ data: { slug: params.slug } })
     if (!event) {
       throw notFound()
     }

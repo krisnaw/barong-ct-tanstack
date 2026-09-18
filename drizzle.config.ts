@@ -38,6 +38,7 @@ export default defineConfig({
     './src/lib/auth-schema.ts',
     './src/lib/shop-schema.ts',
     './src/lib/order-schema.ts',
+    './src/lib/event-schema.ts',
   ],
   out: './drizzle',
   dialect: 'sqlite',

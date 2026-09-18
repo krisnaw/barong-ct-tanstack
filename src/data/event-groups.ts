@@ -6,20 +6,14 @@ export type EventGroup = {
   memberCount: number
 }
 
+/** Local wizard demo groups. Prefer D1 `event_group` when available. */
 export const eventGroups: EventGroup[] = [
   {
-    id: 'grp-melali-kopi',
+    id: 'grp_melali_demo',
     eventSlug: 'barong-melali-2027',
-    courseId: 'long',
-    name: 'Kopi Peloton',
-    memberCount: 3,
-  },
-  {
-    id: 'grp-melali-sunrise',
-    eventSlug: 'barong-melali-2027',
-    courseId: 'short',
-    name: 'Sunrise Spin',
-    memberCount: 2,
+    courseId: 'cat_melali_long',
+    name: 'Peloton A',
+    memberCount: 0,
   },
 ]
 

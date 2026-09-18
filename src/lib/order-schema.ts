@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user, userShippingAddress } from '~/lib/auth-schema'
+import { eventParticipant } from '~/lib/event-schema'
 import { pickupPoint, product } from '~/lib/shop-schema'
 
 export const orders = sqliteTable(
@@ -79,9 +80,10 @@ export const payment = sqliteTable(
   'payment',
   {
     id: text('id').primaryKey(),
-    orderId: text('order_id')
-      .notNull()
-      .references(() => orders.id, { onDelete: 'cascade' }),
+    orderId: text('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+    participantId: text('participant_id').references(() => eventParticipant.id, {
+      onDelete: 'cascade',
+    }),
     provider: text('provider').notNull(),
     transactionId: text('transaction_id').notNull(),
     status: text('status').default('pending').notNull(),
@@ -100,6 +102,7 @@ export const payment = sqliteTable(
   },
   (table) => [
     index('payment_orderId_idx').on(table.orderId),
+    index('payment_participantId_idx').on(table.participantId),
     uniqueIndex('payment_provider_transaction_uidx').on(
       table.provider,
       table.transactionId,
@@ -139,5 +142,9 @@ export const paymentRelations = relations(payment, ({ one }) => ({
   order: one(orders, {
     fields: [payment.orderId],
     references: [orders.id],
+  }),
+  participant: one(eventParticipant, {
+    fields: [payment.participantId],
+    references: [eventParticipant.id],
   }),
 }))

@@ -1,0 +1,664 @@
+import { createServerFn } from '@tanstack/react-start'
+import { getRequestHeaders } from '@tanstack/react-start/server'
+import { asc, desc, eq, and } from 'drizzle-orm'
+import { z } from 'zod'
+import {
+  type ClubEvent,
+  type CourseOption,
+  type EventKind,
+  type EventStatus,
+  formatIdr,
+} from '~/data/events'
+import { auth } from '~/lib/auth'
+import { hasAdminRole } from '~/lib/auth.functions'
+import { db } from '~/lib/db'
+import {
+  event,
+  eventCategory,
+  eventGroup,
+  eventParticipant,
+  eventPromo,
+} from '~/lib/event-schema'
+
+const eventKindSchema = z.enum(['free', 'paid', 'flagship'])
+const eventStatusSchema = z.enum(['draft', 'open', 'closed'])
+
+const categoryInputSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  distance: z.string().min(1),
+  price: z.number().int().min(0),
+  serviceFee: z.number().int().min(0).default(0),
+  maxParticipants: z.number().int().positive().nullable().optional(),
+})
+
+const createEventSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.string().default(''),
+  regulation: z.string().optional(),
+  kind: eventKindSchema,
+  status: z.enum(['draft', 'open']),
+  eventDate: z.string().min(1),
+  eventTime: z.string().min(1),
+  timeZone: z.string().min(1),
+  locationName: z.string().min(1),
+  locationAddress: z.string().optional(),
+  registrationClosesAt: z.string().optional(),
+  hasJersey: z.boolean().default(false),
+  isGroupRide: z.boolean().default(false),
+  groupCapacity: z.number().int().positive().nullable().optional(),
+  featureImage: z.string().optional(),
+  featureImageAlt: z.string().optional(),
+  category: categoryInputSchema,
+})
+
+const updateEventSchema = createEventSchema.extend({
+  id: z.string().min(1),
+  status: eventStatusSchema,
+  category: categoryInputSchema.extend({
+    id: z.string().min(1).optional(),
+  }),
+})
+
+type EventRow = typeof event.$inferSelect
+type CategoryRow = typeof eventCategory.$inferSelect
+
+function formatEventDate(isoDate: string) {
+  const parsed = new Date(`${isoDate}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) return isoDate
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsed)
+}
+
+function blurbFromDescription(description: string) {
+  const trimmed = description.trim()
+  if (!trimmed) return ''
+  const sentence = trimmed.split(/(?<=[.!?])\s+/)[0] ?? trimmed
+  return sentence.length > 140 ? `${sentence.slice(0, 137)}…` : sentence
+}
+
+function mapCourse(row: CategoryRow): CourseOption {
+  return {
+    id: row.id,
+    name: row.name,
+    distance: row.distance?.trim() || '—',
+    description: row.description?.trim() || '',
+    price: row.price,
+  }
+}
+
+function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
+  const ordered = [...categories].sort((a, b) => a.sortOrder - b.sortOrder)
+  const primary = ordered[0]
+  const feeAmount = primary?.price ?? 0
+  const distances = ordered
+    .map((item) => item.distance?.trim())
+    .filter((value): value is string => Boolean(value))
+  const capacity =
+    ordered.find((item) => item.maxParticipants != null)?.maxParticipants ??
+    null
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    date: formatEventDate(row.eventDate),
+    time: `${row.eventTime} ${row.timeZone}`.trim(),
+    location: row.locationName,
+    locationAddress: row.locationAddress ?? undefined,
+    distance:
+      distances.length > 1
+        ? distances.join(' / ')
+        : (distances[0] ?? primary?.distance ?? '—'),
+    status: row.status as EventStatus,
+    kind: row.kind as EventKind,
+    blurb: blurbFromDescription(row.description),
+    description: row.description,
+    regulation: row.regulation ?? undefined,
+    image:
+      row.featureImage?.trim() ||
+      'https://images.unsplash.com/photo-1517649763962-0c623066027e?auto=format&fit=crop',
+    imageAlt: row.featureImageAlt?.trim() || row.name,
+    fee: feeAmount > 0 ? formatIdr(feeAmount) : 'Free',
+    feeAmount,
+    capacity: capacity != null ? String(capacity) : undefined,
+    groupCapacity: row.groupCapacity ?? undefined,
+    hasJersey: row.hasJersey,
+    courses: ordered.map(mapCourse),
+    categoryId: primary?.id,
+    categoryName: primary?.name,
+    serviceFeeAmount: primary?.serviceFee ?? 0,
+    eventDate: row.eventDate,
+    eventTime: row.eventTime,
+    timeZone: row.timeZone,
+    registrationClosesAt: row.registrationClosesAt ?? undefined,
+    isGroupRide: row.isGroupRide,
+  }
+}
+
+async function requireSession() {
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  if (!session) {
+    throw new Error('Unauthorized')
+  }
+  return session
+}
+
+async function requireAdmin() {
+  const session = await requireSession()
+  if (!hasAdminRole(session.user.role)) {
+    throw new Error('Unauthorized')
+  }
+  return session
+}
+
+async function loadEventBySlug(slug: string, includeDraft: boolean) {
+  const row = await db.query.event.findFirst({
+    where: eq(event.slug, slug),
+    with: {
+      categories: {
+        orderBy: [asc(eventCategory.sortOrder)],
+      },
+    },
+  })
+  if (!row) return null
+  if (!includeDraft && row.status === 'draft') return null
+  return mapClubEvent(row, row.categories)
+}
+
+export const listEvents = createServerFn({ method: 'GET' })
+  .validator(
+    z
+      .object({
+        includeDraft: z.boolean().optional(),
+        status: eventStatusSchema.optional(),
+      })
+      .optional(),
+  )
+  .handler(async ({ data }) => {
+    const includeDraft = data?.includeDraft === true
+    if (includeDraft) await requireAdmin()
+
+    const rows = await db.query.event.findMany({
+      with: {
+        categories: {
+          orderBy: [asc(eventCategory.sortOrder)],
+        },
+      },
+      orderBy: [asc(event.eventDate), asc(event.name)],
+    })
+
+    return rows
+      .filter((row) => {
+        if (data?.status) return row.status === data.status
+        if (!includeDraft) return row.status !== 'draft'
+        return true
+      })
+      .map((row) => mapClubEvent(row, row.categories))
+  })
+
+export const getEventBySlug = createServerFn({ method: 'GET' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      includeDraft: z.boolean().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const includeDraft = data.includeDraft === true
+    if (includeDraft) await requireAdmin()
+    return loadEventBySlug(data.slug, includeDraft)
+  })
+
+export const createEvent = createServerFn({ method: 'POST' })
+  .validator(createEventSchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const slug = data.slug.trim()
+    const existing = await db.query.event.findFirst({
+      where: eq(event.slug, slug),
+    })
+    if (existing) {
+      throw new Error('An event with this slug already exists')
+    }
+
+    if (data.kind !== 'free' && data.category.price <= 0) {
+      throw new Error('Paid and flagship events need a price greater than 0')
+    }
+
+    const id = crypto.randomUUID()
+    const categoryId = crypto.randomUUID()
+    const price = data.kind === 'free' ? 0 : data.category.price
+    const serviceFee = data.kind === 'free' ? 0 : data.category.serviceFee
+
+    await db.batch([
+      db.insert(event).values({
+        id,
+        slug,
+        name: data.name.trim(),
+        description: data.description.trim(),
+        regulation: data.regulation?.trim() || null,
+        featureImage: data.featureImage?.trim() || null,
+        featureImageAlt: data.featureImageAlt?.trim() || null,
+        kind: data.kind,
+        status: data.status,
+        eventDate: data.eventDate,
+        eventTime: data.eventTime,
+        timeZone: data.timeZone,
+        locationName: data.locationName.trim(),
+        locationAddress: data.locationAddress?.trim() || null,
+        registrationClosesAt: data.registrationClosesAt || null,
+        hasJersey: data.hasJersey,
+        isGroupRide: data.isGroupRide,
+        groupCapacity: data.isGroupRide
+          ? (data.groupCapacity ?? null)
+          : null,
+      }),
+      db.insert(eventCategory).values({
+        id: categoryId,
+        eventId: id,
+        name: data.category.name.trim(),
+        description: data.category.description?.trim() || null,
+        distance: data.category.distance.trim(),
+        price,
+        serviceFee,
+        currency: 'IDR',
+        maxParticipants: data.category.maxParticipants ?? null,
+        sortOrder: 0,
+      }),
+    ])
+
+    const created = await loadEventBySlug(slug, true)
+    if (!created) {
+      throw new Error('Failed to create event')
+    }
+    return created
+  })
+
+export const updateEventStatus = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      id: z.string().min(1),
+      status: eventStatusSchema,
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const existing = await db.query.event.findFirst({
+      where: eq(event.id, data.id),
+    })
+    if (!existing) {
+      throw new Error('Event not found')
+    }
+
+    await db
+      .update(event)
+      .set({
+        status: data.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, data.id))
+
+    return loadEventBySlug(existing.slug, true)
+  })
+
+export const updateEvent = createServerFn({ method: 'POST' })
+  .validator(updateEventSchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const existing = await db.query.event.findFirst({
+      where: eq(event.id, data.id),
+      with: {
+        categories: {
+          orderBy: [asc(eventCategory.sortOrder)],
+        },
+      },
+    })
+    if (!existing) {
+      throw new Error('Event not found')
+    }
+
+    const nextSlug = data.slug.trim()
+    if (nextSlug !== existing.slug) {
+      const slugTaken = await db.query.event.findFirst({
+        where: eq(event.slug, nextSlug),
+      })
+      if (slugTaken) {
+        throw new Error('An event with this slug already exists')
+      }
+    }
+
+    if (data.kind !== 'free' && data.category.price <= 0) {
+      throw new Error('Paid and flagship events need a price greater than 0')
+    }
+
+    const price = data.kind === 'free' ? 0 : data.category.price
+    const serviceFee = data.kind === 'free' ? 0 : data.category.serviceFee
+    const categoryId =
+      data.category.id ??
+      existing.categories[0]?.id ??
+      crypto.randomUUID()
+    const categoryExists = existing.categories.some((item) => item.id === categoryId)
+
+    await db
+      .update(event)
+      .set({
+        slug: nextSlug,
+        name: data.name.trim(),
+        description: data.description.trim(),
+        regulation: data.regulation?.trim() || null,
+        featureImage: data.featureImage?.trim() || null,
+        featureImageAlt: data.featureImageAlt?.trim() || null,
+        kind: data.kind,
+        status: data.status,
+        eventDate: data.eventDate,
+        eventTime: data.eventTime,
+        timeZone: data.timeZone,
+        locationName: data.locationName.trim(),
+        locationAddress: data.locationAddress?.trim() || null,
+        registrationClosesAt: data.registrationClosesAt || null,
+        hasJersey: data.hasJersey,
+        isGroupRide: data.isGroupRide,
+        groupCapacity: data.isGroupRide
+          ? (data.groupCapacity ?? null)
+          : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, data.id))
+
+    if (categoryExists) {
+      await db
+        .update(eventCategory)
+        .set({
+          name: data.category.name.trim(),
+          description: data.category.description?.trim() || null,
+          distance: data.category.distance.trim(),
+          price,
+          serviceFee,
+          currency: 'IDR',
+          maxParticipants: data.category.maxParticipants ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(eventCategory.id, categoryId))
+    } else {
+      await db.insert(eventCategory).values({
+        id: categoryId,
+        eventId: data.id,
+        name: data.category.name.trim(),
+        description: data.category.description?.trim() || null,
+        distance: data.category.distance.trim(),
+        price,
+        serviceFee,
+        currency: 'IDR',
+        maxParticipants: data.category.maxParticipants ?? null,
+        sortOrder: 0,
+      })
+    }
+
+    const updated = await loadEventBySlug(nextSlug, true)
+    if (!updated) {
+      throw new Error('Failed to update event')
+    }
+    return updated
+  })
+
+export const deleteEvent = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const existing = await db.query.event.findFirst({
+      where: eq(event.id, data.id),
+    })
+    if (!existing) {
+      throw new Error('Event not found')
+    }
+
+    await db.delete(event).where(eq(event.id, data.id))
+    return { ok: true as const }
+  })
+
+export type EventParticipantRow = {
+  id: string
+  status: string
+  jerseySize: string | null
+  bibNumber: string | null
+  price: number
+  finalPrice: number
+  userName: string
+  userEmail: string
+  userPhone: string | null
+  categoryName: string | null
+  groupName: string | null
+}
+
+export const listEventParticipants = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return [] as EventParticipantRow[]
+
+    const participants = await db.query.eventParticipant.findMany({
+      where: eq(eventParticipant.eventId, row.id),
+      with: {
+        user: {
+          with: {
+            profile: true,
+          },
+        },
+        category: true,
+        group: true,
+      },
+      orderBy: [desc(eventParticipant.createdAt)],
+    })
+
+    return participants.map((item) => ({
+      id: item.id,
+      status: item.status,
+      jerseySize: item.jerseySize,
+      bibNumber: item.bibNumber,
+      price: item.price,
+      finalPrice: item.finalPrice,
+      userName: item.user.name,
+      userEmail: item.user.email,
+      userPhone: item.user.profile?.phone ?? null,
+      categoryName: item.category?.name ?? null,
+      groupName: item.group?.name ?? null,
+    }))
+  })
+
+export const listEventGroups = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return []
+
+    const groups = await db.query.eventGroup.findMany({
+      where: eq(eventGroup.eventId, row.id),
+      with: {
+        participants: true,
+        category: true,
+      },
+      orderBy: [asc(eventGroup.name)],
+    })
+
+    return groups.map((group) => ({
+      id: group.id,
+      eventSlug: data.slug,
+      courseId: group.eventCategoryId ?? '',
+      categoryName: group.category?.name ?? null,
+      name: group.name,
+      memberCount: group.participants.length,
+    }))
+  })
+
+export type EventPromoRow = {
+  id: string
+  promo: string
+  discountValue: number
+  discountType: string
+  currency: string
+  usageLimit: number | null
+  usedCount: number
+  isActive: boolean
+}
+
+export const listEventPromos = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return [] as EventPromoRow[]
+
+    const promos = await db.query.eventPromo.findMany({
+      where: eq(eventPromo.eventId, row.id),
+      orderBy: [asc(eventPromo.promo)],
+    })
+
+    return promos.map((item) => ({
+      id: item.id,
+      promo: item.promo,
+      discountValue: item.discountValue,
+      discountType: item.discountType,
+      currency: item.currency,
+      usageLimit: item.usageLimit,
+      usedCount: item.usedCount,
+      isActive: item.isActive,
+    }))
+  })
+
+const registerForEventSchema = z.object({
+  eventSlug: z.string().min(1),
+  categoryId: z.string().optional(),
+  groupId: z.string().optional(),
+  groupName: z.string().optional(),
+  jerseySize: z.string().optional(),
+  status: z.enum(['draft', 'pending_payment', 'confirmed']).default('confirmed'),
+})
+
+export const registerForEvent = createServerFn({ method: 'POST' })
+  .validator(registerForEventSchema)
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.eventSlug),
+      with: {
+        categories: {
+          orderBy: [asc(eventCategory.sortOrder)],
+        },
+      },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+    if (row.status !== 'open') {
+      throw new Error('Registration is not open for this event')
+    }
+
+    const category =
+      (data.categoryId
+        ? row.categories.find((item) => item.id === data.categoryId)
+        : undefined) ?? row.categories[0]
+    if (!category) {
+      throw new Error('Event has no category')
+    }
+
+    let groupId = data.groupId?.trim() || null
+    const groupName = data.groupName?.trim() || null
+
+    if (groupId) {
+      const existingGroup = await db.query.eventGroup.findFirst({
+        where: eq(eventGroup.id, groupId),
+      })
+      if (!existingGroup) {
+        if (!groupName) {
+          groupId = null
+        } else {
+          await db.insert(eventGroup).values({
+            id: groupId,
+            eventId: row.id,
+            eventCategoryId: category.id,
+            name: groupName,
+          })
+        }
+      }
+    } else if (groupName) {
+      const byName = await db.query.eventGroup.findFirst({
+        where: and(
+          eq(eventGroup.eventId, row.id),
+          eq(eventGroup.name, groupName),
+        ),
+      })
+      if (byName) {
+        groupId = byName.id
+      } else {
+        groupId = crypto.randomUUID()
+        await db.insert(eventGroup).values({
+          id: groupId,
+          eventId: row.id,
+          eventCategoryId: category.id,
+          name: groupName,
+        })
+      }
+    }
+
+    const price = category.price
+    const serviceFee = category.serviceFee
+    const finalPrice = Math.max(0, price + serviceFee)
+    const existing = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.userId, session.user.id),
+        eq(eventParticipant.eventId, row.id),
+      ),
+    })
+
+    if (existing) {
+      await db
+        .update(eventParticipant)
+        .set({
+          eventCategoryId: category.id,
+          eventGroupId: groupId,
+          jerseySize: data.jerseySize?.trim() || null,
+          status: data.status,
+          price,
+          serviceFee,
+          currency: category.currency,
+          finalPrice,
+          updatedAt: new Date(),
+        })
+        .where(eq(eventParticipant.id, existing.id))
+      return { id: existing.id, status: data.status }
+    }
+
+    const id = crypto.randomUUID()
+    await db.insert(eventParticipant).values({
+      id,
+      userId: session.user.id,
+      eventId: row.id,
+      eventCategoryId: category.id,
+      eventGroupId: groupId,
+      jerseySize: data.jerseySize?.trim() || null,
+      status: data.status,
+      price,
+      serviceFee,
+      currency: category.currency,
+      discountAmount: 0,
+      finalPrice,
+    })
+
+    return { id, status: data.status }
+  })
