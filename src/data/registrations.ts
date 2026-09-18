@@ -7,11 +7,11 @@ export type EventRegistration = {
   email: string
   phone: string
   status: RegistrationStatus
-  jerseyId?: string
-  jerseyName?: string
+  courseId?: string
+  courseName?: string
+  groupId?: string
+  groupName?: string
   jerseySize?: string
-  routeId?: string
-  routeName?: string
   paid?: boolean
 }
 
@@ -23,11 +23,11 @@ export const registrations: EventRegistration[] = [
     email: 'made.wirawan@email.com',
     phone: '+62 812-3456-7801',
     status: 'confirmed',
-    jerseyId: 'classic-black',
-    jerseyName: 'Classic Black',
+    courseId: 'long',
+    courseName: 'Long course',
+    groupId: 'grp-melali-kopi',
+    groupName: 'Kopi Peloton',
     jerseySize: 'L',
-    routeId: 'long',
-    routeName: 'Long route',
     paid: true,
   },
   {
@@ -37,11 +37,11 @@ export const registrations: EventRegistration[] = [
     email: 'kadek.ayu@email.com',
     phone: '+62 813-2211-0099',
     status: 'confirmed',
-    jerseyId: 'melali-white',
-    jerseyName: 'Melali White',
+    courseId: 'short',
+    courseName: 'Short course',
+    groupId: 'grp-melali-sunrise',
+    groupName: 'Sunrise Spin',
     jerseySize: 'M',
-    routeId: 'short',
-    routeName: 'Short route',
     paid: true,
   },
   {
@@ -51,11 +51,11 @@ export const registrations: EventRegistration[] = [
     email: 'putu.agus@email.com',
     phone: '+62 821-7788-3344',
     status: 'pending',
-    jerseyId: 'classic-black',
-    jerseyName: 'Classic Black',
+    courseId: 'long',
+    courseName: 'Long course',
+    groupId: 'grp-melali-kopi',
+    groupName: 'Kopi Peloton',
     jerseySize: 'XL',
-    routeId: 'long',
-    routeName: 'Long route',
     paid: false,
   },
   {
@@ -65,67 +65,29 @@ export const registrations: EventRegistration[] = [
     email: 'nyoman.devi@email.com',
     phone: '+62 819-5566-1122',
     status: 'confirmed',
-    jerseyId: 'melali-white',
-    jerseyName: 'Melali White',
+    courseId: 'long',
+    courseName: 'Long course',
+    groupId: 'grp-melali-kopi',
+    groupName: 'Kopi Peloton',
     jerseySize: 'S',
-    routeId: 'long',
-    routeName: 'Long route',
     paid: true,
   },
   {
-    id: 'reg-melali-05',
-    eventSlug: 'barong-melali-2027',
+    id: 'reg-clinic-01',
+    eventSlug: 'climb-clinic-bedugul',
     name: 'Gede Bagus Pratama',
     email: 'gede.bagus@email.com',
     phone: '+62 878-9900-2211',
     status: 'confirmed',
-    jerseyId: 'classic-black',
-    jerseyName: 'Classic Black',
-    jerseySize: 'M',
-    routeId: 'short',
-    routeName: 'Short route',
     paid: true,
   },
   {
-    id: 'reg-melali-06',
-    eventSlug: 'barong-melali-2027',
+    id: 'reg-clinic-02',
+    eventSlug: 'climb-clinic-bedugul',
     name: 'Komang Ratih',
     email: 'komang.ratih@email.com',
     phone: '+62 812-6677-8899',
-    status: 'cancelled',
-    jerseyId: 'melali-white',
-    jerseyName: 'Melali White',
-    jerseySize: 'L',
-    routeId: 'short',
-    routeName: 'Short route',
-    paid: false,
-  },
-  {
-    id: 'reg-melali-07',
-    eventSlug: 'barong-melali-2027',
-    name: 'Wayan Adi Nugraha',
-    email: 'wayan.adi@email.com',
-    phone: '+62 813-4455-6677',
-    status: 'confirmed',
-    jerseyId: 'classic-black',
-    jerseyName: 'Classic Black',
-    jerseySize: 'XXL',
-    routeId: 'long',
-    routeName: 'Long route',
-    paid: true,
-  },
-  {
-    id: 'reg-melali-08',
-    eventSlug: 'barong-melali-2027',
-    name: 'Luh Putu Sari',
-    email: 'luh.putu@email.com',
-    phone: '+62 822-1100-3344',
     status: 'pending',
-    jerseyId: 'melali-white',
-    jerseyName: 'Melali White',
-    jerseySize: 'XS',
-    routeId: 'short',
-    routeName: 'Short route',
     paid: false,
   },
   {

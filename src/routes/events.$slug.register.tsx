@@ -1,25 +1,49 @@
 import * as React from 'react'
 import {
   createFileRoute,
+  redirect,
   useLoaderData,
   useNavigate,
 } from '@tanstack/react-router'
 import { z } from 'zod'
+import { EventRegisterWizard } from '~/components/event-register-wizard'
 import {
-  EventRegisterWizard,
+  firstStepForKind,
   type RegisterStep,
-} from '~/components/event-register-wizard'
+  stepsForKind,
+} from '~/data/events'
+import { getSession } from '~/lib/auth.functions'
+import { getMyProfile } from '~/lib/profile.functions'
 import { seo } from '~/utils/seo'
 
+const registerSteps = [
+  'group',
+  'course',
+  'jersey',
+  'profile',
+  'payment',
+  'done',
+] as const
+
 const registerSearchSchema = z.object({
-  step: z
-    .enum(['jersey', 'route', 'profile', 'payment', 'done'])
-    .optional()
-    .catch(undefined),
+  step: z.enum(registerSteps).optional().catch(undefined),
+  groupId: z.string().optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/events/$slug/register')({
   validateSearch: registerSearchSchema,
+  beforeLoad: async ({ location }) => {
+    const session = await getSession()
+    if (!session) {
+      throw redirect({
+        to: '/auth/login',
+        search: {
+          redirect: `${location.pathname}${location.searchStr}`,
+        },
+      })
+    }
+  },
+  loader: () => getMyProfile(),
   head: () => ({
     meta: seo({
       title: 'Register | Barong Cycling Team',
@@ -31,16 +55,16 @@ export const Route = createFileRoute('/events/$slug/register')({
 
 function EventRegisterPage() {
   const event = useLoaderData({ from: '/events/$slug' })
-  const { step: requestedStep } = Route.useSearch()
+  const profile = Route.useLoaderData()
+  const { step: requestedStep, groupId } = Route.useSearch()
   const navigate = useNavigate()
   const params = Route.useParams()
 
+  const allowed = stepsForKind(event.kind)
   const defaultStep: RegisterStep =
-    event.registration === 'full' ? 'jersey' : 'profile'
-  const allowed: RegisterStep[] =
-    event.registration === 'full'
-      ? ['jersey', 'route', 'profile', 'payment']
-      : ['profile', 'done']
+    event.kind === 'flagship' && groupId
+      ? 'course'
+      : firstStepForKind(event.kind)
   const step =
     requestedStep && allowed.includes(requestedStep)
       ? requestedStep
@@ -59,14 +83,21 @@ function EventRegisterPage() {
     void navigate({
       to: '/events/$slug/register',
       params: { slug: params.slug },
-      search: { step },
+      search: { step, groupId },
       replace: true,
     })
-  }, [event.status, navigate, params.slug, requestedStep, step])
+  }, [event.status, groupId, navigate, params.slug, requestedStep, step])
 
   if (event.status !== 'open') {
     return null
   }
 
-  return <EventRegisterWizard event={event} step={step} />
+  return (
+    <EventRegisterWizard
+      event={event}
+      groupId={groupId}
+      profile={profile}
+      step={step}
+    />
+  )
 }

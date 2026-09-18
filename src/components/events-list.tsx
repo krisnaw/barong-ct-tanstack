@@ -1,4 +1,3 @@
-import { ArrowUpRightIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { events, type EventStatus } from '~/data/events'
 import { pastEvents } from '~/data/recaps'
@@ -7,14 +6,18 @@ import { cn } from '~/lib/utils'
 export type EventsTab = 'active' | 'past'
 
 const statusLabel: Record<EventStatus, string> = {
+  draft: 'Draft',
   open: 'Open',
   closed: 'Closed',
-  upcoming: 'Soon',
 }
 
-const activeEvents = events.filter(
-  (event) => event.status === 'open' || event.status === 'upcoming',
-)
+const statusStyles: Record<EventStatus, string> = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
+  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+}
+
+const activeEvents = events.filter((event) => event.status === 'open')
 
 export function EventsList({ tab }: { tab: EventsTab }) {
   const isPast = tab === 'past'
@@ -107,39 +110,36 @@ function ActiveEventsRows() {
             />
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <h2 className="truncate font-heading text-base font-semibold tracking-tight sm:text-lg">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-heading text-base font-semibold tracking-tight sm:truncate sm:text-lg">
                   {event.name}
                 </h2>
-                <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                <span
+                  className={cn(
+                    'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+                    statusStyles[event.status],
+                  )}
+                >
                   {statusLabel[event.status]}
                 </span>
               </div>
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {event.date}
-                <span className="text-border"> · </span>
-                {event.location}
-              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
             </div>
 
-            <dl className="hidden shrink-0 items-center gap-8 text-sm md:flex">
-              <div className="w-24 text-right">
+            <dl className="shrink-0 text-right text-sm sm:flex sm:items-center sm:gap-8">
+              <div className="hidden sm:block">
                 <dt className="sr-only">Distance</dt>
-                <dd className="font-medium tabular-nums">{event.distance}</dd>
+                <dd className="font-medium whitespace-nowrap tabular-nums">
+                  {event.distance}
+                </dd>
               </div>
-              <div className="w-20 text-right">
+              <div>
                 <dt className="sr-only">Fee</dt>
-                <dd className="truncate text-muted-foreground">
+                <dd className="whitespace-nowrap text-muted-foreground sm:min-w-[9rem]">
                   {event.fee ?? 'Free'}
                 </dd>
               </div>
             </dl>
-
-            <ArrowUpRightIcon
-              aria-hidden
-              className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground"
-              weight="bold"
-            />
           </Link>
         </li>
       ))}
@@ -171,39 +171,31 @@ function PastEventsRows() {
             />
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <h2 className="truncate font-heading text-base font-semibold tracking-tight sm:text-lg">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-heading text-base font-semibold tracking-tight sm:truncate sm:text-lg">
                   {event.name}
                 </h2>
-                <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-zinc-600 uppercase">
                   Recap
                 </span>
               </div>
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {event.date}
-                <span className="text-border"> · </span>
-                {event.location}
-              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
             </div>
 
-            <dl className="hidden shrink-0 items-center gap-8 text-sm md:flex">
-              <div className="w-24 text-right">
+            <dl className="shrink-0 text-right text-sm sm:flex sm:items-center sm:gap-8">
+              <div className="hidden sm:block">
                 <dt className="sr-only">Distance</dt>
-                <dd className="font-medium tabular-nums">{event.distance}</dd>
+                <dd className="font-medium whitespace-nowrap tabular-nums">
+                  {event.distance}
+                </dd>
               </div>
-              <div className="w-36 text-right">
+              <div>
                 <dt className="sr-only">Field</dt>
-                <dd className="truncate text-muted-foreground">
+                <dd className="whitespace-nowrap text-muted-foreground">
                   {event.highlight}
                 </dd>
               </div>
             </dl>
-
-            <ArrowUpRightIcon
-              aria-hidden
-              className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground"
-              weight="bold"
-            />
           </Link>
         </li>
       ))}

@@ -19,8 +19,8 @@ import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 
 const eventStatusStyles: Record<EventStatus, string> = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
   open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  upcoming: 'border-sky-200 bg-sky-50 text-sky-800',
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
@@ -46,7 +46,8 @@ export const Route = createFileRoute('/dashboard/events/$slug')({
 
 function DashboardEventDetailPage() {
   const { event, participants } = Route.useLoaderData()
-  const isFull = event.registration === 'full'
+  const isFlagship = event.kind === 'flagship'
+  const isPaid = event.kind === 'paid' || isFlagship
 
   return (
     <>
@@ -77,27 +78,27 @@ function DashboardEventDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <EventStatusBadge status={event.status} />
           <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            {event.registration} registration
+            {event.kind}
           </span>
         </div>
 
-        {event.routes?.length ? (
+        {event.courses?.length ? (
           <section>
             <h2 className="font-heading text-lg font-semibold tracking-tight">
-              Routes
+              Courses
             </h2>
             <ul className="mt-3 divide-y divide-border border border-border">
-              {event.routes.map((route) => (
-                <li className="px-4 py-3 text-sm" key={route.id}>
+              {event.courses.map((course) => (
+                <li className="px-4 py-3 text-sm" key={course.id}>
                   <p className="font-medium">
-                    {route.name}
+                    {course.name}
                     <span className="ml-2 text-muted-foreground">
-                      {route.distance}
-                      {route.elevation ? ` · ${route.elevation}` : ''}
+                      {course.distance}
+                      {course.elevation ? ` · ${course.elevation}` : ''}
                     </span>
                   </p>
                   <p className="mt-1 text-muted-foreground">
-                    {route.description}
+                    {course.description}
                   </p>
                 </li>
               ))}
@@ -121,16 +122,18 @@ function DashboardEventDetailPage() {
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Name</th>
                     <th className="px-4 py-2.5 font-medium">Email</th>
-                    {!isFull ? (
+                    {!isFlagship ? (
                       <th className="px-4 py-2.5 font-medium">Phone</th>
                     ) : null}
-                    {isFull ? (
+                    {isFlagship ? (
                       <>
+                        <th className="px-4 py-2.5 font-medium">Course</th>
+                        <th className="px-4 py-2.5 font-medium">Group</th>
                         <th className="px-4 py-2.5 font-medium">Jersey</th>
-                        <th className="px-4 py-2.5 font-medium">Size</th>
-                        <th className="px-4 py-2.5 font-medium">Route</th>
-                        <th className="px-4 py-2.5 font-medium">Payment</th>
                       </>
+                    ) : null}
+                    {isPaid ? (
+                      <th className="px-4 py-2.5 font-medium">Payment</th>
                     ) : null}
                     <th className="px-4 py-2.5 font-medium">Status</th>
                   </tr>
@@ -138,7 +141,8 @@ function DashboardEventDetailPage() {
                 <tbody className="divide-y divide-border">
                   {participants.map((participant) => (
                     <ParticipantRow
-                      isFull={isFull}
+                      isFlagship={isFlagship}
+                      isPaid={isPaid}
                       key={participant.id}
                       participant={participant}
                     />
@@ -155,27 +159,31 @@ function DashboardEventDetailPage() {
 
 function ParticipantRow({
   participant,
-  isFull,
+  isFlagship,
+  isPaid,
 }: {
   participant: EventRegistration
-  isFull: boolean
+  isFlagship: boolean
+  isPaid: boolean
 }) {
   return (
     <tr>
       <td className="px-4 py-3 font-medium">{participant.name}</td>
       <td className="px-4 py-3 text-muted-foreground">{participant.email}</td>
-      {!isFull ? (
+      {!isFlagship ? (
         <td className="px-4 py-3 text-muted-foreground">{participant.phone}</td>
       ) : null}
-      {isFull ? (
+      {isFlagship ? (
         <>
-          <td className="px-4 py-3">{participant.jerseyName ?? '—'}</td>
+          <td className="px-4 py-3">{participant.courseName ?? '—'}</td>
+          <td className="px-4 py-3">{participant.groupName ?? '—'}</td>
           <td className="px-4 py-3">{participant.jerseySize ?? '—'}</td>
-          <td className="px-4 py-3">{participant.routeName ?? '—'}</td>
-          <td className="px-4 py-3">
-            {participant.paid ? 'Paid' : 'Unpaid'}
-          </td>
         </>
+      ) : null}
+      {isPaid ? (
+        <td className="px-4 py-3">
+          {participant.paid ? 'Paid' : 'Unpaid'}
+        </td>
       ) : null}
       <td className="px-4 py-3">
         <StatusLabel status={participant.status} />

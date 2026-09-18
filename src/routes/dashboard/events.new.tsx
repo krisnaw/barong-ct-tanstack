@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { CalendarBlankIcon } from '@phosphor-icons/react'
+import { format, startOfDay } from 'date-fns'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Breadcrumb,
@@ -9,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
 import { Button, buttonVariants } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
 import {
   Field,
   FieldDescription,
@@ -16,10 +19,61 @@ import {
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import { Switch } from '~/components/ui/switch'
 import { cn } from '~/lib/utils'
+import { type EventKind, type EventStatus, registerCtaCopy } from '~/data/events'
 import { seo } from '~/utils/seo'
+
+const statusOptions: { value: Extract<EventStatus, 'draft' | 'open'>; label: string }[] =
+  [
+    { value: 'draft', label: 'Draft' },
+    { value: 'open', label: 'Open' },
+  ]
+
+const eventTypeOptions: { value: EventKind; label: string }[] = [
+  { value: 'free', label: 'Free' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'flagship', label: 'Flagship' },
+]
+
+const timezoneOptions = [
+  { value: 'GMT+8', label: 'GMT+8' },
+  { value: 'GMT+7', label: 'GMT+7' },
+  { value: 'GMT+9', label: 'GMT+9' },
+] as const
+
+type TimezoneOption = (typeof timezoneOptions)[number]['value']
+
+const timezoneSelectItems = timezoneOptions.map((option) => ({
+  value: option.value,
+  label: option.label,
+}))
+
+function slugify(value: string) {
+  return slugifyInput(value).replace(/-+$/g, '')
+}
+
+function slugifyInput(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+/, '')
+}
 
 export const Route = createFileRoute('/dashboard/events/new')({
   head: () => ({
@@ -34,21 +88,55 @@ export const Route = createFileRoute('/dashboard/events/new')({
 function DashboardCreateEventPage() {
   const navigate = useNavigate()
   const [name, setName] = React.useState('')
-  const [date, setDate] = React.useState('')
-  const [time, setTime] = React.useState('05:30 WITA')
+  const [slug, setSlug] = React.useState('')
+  const [slugEdited, setSlugEdited] = React.useState(false)
+  const [date, setDate] = React.useState<Date>()
+  const [dateOpen, setDateOpen] = React.useState(false)
+  const [time, setTime] = React.useState('05:30')
+  const [timezone, setTimezone] = React.useState<TimezoneOption>('GMT+8')
+  const [registrationClosesAt, setRegistrationClosesAt] = React.useState<Date>()
+  const [registrationClosesOpen, setRegistrationClosesOpen] = React.useState(false)
   const [location, setLocation] = React.useState('')
+  const [locationAddress, setLocationAddress] = React.useState('')
+  const [categoryName, setCategoryName] = React.useState('')
+  const [categoryNameEdited, setCategoryNameEdited] = React.useState(false)
   const [distance, setDistance] = React.useState('')
-  const [fee, setFee] = React.useState('Free')
-  const [capacity, setCapacity] = React.useState('')
-  const [status, setStatus] = React.useState<'open' | 'upcoming'>('upcoming')
-  const [registration, setRegistration] = React.useState<'simple' | 'full'>(
-    'simple',
+  const [price, setPrice] = React.useState('0')
+  const [serviceFee, setServiceFee] = React.useState('0')
+  const [slots, setSlots] = React.useState('')
+  const [status, setStatus] = React.useState<Extract<EventStatus, 'draft' | 'open'>>(
+    'draft',
   )
-  const [blurb, setBlurb] = React.useState('')
+  const [kind, setKind] = React.useState<EventKind>('free')
+  const [requireJersey, setRequireJersey] = React.useState(false)
+  const [requireGroup, setRequireGroup] = React.useState(false)
+  const [groupCapacity, setGroupCapacity] = React.useState('8')
   const [description, setDescription] = React.useState('')
+  const [regulation, setRegulation] = React.useState('')
+
+  const isFree = kind === 'free'
+  const priceAmount = Number(price.replace(/\D/g, '') || 0)
+  const displayPrice = isFree
+    ? 'Free'
+    : price.trim()
+      ? `Rp ${priceAmount.toLocaleString('id-ID')}`
+      : undefined
+
+  function applyEventType(nextKind: EventKind) {
+    setKind(nextKind)
+    if (nextKind === 'free') {
+      setPrice('0')
+      setServiceFee('0')
+      setCategoryNameEdited(false)
+      setCategoryName(name.trim())
+      return
+    }
+    if (priceAmount === 0) setPrice('')
+  }
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault()
+    if (!isFree && priceAmount <= 0) return
     // Stub only — wire persistence later.
     void navigate({ to: '/dashboard/events' })
   }
@@ -84,51 +172,171 @@ function DashboardCreateEventPage() {
             Create event
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Draft a ride or Melali. Saving is stubbed for now.
+            Draft a free ride, paid session, or flagship event. Saving is
+            stubbed for now.
           </p>
         </div>
 
-        <form
-          className="max-w-2xl space-y-6 border border-border p-5 sm:p-6"
-          onSubmit={onSubmit}
-        >
-          <FieldGroup>
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,40rem)_minmax(20rem,1fr)]">
+          <form onSubmit={onSubmit}>
+          <FormSection
+            description="Name, location, event schedule, and when registration ends."
+            title="Event Details"
+          >
             <Field>
               <FieldLabel htmlFor="name">Event name</FieldLabel>
               <Input
                 id="name"
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  const nextName = e.target.value
+                  setName(nextName)
+                  if (!slugEdited) setSlug(slugify(nextName))
+                  if (isFree && !categoryNameEdited) {
+                    setCategoryName(nextName.trim())
+                  }
+                }}
                 placeholder="Saturday Climax — Jatiluwih"
                 required
                 value={name}
               />
             </Field>
 
+            <Field>
+              <FieldLabel htmlFor="slug">Slug</FieldLabel>
+              <Input
+                id="slug"
+                onChange={(e) => {
+                  setSlugEdited(true)
+                  setSlug(slugifyInput(e.target.value))
+                }}
+                onBlur={() => setSlug((current) => slugify(current))}
+                placeholder="saturday-climax-jatiluwih"
+                required
+                value={slug}
+              />
+              <FieldDescription>
+                {slug ? `/events/${slug}` : 'Used in the event URL.'}
+              </FieldDescription>
+            </Field>
+
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
-                <FieldLabel htmlFor="date">Date</FieldLabel>
-                <Input
-                  id="date"
-                  onChange={(e) => setDate(e.target.value)}
-                  placeholder="19 September 2026"
-                  required
-                  value={date}
-                />
+                <FieldLabel htmlFor="date">Event Date</FieldLabel>
+                <Popover onOpenChange={setDateOpen} open={dateOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground"
+                        data-empty={!date}
+                        id="date"
+                        variant="outline"
+                      />
+                    }
+                  >
+                    <CalendarBlankIcon weight="bold" />
+                    {date ? format(date, 'd MMMM yyyy') : 'Pick a date'}
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto p-0">
+                    <Calendar
+                      disabled={{ before: startOfDay(new Date()) }}
+                      mode="single"
+                      onSelect={(next) => {
+                        setDate(next)
+                        if (
+                          next &&
+                          registrationClosesAt &&
+                          registrationClosesAt > next
+                        ) {
+                          setRegistrationClosesAt(undefined)
+                        }
+                        if (next) setDateOpen(false)
+                      }}
+                      selected={date}
+                    />
+                  </PopoverContent>
+                </Popover>
               </Field>
               <Field>
-                <FieldLabel htmlFor="time">Time</FieldLabel>
-                <Input
-                  id="time"
-                  onChange={(e) => setTime(e.target.value)}
-                  placeholder="05:30 WITA"
-                  required
-                  value={time}
-                />
+                <FieldLabel htmlFor="time">Event Time</FieldLabel>
+                <div className="flex gap-2">
+                  <Input
+                    className="min-w-0 flex-1"
+                    id="time"
+                    onChange={(e) => setTime(e.target.value)}
+                    placeholder="05:30"
+                    required
+                    type="time"
+                    value={time}
+                  />
+                  <Select
+                    items={timezoneSelectItems}
+                    onValueChange={(value) => {
+                      if (value == null) return
+                      setTimezone(value as TimezoneOption)
+                    }}
+                    value={timezone}
+                  >
+                    <SelectTrigger
+                      aria-label="Timezone"
+                      className="w-[7.5rem] shrink-0"
+                      id="timezone"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezoneOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </Field>
             </div>
 
             <Field>
-              <FieldLabel htmlFor="location">Start location</FieldLabel>
+              <FieldLabel htmlFor="registrationClosesAt">
+                Registration closed at
+              </FieldLabel>
+              <Popover
+                onOpenChange={setRegistrationClosesOpen}
+                open={registrationClosesOpen}
+              >
+                <PopoverTrigger
+                  render={
+                    <Button
+                      className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground sm:max-w-xs"
+                      data-empty={!registrationClosesAt}
+                      id="registrationClosesAt"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <CalendarBlankIcon weight="bold" />
+                  {registrationClosesAt
+                    ? format(registrationClosesAt, 'd MMMM yyyy')
+                    : 'Pick a date'}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    disabled={[
+                      { before: startOfDay(new Date()) },
+                      ...(date ? [{ after: date }] : []),
+                    ]}
+                    mode="single"
+                    onSelect={(next) => {
+                      setRegistrationClosesAt(next)
+                      if (next) setRegistrationClosesOpen(false)
+                    }}
+                    selected={registrationClosesAt}
+                  />
+                </PopoverContent>
+              </Popover>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="location">Location name</FieldLabel>
               <Input
                 id="location"
                 onChange={(e) => setLocation(e.target.value)}
@@ -137,7 +345,89 @@ function DashboardCreateEventPage() {
                 value={location}
               />
             </Field>
+            <Field>
+              <FieldLabel htmlFor="locationAddress">Location address</FieldLabel>
+              <Input
+                id="locationAddress"
+                onChange={(e) => setLocationAddress(e.target.value)}
+                placeholder="Jl. Raya Puputan No. 1, Denpasar"
+                value={locationAddress}
+              />
+            </Field>
+          </FormSection>
 
+          <FormSection
+            description="Save as Draft while you prepare. Open publishes it on the ride calendar."
+            title="Publishing"
+          >
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {statusOptions.map((option) => (
+                  <button
+                    className={cn(
+                      'border px-3 py-2 text-sm font-medium transition-colors',
+                      status === option.value
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-border hover:border-foreground/40',
+                    )}
+                    key={option.value}
+                    onClick={() => setStatus(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          </FormSection>
+
+          <FormSection
+            description={
+              isFree
+                ? 'Free auto-fills category name and sets price to 0 — edit freely. Leave slots empty for unlimited.'
+                : 'Pick the type, then set the default category. Paid and Flagship need a price; service fee can stay 0.'
+            }
+            title="Type & Category"
+          >
+            <Field>
+              <FieldLabel>Event Type</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {eventTypeOptions.map((option) => (
+                  <button
+                    className={cn(
+                      'border px-3 py-2 text-sm font-medium transition-colors',
+                      kind === option.value
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-border hover:border-foreground/40',
+                    )}
+                    key={option.value}
+                    onClick={() => applyEventType(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="categoryName">Category name</FieldLabel>
+              <Input
+                id="categoryName"
+                onChange={(e) => {
+                  setCategoryNameEdited(true)
+                  setCategoryName(e.target.value)
+                }}
+                placeholder={name.trim() || 'Open'}
+                required
+                value={categoryName}
+              />
+              {isFree ? (
+                <FieldDescription>
+                  Auto-filled from the event name until you edit it.
+                </FieldDescription>
+              ) : null}
+            </Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="distance">Distance</FieldLabel>
@@ -150,84 +440,101 @@ function DashboardCreateEventPage() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="fee">Fee</FieldLabel>
+                <FieldLabel htmlFor="slots">Slots / limit</FieldLabel>
                 <Input
-                  id="fee"
-                  onChange={(e) => setFee(e.target.value)}
-                  placeholder="Free"
-                  value={fee}
+                  id="slots"
+                  inputMode="numeric"
+                  onChange={(e) => setSlots(e.target.value)}
+                  placeholder="Unlimited"
+                  value={slots}
                 />
               </Field>
             </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="price">Price</FieldLabel>
+                <Input
+                  aria-invalid={!isFree && priceAmount <= 0}
+                  id="price"
+                  inputMode="numeric"
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder={isFree ? '0' : '150000'}
+                  required
+                  value={price}
+                />
+                {!isFree ? (
+                  <FieldDescription>Must be greater than 0.</FieldDescription>
+                ) : (
+                  <FieldDescription>Defaults to 0 for free events.</FieldDescription>
+                )}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="serviceFee">Service fee</FieldLabel>
+                <Input
+                  id="serviceFee"
+                  inputMode="numeric"
+                  onChange={(e) => setServiceFee(e.target.value)}
+                  placeholder="0"
+                  value={serviceFee}
+                />
+                <FieldDescription>Optional. Can be 0.</FieldDescription>
+              </Field>
+            </div>
+          </FormSection>
 
-            <Field>
-              <FieldLabel htmlFor="capacity">Capacity</FieldLabel>
-              <Input
-                id="capacity"
-                onChange={(e) => setCapacity(e.target.value)}
-                placeholder="60"
-                value={capacity}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Status</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {(['upcoming', 'open'] as const).map((value) => (
-                  <button
-                    className={cn(
-                      'border px-3 py-2 text-sm font-medium transition-colors',
-                      status === value
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border hover:border-foreground/40',
-                    )}
-                    key={value}
-                    onClick={() => setStatus(value)}
-                    type="button"
-                  >
-                    {value}
-                  </button>
-                ))}
+          <FormSection
+            description="Optional registration steps. Turn these on only when the event needs them."
+            title="Options"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Jersey size</p>
+                <p className="text-sm text-muted-foreground">
+                  Ask riders to pick a jersey size during registration.
+                </p>
               </div>
-            </Field>
-
-            <Field>
-              <FieldLabel>Registration type</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {(['simple', 'full'] as const).map((value) => (
-                  <button
-                    className={cn(
-                      'border px-3 py-2 text-sm font-medium transition-colors',
-                      registration === value
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border hover:border-foreground/40',
-                    )}
-                    key={value}
-                    onClick={() => setRegistration(value)}
-                    type="button"
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-              <FieldDescription>
-                Full registration adds jersey, route, and payment steps.
-              </FieldDescription>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="blurb">Short blurb</FieldLabel>
-              <Input
-                id="blurb"
-                onChange={(e) => setBlurb(e.target.value)}
-                placeholder="Weekly long ride up to the crater rim."
-                required
-                value={blurb}
+              <Switch
+                aria-label="Require jersey size"
+                checked={requireJersey}
+                onCheckedChange={setRequireJersey}
               />
-            </Field>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Require group</p>
+                <p className="text-sm text-muted-foreground">
+                  Riders must create or join a group before completing registration.
+                </p>
+              </div>
+              <Switch
+                aria-label="Require group"
+                checked={requireGroup}
+                onCheckedChange={setRequireGroup}
+              />
+            </div>
+            {requireGroup ? (
+              <Field>
+                <FieldLabel htmlFor="groupCapacity">Group capacity</FieldLabel>
+                <Input
+                  id="groupCapacity"
+                  inputMode="numeric"
+                  onChange={(e) => setGroupCapacity(e.target.value)}
+                  placeholder="8"
+                  value={groupCapacity}
+                />
+                <FieldDescription>
+                  Max riders per named group.
+                </FieldDescription>
+              </Field>
+            ) : null}
+          </FormSection>
 
+          <FormSection
+            description="Event page copy. Regulation is optional for rules riders should follow."
+            title="Description"
+          >
             <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <FieldLabel htmlFor="description">Details</FieldLabel>
               <textarea
                 className="min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 id="description"
@@ -237,9 +544,20 @@ function DashboardCreateEventPage() {
                 value={description}
               />
             </Field>
-          </FieldGroup>
 
-          <div className="flex items-center justify-between gap-3">
+            <Field>
+              <FieldLabel htmlFor="regulation">Regulation</FieldLabel>
+              <textarea
+                className="min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                id="regulation"
+                onChange={(e) => setRegulation(e.target.value)}
+                placeholder="Optional rules, cut-offs, and kit requirements."
+                value={regulation}
+              />
+            </Field>
+          </FormSection>
+
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-8">
             <Link
               className={cn(buttonVariants({ variant: 'outline' }))}
               to="/dashboard/events"
@@ -249,7 +567,264 @@ function DashboardCreateEventPage() {
             <Button type="submit">Create event</Button>
           </div>
         </form>
+
+          <EventPreview
+            categoryName={categoryName}
+            date={date ? format(date, 'd MMMM yyyy') : ''}
+            description={description}
+            distance={distance}
+            fee={displayPrice}
+            groupCapacity={requireGroup ? groupCapacity : undefined}
+            kind={kind}
+            location={location}
+            locationAddress={locationAddress}
+            name={name}
+            registrationClosesAt={
+              registrationClosesAt
+                ? format(registrationClosesAt, 'd MMMM yyyy')
+                : ''
+            }
+            regulation={regulation}
+            requireGroup={requireGroup}
+            requireJersey={requireJersey}
+            serviceFee={isFree ? undefined : serviceFee}
+            slug={slug}
+            slots={slots}
+            status={status}
+            time={time}
+            timezone={timezone}
+          />
+        </div>
       </div>
     </>
+  )
+}
+
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="border-t border-border py-8">
+      <div>
+        <h2 className="font-heading text-base font-semibold tracking-tight">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <FieldGroup className="mt-6">{children}</FieldGroup>
+    </section>
+  )
+}
+
+const previewStatusLabel: Record<EventStatus, string> = {
+  draft: 'Draft',
+  open: 'Open',
+  closed: 'Closed',
+}
+
+const previewStatusStyles: Record<EventStatus, string> = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
+  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+}
+
+const eventTypeLabel: Record<EventKind, string> = {
+  free: 'Free',
+  paid: 'Paid',
+  flagship: 'Flagship',
+}
+
+function EventPreview({
+  categoryName,
+  date,
+  description,
+  distance,
+  fee,
+  groupCapacity,
+  kind,
+  location,
+  locationAddress,
+  name,
+  registrationClosesAt,
+  regulation,
+  requireGroup,
+  requireJersey,
+  serviceFee,
+  slug,
+  slots,
+  status,
+  time,
+  timezone,
+}: {
+  categoryName?: string
+  date: string
+  description: string
+  distance?: string
+  fee?: string
+  groupCapacity?: string
+  kind: EventKind
+  location: string
+  locationAddress?: string
+  name: string
+  registrationClosesAt: string
+  regulation: string
+  requireGroup: boolean
+  requireJersey: boolean
+  serviceFee?: string
+  slug: string
+  slots?: string
+  status: Extract<EventStatus, 'draft' | 'open'>
+  time: string
+  timezone: TimezoneOption
+}) {
+  const displayName = name.trim() || 'Event name'
+  const displayFee = fee?.trim() || (kind === 'free' ? 'Free' : 'Price')
+  const displayDistance = distance?.trim() || 'Distance'
+  const displaySlots = slots?.trim() ? `${slots.trim()} spots` : 'Unlimited'
+  const displayCategory = categoryName?.trim() || 'Category'
+  const displayServiceFee = serviceFee?.trim()
+    ? `Rp ${Number(serviceFee.replace(/\D/g, '') || 0).toLocaleString('id-ID')}`
+    : null
+  const canRegister = status === 'open'
+
+  return (
+    <aside className="space-y-4 border-t border-border py-8 lg:sticky lg:top-6">
+      <div>
+        <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+          Preview
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {status === 'draft'
+            ? 'Hidden from the public calendar until Open.'
+            : 'How this event appears on the ride calendar.'}
+        </p>
+      </div>
+
+      <div className="border border-border p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+              Event
+            </p>
+            <h3 className="mt-2 font-heading text-xl font-semibold tracking-tight">
+              {displayName}
+            </h3>
+          </div>
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+              previewStatusStyles[status],
+            )}
+          >
+            {previewStatusLabel[status]}
+          </span>
+        </div>
+
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {description.trim() || 'Longer details for the event page.'}
+        </p>
+        {regulation.trim() ? (
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Regulation
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {regulation.trim()}
+            </p>
+          </div>
+        ) : null}
+
+        <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
+          <PreviewRow
+            label="When"
+            value={
+              date.trim()
+                ? `${date}${
+                    time.trim() ? ` · ${time.trim()} ${timezone}` : ` · ${timezone}`
+                  }`
+                : '—'
+            }
+          />
+          <PreviewRow label="Location" value={location.trim() || '—'} />
+          {locationAddress?.trim() ? (
+            <PreviewRow label="Address" value={locationAddress.trim()} />
+          ) : null}
+          <PreviewRow
+            label="Reg. closes"
+            value={registrationClosesAt.trim() || '—'}
+          />
+          <PreviewRow
+            label="URL"
+            value={slug ? `/events/${slug}` : '—'}
+          />
+          <PreviewRow
+            label="Jersey"
+            value={requireJersey ? 'Required' : 'Off'}
+          />
+          <PreviewRow
+            label="Group"
+            value={
+              requireGroup
+                ? groupCapacity?.trim()
+                  ? `Required · max ${groupCapacity.trim()}`
+                  : 'Required'
+                : 'Off'
+            }
+          />
+        </dl>
+
+        <span
+          className={cn(
+            buttonVariants(),
+            'mt-6 w-full pointer-events-none',
+            !canRegister && 'opacity-50',
+          )}
+        >
+          {canRegister ? 'Register' : 'Not available yet'}
+        </span>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          {canRegister
+            ? registerCtaCopy(kind)
+            : 'Check back later or browse other open events.'}
+        </p>
+      </div>
+
+      <div className="border border-border p-5">
+        <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+          Category
+        </p>
+        <div className="mt-2 flex items-baseline justify-between gap-4">
+          <h4 className="font-heading text-lg font-semibold tracking-tight">
+            {displayCategory}
+          </h4>
+          <p className="shrink-0 text-sm font-medium tabular-nums">{displayFee}</p>
+        </div>
+
+        <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
+          <PreviewRow label="Type" value={eventTypeLabel[kind]} />
+          <PreviewRow label="Distance" value={displayDistance} />
+          <PreviewRow label="Slots" value={displaySlots} />
+          <PreviewRow label="Price" value={displayFee} />
+          {displayServiceFee ? (
+            <PreviewRow label="Service fee" value={displayServiceFee} />
+          ) : null}
+        </dl>
+      </div>
+    </aside>
+  )
+}
+
+function PreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium">{value}</dd>
+    </div>
   )
 }

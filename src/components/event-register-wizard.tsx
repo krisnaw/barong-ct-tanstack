@@ -1,11 +1,41 @@
 import * as React from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
+  CreditCardIcon,
+  QrCodeIcon,
+} from '@phosphor-icons/react'
+import {
+  ACCOUNT_BLOOD_TYPES,
+  ACCOUNT_GENDERS,
+} from '~/lib/account'
+import {
   type ClubEvent,
+  type CourseOption,
+  eventEntryAmount,
   formatIdr,
-  type JerseyOption,
-  type RouteOption,
+  JERSEY_SIZES,
+  type PaymentMethodChoice,
+  type RegisterStep,
+  stepsForKind,
 } from '~/data/events'
+import { useAccount } from '~/lib/account'
+import {
+  applyProfileToDraft,
+  emptyDraft,
+  findGroup,
+  groupNameTaken,
+  isProfileComplete,
+  loadDraft,
+  patchCreatedGroup,
+  type RegisterDraft,
+  saveCreatedGroup,
+  saveDraft,
+} from '~/lib/event-register-draft'
+import {
+  type UserProfileRow,
+  upsertMyProfile,
+} from '~/lib/profile.functions'
+import { dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Field,
@@ -16,77 +46,70 @@ import {
 import { Input } from '~/components/ui/input'
 import { cn } from '~/lib/utils'
 
-export type FullRegisterStep = 'jersey' | 'route' | 'profile' | 'payment'
-export type SimpleRegisterStep = 'profile' | 'done'
-export type RegisterStep = FullRegisterStep | SimpleRegisterStep
-
-export type RegisterDraft = {
-  jerseyId: string
-  jerseySize: string
-  routeId: string
-  fullName: string
-  email: string
-  phone: string
-  club: string
-  emergencyContact: string
-}
-
-const emptyDraft: RegisterDraft = {
-  jerseyId: '',
-  jerseySize: '',
-  routeId: '',
-  fullName: '',
-  email: '',
-  phone: '',
-  club: '',
-  emergencyContact: '',
-}
-
-const fullSteps: FullRegisterStep[] = ['jersey', 'route', 'profile', 'payment']
-const simpleSteps: SimpleRegisterStep[] = ['profile', 'done']
-
 const stepLabel: Record<RegisterStep, string> = {
+  course: 'Course',
+  group: 'Group',
   jersey: 'Jersey',
-  route: 'Route',
   profile: 'Profile',
   payment: 'Payment',
   done: 'Done',
 }
 
-function storageKey(slug: string) {
-  return `barong-register:${slug}`
-}
+const paymentMethods: {
+  id: PaymentMethodChoice
+  label: string
+  detail: string
+  icon: React.ReactNode
+}[] = [
+  {
+    id: 'qris_va',
+    label: 'QRIS / BNI VA',
+    detail: 'Pay with QRIS or BNI Virtual Account.',
+    icon: <QrCodeIcon className="size-4" weight="bold" />,
+  },
+  {
+    id: 'card',
+    label: 'Credit card',
+    detail: 'Visa, Mastercard, and other cards. A service fee applies.',
+    icon: <CreditCardIcon className="size-4" weight="bold" />,
+  },
+]
 
-function loadDraft(slug: string): RegisterDraft {
-  if (typeof window === 'undefined') return emptyDraft
-  try {
-    const raw = sessionStorage.getItem(storageKey(slug))
-    if (!raw) return emptyDraft
-    return { ...emptyDraft, ...JSON.parse(raw) }
-  } catch {
-    return emptyDraft
-  }
-}
-
-function saveDraft(slug: string, draft: RegisterDraft) {
-  if (typeof window === 'undefined') return
-  sessionStorage.setItem(storageKey(slug), JSON.stringify(draft))
-}
+const selectClassName =
+  'h-8 w-full appearance-none rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function EventRegisterWizard({
   event,
   step,
+  groupId,
+  profile,
 }: {
   event: ClubEvent
   step: RegisterStep
+  groupId?: string
+  profile: UserProfileRow & { email: string }
 }) {
   const navigate = useNavigate()
-  const steps = event.registration === 'full' ? fullSteps : simpleSteps
+  const steps = stepsForKind(event.kind)
   const [draft, setDraft] = React.useState<RegisterDraft>(emptyDraft)
+  const [ready, setReady] = React.useState(false)
 
   React.useEffect(() => {
-    setDraft(loadDraft(event.slug))
-  }, [event.slug])
+    const loaded = loadDraft(event.slug)
+    const invited = groupId ? findGroup(event.slug, groupId) : undefined
+    const withGroup = invited
+      ? {
+          ...loaded,
+          groupId: invited.id,
+          groupName: invited.name,
+          courseId: invited.courseId,
+        }
+      : loaded
+    const next = applyProfileToDraft(withGroup, profile)
+    if (invited) saveDraft(event.slug, next)
+    setDraft(next)
+    setReady(true)
+  }, [event.slug, groupId, profile])
 
   function update(partial: Partial<RegisterDraft>) {
     setDraft((current) => {
@@ -96,16 +119,67 @@ export function EventRegisterWizard({
     })
   }
 
-  function goTo(nextStep: RegisterStep) {
+  function goTo(nextStep: RegisterStep, createdGroupId?: string) {
     void navigate({
       to: '/events/$slug/register',
       params: { slug: event.slug },
-      search: { step: nextStep },
+      search: {
+        step: nextStep,
+        groupId: createdGroupId || groupId || draft.groupId || undefined,
+      },
     })
   }
 
-  const stepIndex = Math.max(0, steps.indexOf(step as never))
-  const isFull = event.registration === 'full'
+  const invited = Boolean(groupId && draft.groupId === groupId)
+  const stepIndex = Math.max(0, steps.indexOf(step))
+
+  React.useEffect(() => {
+    if (!ready || event.kind !== 'flagship') return
+    if (invited && step === 'group') {
+      void navigate({
+        to: '/events/$slug/register',
+        params: { slug: event.slug },
+        search: { step: 'course', groupId },
+        replace: true,
+      })
+      return
+    }
+    if ((step === 'course' || step === 'jersey') && !draft.groupId) {
+      void navigate({
+        to: '/events/$slug/register',
+        params: { slug: event.slug },
+        search: { step: 'group', groupId: groupId || undefined },
+        replace: true,
+      })
+      return
+    }
+    if (step === 'jersey' && !draft.courseId) {
+      void navigate({
+        to: '/events/$slug/register',
+        params: { slug: event.slug },
+        search: { step: 'course', groupId: groupId || draft.groupId || undefined },
+        replace: true,
+      })
+    }
+  }, [
+    draft.courseId,
+    draft.groupId,
+    event.kind,
+    event.slug,
+    groupId,
+    invited,
+    navigate,
+    ready,
+    step,
+  ])
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10 lg:px-0 lg:py-12">
+        <p className="text-sm text-muted-foreground">Loading registration…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10 lg:px-0 lg:py-12">
@@ -149,54 +223,74 @@ export function EventRegisterWizard({
         })}
       </ol>
 
-      {isFull && step === 'jersey' ? (
-        <JerseyStep
+      {event.kind === 'flagship' && step === 'group' ? (
+        <GroupStep
           draft={draft}
-          jerseys={event.jerseys ?? []}
-          onContinue={() => goTo('route')}
+          event={event}
+          invited={invited}
+          onContinue={(createdId) => goTo('course', createdId)}
           onUpdate={update}
         />
       ) : null}
 
-      {isFull && step === 'route' ? (
-        <RouteStep
+      {event.kind === 'flagship' && step === 'course' ? (
+        <CourseStep
+          courses={event.courses ?? []}
           draft={draft}
-          onBack={() => goTo('jersey')}
+          eventSlug={event.slug}
+          onBack={() => goTo('group')}
+          onContinue={() => goTo('jersey')}
+          onUpdate={update}
+        />
+      ) : null}
+
+      {event.kind === 'flagship' && step === 'jersey' ? (
+        <JerseyStep
+          draft={draft}
+          onBack={() => goTo('course')}
           onContinue={() => goTo('profile')}
           onUpdate={update}
-          routes={event.routes ?? []}
+          preferredSize={profile.jerseySize}
         />
       ) : null}
 
       {step === 'profile' ? (
         <ProfileStep
           draft={draft}
-          onBack={isFull ? () => goTo('route') : undefined}
-          onContinue={() => goTo(isFull ? 'payment' : 'done')}
+          onBack={
+            event.kind === 'flagship' ? () => goTo('jersey') : undefined
+          }
+          onContinue={() =>
+            goTo(event.kind === 'free' ? 'done' : 'payment')
+          }
           onUpdate={update}
         />
       ) : null}
 
-      {isFull && step === 'payment' ? (
+      {step === 'payment' ? (
         <PaymentStep
           draft={draft}
           event={event}
           onBack={() => goTo('profile')}
           onPaid={() => {
-            sessionStorage.removeItem(storageKey(event.slug))
+            const next = { ...draft, status: 'confirmed' as const }
+            saveDraft(event.slug, next)
+            setDraft(next)
             void navigate({
               to: '/events/$slug',
               params: { slug: event.slug },
             })
           }}
+          onUpdate={update}
         />
       ) : null}
 
-      {!isFull && step === 'done' ? (
+      {step === 'done' ? (
         <DoneStep
           event={event}
           onFinish={() => {
-            sessionStorage.removeItem(storageKey(event.slug))
+            const next = { ...draft, status: 'confirmed' as const }
+            saveDraft(event.slug, next)
             void navigate({
               to: '/events/$slug',
               params: { slug: event.slug },
@@ -208,104 +302,17 @@ export function EventRegisterWizard({
   )
 }
 
-function JerseyStep({
-  jerseys,
+function CourseStep({
+  courses,
   draft,
-  onUpdate,
-  onContinue,
-}: {
-  jerseys: JerseyOption[]
-  draft: RegisterDraft
-  onUpdate: (partial: Partial<RegisterDraft>) => void
-  onContinue: () => void
-}) {
-  const selected = jerseys.find((jersey) => jersey.id === draft.jerseyId)
-  const canContinue = Boolean(draft.jerseyId && draft.jerseySize)
-
-  return (
-    <section className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
-          Choose your jersey
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Kit is included in the Melali entry fee.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        {jerseys.map((jersey) => {
-          const active = draft.jerseyId === jersey.id
-          return (
-            <button
-              className={cn(
-                'border p-4 text-left transition-colors',
-                active
-                  ? 'border-foreground bg-muted/40'
-                  : 'border-border hover:border-foreground/40',
-              )}
-              key={jersey.id}
-              onClick={() =>
-                onUpdate({
-                  jerseyId: jersey.id,
-                  jerseySize: active ? draft.jerseySize : '',
-                })
-              }
-              type="button"
-            >
-              <p className="font-medium">{jersey.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {jersey.description}
-              </p>
-            </button>
-          )
-        })}
-      </div>
-
-      {selected ? (
-        <Field>
-          <FieldLabel>Size</FieldLabel>
-          <div className="flex flex-wrap gap-2">
-            {selected.sizes.map((size) => {
-              const active = draft.jerseySize === size
-              return (
-                <button
-                  className={cn(
-                    'min-w-12 border px-3 py-2 text-sm font-medium transition-colors',
-                    active
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-border hover:border-foreground/40',
-                  )}
-                  key={size}
-                  onClick={() => onUpdate({ jerseySize: size })}
-                  type="button"
-                >
-                  {size}
-                </button>
-              )
-            })}
-          </div>
-        </Field>
-      ) : null}
-
-      <div className="flex justify-end">
-        <Button disabled={!canContinue} onClick={onContinue} type="button">
-          Continue to route
-        </Button>
-      </div>
-    </section>
-  )
-}
-
-function RouteStep({
-  routes,
-  draft,
+  eventSlug,
   onUpdate,
   onBack,
   onContinue,
 }: {
-  routes: RouteOption[]
+  courses: CourseOption[]
   draft: RegisterDraft
+  eventSlug: string
   onUpdate: (partial: Partial<RegisterDraft>) => void
   onBack: () => void
   onContinue: () => void
@@ -314,7 +321,7 @@ function RouteStep({
     <section className="space-y-6">
       <div>
         <h2 className="font-heading text-xl font-semibold tracking-tight">
-          Choose your route
+          Choose your course
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Same start. Pick the distance that fits your day.
@@ -322,8 +329,8 @@ function RouteStep({
       </div>
 
       <div className="grid gap-3">
-        {routes.map((route) => {
-          const active = draft.routeId === route.id
+        {courses.map((course) => {
+          const active = draft.courseId === course.id
           return (
             <button
               className={cn(
@@ -332,19 +339,29 @@ function RouteStep({
                   ? 'border-foreground bg-muted/40'
                   : 'border-border hover:border-foreground/40',
               )}
-              key={route.id}
-              onClick={() => onUpdate({ routeId: route.id })}
+              key={course.id}
+              onClick={() => {
+                onUpdate({ courseId: course.id })
+                if (draft.groupId) {
+                  patchCreatedGroup(eventSlug, draft.groupId, {
+                    courseId: course.id,
+                  })
+                }
+              }}
               type="button"
             >
               <div className="flex items-baseline justify-between gap-3">
-                <p className="font-medium">{route.name}</p>
+                <p className="font-medium">{course.name}</p>
                 <p className="text-sm font-medium tabular-nums">
-                  {route.distance}
+                  {formatIdr(course.price)}
                 </p>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {route.description}
-                {route.elevation ? ` · ${route.elevation}` : ''}
+                {course.distance}
+                {course.elevation ? ` · ${course.elevation}` : ''}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {course.description}
               </p>
             </button>
           )
@@ -355,8 +372,202 @@ function RouteStep({
         <Button onClick={onBack} type="button" variant="outline">
           Back
         </Button>
+        <Button disabled={!draft.courseId} onClick={onContinue} type="button">
+          Continue to jersey
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+function GroupStep({
+  event,
+  draft,
+  invited,
+  onUpdate,
+  onContinue,
+}: {
+  event: ClubEvent
+  draft: RegisterDraft
+  invited: boolean
+  onUpdate: (partial: Partial<RegisterDraft>) => void
+  onContinue: (createdGroupId?: string) => void
+}) {
+  const [name, setName] = React.useState(draft.groupName)
+  const [error, setError] = React.useState('')
+  const created = Boolean(draft.groupId)
+  const group = draft.groupId ? findGroup(event.slug, draft.groupId) : undefined
+  const full =
+    Boolean(group && event.groupCapacity) &&
+    (group?.memberCount ?? 0) >= (event.groupCapacity ?? 0)
+
+  function createGroup() {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Enter a group name.')
+      return null
+    }
+    if (groupNameTaken(event.slug, trimmed)) {
+      setError(`“${trimmed}” already exists. Try adding a number, e.g. ${trimmed} 1.`)
+      return null
+    }
+    const groupId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `grp-${Date.now()}`
+    saveCreatedGroup({
+      id: groupId,
+      eventSlug: event.slug,
+      courseId: draft.courseId,
+      name: trimmed,
+      memberCount: 1,
+    })
+    onUpdate({ groupId, groupName: trimmed })
+    setError('')
+    return groupId
+  }
+
+  function handleContinue() {
+    if (draft.groupId) {
+      onContinue()
+      return
+    }
+    const createdId = createGroup()
+    if (createdId) onContinue(createdId)
+  }
+
+  if (invited && full) {
+    return (
+      <section className="space-y-6">
+        <div>
+          <h2 className="font-heading text-xl font-semibold tracking-tight">
+            This group is full
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {draft.groupName || 'This group'} already has {event.groupCapacity}{' '}
+            riders. Ask for a new invite or create your own group.
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h2 className="font-heading text-xl font-semibold tracking-tight">
+          {invited ? 'Join this group' : 'Create a group ride'}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {invited
+            ? `You were invited to ${draft.groupName}. Pick your course next.`
+            : `Name your peloton. You can invite teammates after registration is complete. Up to ${event.groupCapacity ?? 8} riders.`}
+        </p>
+      </div>
+
+      {invited || created ? (
+        <div className="border border-border p-4">
+          <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            Group
+          </p>
+          <p className="mt-1 font-medium">{draft.groupName}</p>
+        </div>
+      ) : (
+        <Field>
+          <FieldLabel htmlFor="groupName">Group name</FieldLabel>
+          <Input
+            id="groupName"
+            onChange={(event) => {
+              setName(event.target.value)
+              setError('')
+            }}
+            placeholder="Kopi Peloton"
+            value={name}
+          />
+          {error ? (
+            <p className="mt-2 text-sm text-destructive">{error}</p>
+          ) : (
+            <FieldDescription>
+              Names must be unique for this event.
+            </FieldDescription>
+          )}
+        </Field>
+      )}
+
+      <div className="flex justify-end">
         <Button
-          disabled={!draft.routeId}
+          disabled={invited ? !draft.groupId : !name.trim() && !draft.groupId}
+          onClick={handleContinue}
+          type="button"
+        >
+          Continue to course
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+function JerseyStep({
+  draft,
+  onUpdate,
+  onBack,
+  onContinue,
+  preferredSize,
+}: {
+  draft: RegisterDraft
+  onUpdate: (partial: Partial<RegisterDraft>) => void
+  onBack: () => void
+  onContinue: () => void
+  preferredSize?: string
+}) {
+  return (
+    <section className="space-y-6">
+      <div>
+        <h2 className="font-heading text-xl font-semibold tracking-tight">
+          Jersey size
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Race-fit kit is included. If you sit between sizes, take the larger for
+          Bali heat.
+        </p>
+      </div>
+
+      <Field>
+        <FieldLabel>Size</FieldLabel>
+        <div className="flex flex-wrap gap-2">
+          {JERSEY_SIZES.map((size) => {
+            const active = draft.jerseySize === size
+            return (
+              <button
+                className={cn(
+                  'min-w-12 border px-3 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-border hover:border-foreground/40',
+                )}
+                key={size}
+                onClick={() => onUpdate({ jerseySize: size })}
+                type="button"
+              >
+                {size}
+            </button>
+          )
+        })}
+        </div>
+        {preferredSize ? (
+          <FieldDescription>
+            Your account default is {preferredSize}. Confirm a size for this
+            event.
+          </FieldDescription>
+        ) : null}
+      </Field>
+
+      <div className="flex items-center justify-between gap-3">
+        <Button onClick={onBack} type="button" variant="outline">
+          Back
+        </Button>
+        <Button
+          disabled={!draft.jerseySize}
           onClick={onContinue}
           type="button"
         >
@@ -378,12 +589,41 @@ function ProfileStep({
   onBack?: () => void
   onContinue: () => void
 }) {
-  const canContinue = Boolean(
-    draft.fullName.trim() &&
-      draft.email.trim() &&
-      draft.phone.trim() &&
-      draft.emergencyContact.trim(),
-  )
+  const { signedIn, updateProfile } = useAccount()
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState('')
+
+  async function handleContinue() {
+    if (!isProfileComplete(draft) || saving) return
+    setSaving(true)
+    setError('')
+    const patch = {
+      firstName: draft.firstName.trim(),
+      lastName: draft.lastName.trim(),
+      phone: draft.phone.trim(),
+      gender: draft.gender,
+      bloodType: draft.bloodType,
+      dateOfBirth: draft.dateOfBirth,
+      nationality: draft.nationality.trim(),
+      idNumber: draft.idNumber.trim(),
+      emergencyContactName: draft.emergencyContactName.trim(),
+      emergencyContactPhone: draft.emergencyContactPhone.trim(),
+      ...(draft.jerseySize ? { jerseySize: draft.jerseySize } : {}),
+    }
+    try {
+      if (signedIn) {
+        await updateProfile(patch)
+      } else {
+        await upsertMyProfile({ data: patch })
+      }
+      onUpdate({ profileConfirmed: true })
+      onContinue()
+    } catch {
+      setError('Could not save your profile. Try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <section className="space-y-6">
@@ -392,42 +632,151 @@ function ProfileStep({
           Rider profile
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Used for start lists, kit sizing checks, and emergency contact.
+          Loaded from your account. Changes here update your Barong profile.
         </p>
       </div>
 
       <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="fullName">Full name</FieldLabel>
-          <Input
-            id="fullName"
-            onChange={(event) => onUpdate({ fullName: event.target.value })}
-            placeholder="Gede Riza"
-            required
-            value={draft.fullName}
-          />
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="firstName">First name</FieldLabel>
+            <Input
+              id="firstName"
+              onChange={(event) => onUpdate({ firstName: event.target.value })}
+              required
+              value={draft.firstName}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="lastName">Last name</FieldLabel>
+            <Input
+              id="lastName"
+              onChange={(event) => onUpdate({ lastName: event.target.value })}
+              required
+              value={draft.lastName}
+            />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
-            onChange={(event) => onUpdate({ email: event.target.value })}
-            placeholder="rider@barong.ct"
+            readOnly
             required
             type="email"
             value={draft.email}
           />
+          <FieldDescription>
+            From your account. Change it from Account settings.
+          </FieldDescription>
         </Field>
         <Field>
           <FieldLabel htmlFor="phone">Phone / WhatsApp</FieldLabel>
           <Input
             id="phone"
             onChange={(event) => onUpdate({ phone: event.target.value })}
-            placeholder="+62 812 0000 0000"
             required
             value={draft.phone}
           />
         </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="gender">Gender</FieldLabel>
+            <select
+              className={selectClassName}
+              id="gender"
+              onChange={(event) => onUpdate({ gender: event.target.value })}
+              required
+              value={draft.gender}
+            >
+              <option value="">Select</option>
+              {ACCOUNT_GENDERS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="bloodType">Blood type</FieldLabel>
+            <select
+              className={selectClassName}
+              id="bloodType"
+              onChange={(event) => onUpdate({ bloodType: event.target.value })}
+              required
+              value={draft.bloodType}
+            >
+              <option value="">Select</option>
+              {ACCOUNT_BLOOD_TYPES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="dateOfBirth">Date of birth</FieldLabel>
+            <Input
+              id="dateOfBirth"
+              onChange={(event) =>
+                onUpdate({ dateOfBirth: event.target.value })
+              }
+              required
+              type="date"
+              value={draft.dateOfBirth}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="nationality">Nationality</FieldLabel>
+            <Input
+              id="nationality"
+              onChange={(event) =>
+                onUpdate({ nationality: event.target.value })
+              }
+              required
+              value={draft.nationality}
+            />
+          </Field>
+        </div>
+        <Field>
+          <FieldLabel htmlFor="idNumber">KTP or ID</FieldLabel>
+          <Input
+            id="idNumber"
+            onChange={(event) => onUpdate({ idNumber: event.target.value })}
+            required
+            value={draft.idNumber}
+          />
+        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="emergencyContactName">
+              Emergency contact
+            </FieldLabel>
+            <Input
+              id="emergencyContactName"
+              onChange={(event) =>
+                onUpdate({ emergencyContactName: event.target.value })
+              }
+              required
+              value={draft.emergencyContactName}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="emergencyContactPhone">
+              Emergency phone
+            </FieldLabel>
+            <Input
+              id="emergencyContactPhone"
+              onChange={(event) =>
+                onUpdate({ emergencyContactPhone: event.target.value })
+              }
+              required
+              value={draft.emergencyContactPhone}
+            />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="club">Club (optional)</FieldLabel>
           <Input
@@ -436,21 +785,6 @@ function ProfileStep({
             placeholder="Barong Cycling Team"
             value={draft.club}
           />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="emergencyContact">Emergency contact</FieldLabel>
-          <Input
-            id="emergencyContact"
-            onChange={(event) =>
-              onUpdate({ emergencyContact: event.target.value })
-            }
-            placeholder="Name + phone"
-            required
-            value={draft.emergencyContact}
-          />
-          <FieldDescription>
-            Someone we can reach on the day if needed.
-          </FieldDescription>
         </Field>
       </FieldGroup>
 
@@ -462,10 +796,17 @@ function ProfileStep({
         ) : (
           <span />
         )}
-        <Button disabled={!canContinue} onClick={onContinue} type="button">
-          Continue
+        <Button
+          disabled={!isProfileComplete(draft) || saving}
+          onClick={() => {
+            void handleContinue()
+          }}
+          type="button"
+        >
+          {saving ? 'Saving…' : 'Continue'}
         </Button>
       </div>
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </section>
   )
 }
@@ -475,15 +816,19 @@ function PaymentStep({
   draft,
   onBack,
   onPaid,
+  onUpdate,
 }: {
   event: ClubEvent
   draft: RegisterDraft
   onBack: () => void
   onPaid: () => void
+  onUpdate: (partial: Partial<RegisterDraft>) => void
 }) {
-  const jersey = event.jerseys?.find((item) => item.id === draft.jerseyId)
-  const route = event.routes?.find((item) => item.id === draft.routeId)
-  const amount = event.feeAmount ?? 0
+  const course = event.courses?.find((item) => item.id === draft.courseId)
+  const amount = eventEntryAmount(event, draft.courseId)
+  const serviceFee =
+    draft.paymentMethod === 'card' ? dokuCardServiceFee(amount) : 0
+  const total = amount + serviceFee
 
   return (
     <section className="space-y-6">
@@ -497,22 +842,56 @@ function PaymentStep({
       </div>
 
       <dl className="divide-y divide-border border border-border text-sm">
-        <SummaryRow label="Rider" value={draft.fullName} />
-        <SummaryRow label="Email" value={draft.email} />
         <SummaryRow
-          label="Jersey"
-          value={`${jersey?.name ?? '—'} · ${draft.jerseySize || '—'}`}
+          label="Rider"
+          value={`${draft.firstName} ${draft.lastName}`.trim() || '—'}
         />
-        <SummaryRow
-          label="Route"
-          value={
-            route
-              ? `${route.name} (${route.distance})`
-              : '—'
-          }
-        />
-        <SummaryRow label="Total" value={formatIdr(amount)} />
+        <SummaryRow label="Email" value={draft.email || '—'} />
+        {event.kind === 'flagship' ? (
+          <>
+            <SummaryRow
+              label="Course"
+              value={
+                course ? `${course.name} (${course.distance})` : '—'
+              }
+            />
+            <SummaryRow label="Group" value={draft.groupName || '—'} />
+            <SummaryRow label="Jersey" value={draft.jerseySize || '—'} />
+          </>
+        ) : null}
+        <SummaryRow label="Entry" value={formatIdr(amount)} />
+        {serviceFee > 0 ? (
+          <SummaryRow label="Card fee" value={formatIdr(serviceFee)} />
+        ) : null}
+        <SummaryRow label="Total" value={formatIdr(total)} />
       </dl>
+
+      <div className="grid gap-3">
+        {paymentMethods.map((method) => {
+          const active = draft.paymentMethod === method.id
+          return (
+            <button
+              className={cn(
+                'flex items-start gap-3 border p-4 text-left transition-colors',
+                active
+                  ? 'border-foreground bg-muted/40'
+                  : 'border-border hover:border-foreground/40',
+              )}
+              key={method.id}
+              onClick={() => onUpdate({ paymentMethod: method.id })}
+              type="button"
+            >
+              <span className="mt-0.5 text-muted-foreground">{method.icon}</span>
+              <span>
+                <span className="block font-medium">{method.label}</span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  {method.detail}
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
       <div className="border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
         Payment is stubbed for now — click pay to finish this draft flow.
@@ -522,8 +901,12 @@ function PaymentStep({
         <Button onClick={onBack} type="button" variant="outline">
           Back
         </Button>
-        <Button onClick={onPaid} type="button">
-          Pay {formatIdr(amount)}
+        <Button
+          disabled={!draft.paymentMethod}
+          onClick={onPaid}
+          type="button"
+        >
+          Pay {formatIdr(total)}
         </Button>
       </div>
     </section>

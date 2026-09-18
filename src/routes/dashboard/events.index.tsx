@@ -13,9 +13,15 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { cn } from '~/lib/utils'
 
 const eventStatusStyles: Record<EventStatus, string> = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
   open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  upcoming: 'border-sky-200 bg-sky-50 text-sky-800',
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+}
+
+const eventStatusLabel: Record<EventStatus, string> = {
+  draft: 'Draft',
+  open: 'Open',
+  closed: 'Closed',
 }
 
 export const Route = createFileRoute('/dashboard/events/')({
@@ -68,6 +74,8 @@ function DashboardEventsPage() {
                     {event.date}
                     <span className="text-border"> · </span>
                     {event.location}
+                    <span className="text-border"> · </span>
+                    {event.kind}
                   </p>
                 </div>
                 <span
@@ -76,7 +84,7 @@ function DashboardEventsPage() {
                     eventStatusStyles[event.status],
                   )}
                 >
-                  {event.status}
+                  {eventStatusLabel[event.status]}
                 </span>
               </Link>
             </li>
