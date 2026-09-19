@@ -37,7 +37,6 @@ import {
   upsertMyProfile,
 } from '~/lib/profile.functions'
 import { startEventPayment } from '~/lib/payment.functions'
-import { dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Field,
@@ -71,7 +70,7 @@ const paymentMethods: {
   {
     id: 'card',
     label: 'Credit card',
-    detail: 'Visa, Mastercard, and other cards. A service fee applies.',
+    detail: 'Visa, Mastercard, and other cards via DOKU.',
     icon: <CreditCardIcon className="size-4" weight="bold" />,
   },
 ]
@@ -870,7 +869,9 @@ function PaymentStep({
   const course = event.courses?.find((item) => item.id === draft.courseId)
   const amount = eventEntryAmount(event, draft.courseId)
   const serviceFee =
-    draft.paymentMethod === 'card' ? dokuCardServiceFee(amount) : 0
+    event.kind === 'flagship'
+      ? (course?.serviceFee ?? 0)
+      : (event.serviceFeeAmount ?? 0)
   const total = amount + serviceFee
   const [paying, setPaying] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -921,7 +922,7 @@ function PaymentStep({
         ) : null}
         <SummaryRow label="Entry" value={formatIdr(amount)} />
         {serviceFee > 0 ? (
-          <SummaryRow label="Card fee" value={formatIdr(serviceFee)} />
+          <SummaryRow label="Service fee" value={formatIdr(serviceFee)} />
         ) : null}
         <SummaryRow label="Total" value={formatIdr(total)} />
       </dl>

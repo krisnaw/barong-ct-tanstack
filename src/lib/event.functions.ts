@@ -89,6 +89,7 @@ function mapCourse(row: CategoryRow): CourseOption {
     distance: row.distance?.trim() || '—',
     description: row.description?.trim() || '',
     price: row.price,
+    serviceFee: row.serviceFee,
   }
 }
 

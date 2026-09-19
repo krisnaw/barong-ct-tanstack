@@ -288,9 +288,7 @@ export const startEventPayment = createServerFn({ method: 'POST' })
     }
 
     const provider = getProvider()
-    const serviceFee =
-      data.methodId === 'card' ? dokuCardServiceFee(goodsTotal) : 0
-    const chargeAmount = chargeAmountForMethod(goodsTotal, data.methodId)
+    const chargeAmount = goodsTotal
     const invoiceRef = eventInvoiceRef(participant.id)
 
     const pendingRows = await db.query.payment.findMany({
@@ -366,15 +364,6 @@ export const startEventPayment = createServerFn({ method: 'POST' })
               name: 'Service fee',
               quantity: 1,
               price: participant.serviceFee,
-            },
-          ]
-        : []),
-      ...(serviceFee > 0
-        ? [
-            {
-              name: 'Card service fee',
-              quantity: 1,
-              price: serviceFee,
             },
           ]
         : []),

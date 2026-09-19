@@ -17,6 +17,7 @@ export type CourseOption = {
   elevation?: string
   description: string
   price: number
+  serviceFee?: number
 }
 
 export type ClubEvent = {
