@@ -33,6 +33,11 @@ import {
 } from '~/lib/account'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
+import {
+  AccountOrdersSkeleton,
+  AccountPageSkeleton,
+} from '~/components/page-skeletons'
 import { listMyOrders } from '~/lib/order.functions'
 import { startPayment } from '~/lib/payment.functions'
 import { cn } from '~/lib/utils'
@@ -47,13 +52,7 @@ export function AccountLayout() {
   const { profile, signedIn, ready, signOut } = useAccount()
 
   if (!ready) {
-    return (
-      <section className="px-5 py-10 sm:px-8 sm:py-12 lg:px-12">
-        <p className="border-y border-border py-10 text-sm text-muted-foreground">
-          Loading account…
-        </p>
-      </section>
-    )
+    return <AccountPageSkeleton />
   }
 
   if (!signedIn || !profile) {
@@ -308,7 +307,7 @@ export function AccountProfilePanel() {
               type="button"
               variant="outline"
             >
-              {avatarPending ? 'Uploading…' : 'Change photo'}
+              {avatarPending ? (<><Spinner /> Uploading…</>) : 'Change photo'}
             </Button>
             {draft.avatarUrl ? (
               <Button
@@ -584,7 +583,9 @@ export function AccountOrdersPanel({
         Order history
       </h2>
       {!ready ? (
-        <p className="mt-6 text-sm text-muted-foreground">Loading orders…</p>
+        <div className="mt-6">
+          <AccountOrdersSkeleton showHeading={false} />
+        </div>
       ) : orders.length === 0 ? (
         <div className="mt-6 border-y border-border py-10">
           <p className="font-heading text-base font-medium tracking-tight">
@@ -621,7 +622,7 @@ function SaveBar({
   return (
     <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
       <Button disabled={pending} size="lg" type="submit">
-        {pending ? 'Saving…' : label}
+        {pending ? (<><Spinner /> Saving…</>) : label}
       </Button>
     </div>
   )
@@ -748,7 +749,7 @@ function PayNowButton({ order }: { order: ShopOrder }) {
   return (
     <div>
       <Button disabled={pending} onClick={() => void pay()} type="button">
-        {pending ? 'Redirecting…' : `Pay ${formatShopPrice(order.total)}`}
+        {pending ? (<><Spinner /> Redirecting…</>) : `Pay ${formatShopPrice(order.total)}`}
       </Button>
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
     </div>

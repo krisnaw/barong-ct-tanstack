@@ -34,8 +34,10 @@ import {
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 
 const participantStatusStyles: Record<string, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -54,6 +56,8 @@ const participantStatusLabel: Record<string, string> = {
 export const Route = createFileRoute(
   '/dashboard/events/$slug/participants/$participantId',
 )({
+  pendingComponent: DashboardDetailSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const participant = await getEventParticipant({
       data: {
@@ -321,7 +325,7 @@ function DeleteParticipantCard({
                 type="button"
                 variant="destructive"
               >
-                {deleting ? 'Deleting…' : 'Delete permanently'}
+                {deleting ? (<><Spinner /> Deleting…</>) : 'Delete permanently'}
               </Button>
             </DialogFooter>
           </DialogContent>

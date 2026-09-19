@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
 const orderStatusFilterItems = [
   { value: 'all' as const, label: 'All' },
@@ -46,6 +47,8 @@ const orderStatusFilterItems = [
 ]
 
 export const Route = createFileRoute('/dashboard/orders/')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: async () => (await listOrders()) ?? [],
   component: DashboardOrdersPage,
 })

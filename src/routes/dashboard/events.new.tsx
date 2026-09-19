@@ -34,6 +34,7 @@ import {
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { type EventKind, type EventStatus, eventImageSrc, registerCtaCopy } from '~/data/events'
 import { EventFeatureImageField } from '~/components/event-feature-image-field'
@@ -597,7 +598,7 @@ function DashboardCreateEventPage() {
               Cancel
             </Link>
             <Button disabled={submitting} type="submit">
-              {submitting ? 'Creating…' : 'Create event'}
+              {submitting ? (<><Spinner /> Creating…</>) : 'Create event'}
             </Button>
           </div>
         </form>

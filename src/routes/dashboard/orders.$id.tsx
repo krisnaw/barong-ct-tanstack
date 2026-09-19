@@ -51,8 +51,10 @@ import {
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 
 const paymentStatusStyles: Record<OrderPaymentStatus, string> = {
   unpaid: 'border-zinc-200 bg-zinc-100 text-zinc-600',
@@ -63,6 +65,8 @@ const paymentStatusStyles: Record<OrderPaymentStatus, string> = {
 }
 
 export const Route = createFileRoute('/dashboard/orders/$id')({
+  pendingComponent: DashboardDetailSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const order = await getOrderById({ data: { id: params.id } })
     if (!order) {
@@ -389,7 +393,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
             disabled={saving || trackingNumber.trim().length < 4}
             onClick={() => void save()}
           >
-            {saving ? 'Saving…' : hasTracking ? 'Save tracking' : 'Mark as completed'}
+            {saving ? (<><Spinner /> Saving…</>) : hasTracking ? 'Save tracking' : 'Mark as completed'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -12,6 +12,7 @@ import {
   FieldSeparator,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import { Spinner } from '~/components/ui/spinner'
 import { authClient, PASSWORD_AUTH_ENABLED } from '~/lib/auth-client'
 
 export function SignUpForm({
@@ -185,7 +186,7 @@ export function SignUpForm({
             <>
               <Field>
                 <Button disabled={pending !== null} type="submit">
-                  {pending === 'password' ? 'Please wait…' : 'Create account'}
+                  {pending === 'password' ? (<><Spinner /> Please wait…</>) : 'Create account'}
                 </Button>
               </Field>
               <FieldSeparator>or</FieldSeparator>
@@ -197,7 +198,7 @@ export function SignUpForm({
                   variant="outline"
                 >
                   {pending === 'magic'
-                    ? 'Please wait…'
+                    ? (<><Spinner /> Please wait…</>)
                     : 'Email me a sign-up link'}
                 </Button>
               </Field>
@@ -205,7 +206,7 @@ export function SignUpForm({
           ) : (
             <Field>
               <Button disabled={pending !== null} type="submit">
-                {pending === 'magic' ? 'Please wait…' : 'Email me a sign-up link'}
+                {pending === 'magic' ? (<><Spinner /> Please wait…</>) : 'Email me a sign-up link'}
               </Button>
             </Field>
           )}

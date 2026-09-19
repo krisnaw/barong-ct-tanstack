@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { CheckoutSkeleton } from '~/components/page-skeletons'
 import { ShopCheckout } from '~/components/shop-checkout'
 import { getPaymentDisplay } from '~/lib/payment.functions'
 import { listPickupPoints } from '~/lib/pickup-point.functions'
@@ -6,6 +7,8 @@ import { seo } from '~/utils/seo'
 import { Route as ShopRoute } from './shop'
 
 export const Route = createFileRoute('/shop/checkout/')({
+  pendingComponent: CheckoutSkeleton,
+  pendingMs: 150,
   loader: async () => ({
     paymentDisplay: await getPaymentDisplay(),
     pickupPoints: await listPickupPoints(),

@@ -37,6 +37,7 @@ import {
   upsertMyProfile,
 } from '~/lib/profile.functions'
 import { startEventPayment } from '~/lib/payment.functions'
+import { RegisterWizardSkeleton } from '~/components/page-skeletons'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Field,
@@ -45,6 +46,7 @@ import {
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 
 const stepLabel: Record<RegisterStep, string> = {
@@ -174,11 +176,7 @@ export function EventRegisterWizard({
   ])
 
   if (!ready) {
-    return (
-      <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10 lg:px-0 lg:py-12">
-        <p className="text-sm text-muted-foreground">Loading registration…</p>
-      </div>
-    )
+    return <RegisterWizardSkeleton />
   }
 
   return (
@@ -845,7 +843,7 @@ function ProfileStep({
           }}
           type="button"
         >
-          {saving ? 'Saving…' : confirmLabel}
+          {saving ? (<><Spinner /> Saving…</>) : confirmLabel}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -965,7 +963,7 @@ function PaymentStep({
           }}
           type="button"
         >
-          {paying ? 'Redirecting…' : 'Pay'}
+          {paying ? (<><Spinner /> Redirecting…</>) : 'Pay'}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

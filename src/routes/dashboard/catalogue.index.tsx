@@ -23,8 +23,11 @@ import {
 } from '~/components/ui/table'
 import { listProducts } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/catalogue/')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: () => listProducts({ data: { includeInactive: true } }),
   component: DashboardCataloguePage,
 })

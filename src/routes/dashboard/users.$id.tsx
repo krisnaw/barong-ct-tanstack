@@ -28,8 +28,11 @@ import {
 import { listOrdersByUser } from '~/lib/order.functions'
 import { getUserById, type AdminUserAddress } from '~/lib/user.functions'
 import { seo } from '~/utils/seo'
+import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/users/$id')({
+  pendingComponent: DashboardDetailSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const [account, orders] = await Promise.all([
       getUserById({ data: { id: params.id } }),

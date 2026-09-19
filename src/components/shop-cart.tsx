@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { MinusIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
+import { CartLinesSkeleton } from '~/components/page-skeletons'
 import { buttonVariants } from '~/components/ui/button'
 import {
   findShopProduct,
@@ -56,9 +57,7 @@ export function ShopCart({ products }: { products: ShopProduct[] }) {
       </div>
 
       {!ready ? (
-        <p className="border-y border-border py-10 text-sm text-muted-foreground">
-          Loading bag…
-        </p>
+        <CartLinesSkeleton className="border-y border-border" />
       ) : lines.length === 0 ? (
         <EmptyBag />
       ) : (

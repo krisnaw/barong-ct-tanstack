@@ -24,11 +24,15 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { getProductBySlug, updateProduct } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardFormSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/catalogue/$slug')({
+  pendingComponent: DashboardFormSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const product = await getProductBySlug({
       data: { slug: params.slug, includeInactive: true },
@@ -345,7 +349,7 @@ function DashboardProductDetailPage() {
               View public
             </Link>
             <Button disabled={saving} type="submit">
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? (<><Spinner /> Saving…</>) : 'Save changes'}
             </Button>
           </div>
         </form>

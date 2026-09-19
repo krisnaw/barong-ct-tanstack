@@ -22,6 +22,7 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { createProduct } from '~/lib/shop.functions'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
@@ -304,7 +305,7 @@ function DashboardCreateProductPage() {
               Cancel
             </Link>
             <Button disabled={saving} type="submit">
-              {saving ? 'Saving…' : 'Add product'}
+              {saving ? (<><Spinner /> Saving…</>) : 'Add product'}
             </Button>
           </div>
         </form>

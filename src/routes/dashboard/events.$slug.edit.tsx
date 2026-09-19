@@ -51,6 +51,7 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { EventFeatureImageField } from '~/components/event-feature-image-field'
 import {
@@ -61,6 +62,7 @@ import {
 } from '~/data/events'
 import { deleteEvent, getEventBySlug, updateEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
+import { DashboardFormSkeleton } from '~/components/page-skeletons'
 
 const statusOptions: { value: EventStatus; label: string }[] = [
   { value: 'draft', label: 'Draft' },
@@ -111,6 +113,8 @@ function asTimezone(value?: string): TimezoneOption {
 }
 
 export const Route = createFileRoute('/dashboard/events/$slug/edit')({
+  pendingComponent: DashboardFormSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const event = await getEventBySlug({
       data: { slug: params.slug, includeDraft: true },
@@ -713,7 +717,7 @@ function DashboardEditEventPage() {
                 Cancel
               </Link>
               <Button disabled={submitting} type="submit">
-                {submitting ? 'Saving…' : 'Save changes'}
+                {submitting ? (<><Spinner /> Saving…</>) : 'Save changes'}
               </Button>
             </div>
           </form>
@@ -823,7 +827,7 @@ function DeleteEventCard({
                 type="button"
                 variant="destructive"
               >
-                {deleting ? 'Deleting…' : 'Delete permanently'}
+                {deleting ? (<><Spinner /> Deleting…</>) : 'Delete permanently'}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -10,6 +10,7 @@ import {
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Switch } from '~/components/ui/switch'
+import { Spinner } from '~/components/ui/spinner'
 import type { PickupPoint } from '~/data/pickup-points'
 import { cn } from '~/lib/utils'
 
@@ -224,7 +225,7 @@ export function PickupPointForm({
           Cancel
         </Link>
         <Button disabled={saving} type="submit">
-          {saving ? 'Saving…' : submitLabel}
+          {saving ? (<><Spinner /> Saving…</>) : submitLabel}
         </Button>
       </div>
     </form>

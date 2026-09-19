@@ -18,6 +18,7 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 
 const eventStatusStyles: Record<EventStatus, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -40,6 +41,8 @@ const participantStatusLabel: Record<string, string> = {
 }
 
 export const Route = createFileRoute('/dashboard/events/$slug/')({
+  pendingComponent: DashboardDetailSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const event = await getEventBySlug({
       data: { slug: params.slug, includeDraft: true },

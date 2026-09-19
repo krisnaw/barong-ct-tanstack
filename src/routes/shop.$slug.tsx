@@ -2,8 +2,11 @@ import { createFileRoute, notFound } from '@tanstack/react-router'
 import { ShopProductDetail } from '~/components/shop-product'
 import { getProductBySlug } from '~/lib/shop.functions'
 import { seo } from '~/utils/seo'
+import { ShopProductSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/shop/$slug')({
+  pendingComponent: ShopProductSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const product = await getProductBySlug({ data: { slug: params.slug } })
     if (!product) {

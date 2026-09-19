@@ -3,6 +3,7 @@ import { ImageIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { Button } from '~/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { shopImageSrc } from '~/data/shop'
 import { uploadCatalogueImage } from '~/lib/catalogue-image.functions'
 
@@ -170,7 +171,7 @@ export function ProductImageFields({
                     variant="outline"
                   >
                     {pending
-                      ? 'Uploading…'
+                      ? (<><Spinner /> Uploading…</>)
                       : field.url
                         ? 'Replace'
                         : 'Upload'}

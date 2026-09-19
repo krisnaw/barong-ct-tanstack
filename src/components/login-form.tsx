@@ -12,6 +12,7 @@ import {
   FieldSeparator,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import { Spinner } from '~/components/ui/spinner'
 import { authClient, PASSWORD_AUTH_ENABLED } from '~/lib/auth-client'
 
 function magicLinkErrorMessage(code?: string) {
@@ -203,7 +204,7 @@ export function LoginForm({
             <>
               <Field>
                 <Button disabled={pending !== null} type="submit">
-                  {pending === 'password' ? 'Please wait…' : 'Login'}
+                  {pending === 'password' ? (<><Spinner /> Please wait…</>) : 'Login'}
                 </Button>
               </Field>
               <FieldSeparator>or</FieldSeparator>
@@ -215,7 +216,7 @@ export function LoginForm({
                   variant="outline"
                 >
                   {pending === 'magic'
-                    ? 'Please wait…'
+                    ? (<><Spinner /> Please wait…</>)
                     : 'Email me a sign-in link'}
                 </Button>
               </Field>
@@ -223,7 +224,7 @@ export function LoginForm({
           ) : (
             <Field>
               <Button disabled={pending !== null} type="submit">
-                {pending === 'magic' ? 'Please wait…' : 'Email me a sign-in link'}
+                {pending === 'magic' ? (<><Spinner /> Please wait…</>) : 'Email me a sign-in link'}
               </Button>
             </Field>
           )}

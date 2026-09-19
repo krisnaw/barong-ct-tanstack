@@ -38,8 +38,10 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
 const eventStatusStyles: Record<EventStatus, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -60,6 +62,8 @@ const statusSelectItems = [
 ] as const
 
 export const Route = createFileRoute('/dashboard/events/')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: async () =>
     (await listEvents({ data: { includeDraft: true } })) ?? [],
   head: () => ({
@@ -266,7 +270,7 @@ function ChangeStatusDialog({ event }: { event: ClubEvent }) {
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
           <Button disabled={saving} onClick={() => void save()} type="button">
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? (<><Spinner /> Saving…</>) : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

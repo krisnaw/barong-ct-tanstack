@@ -5,8 +5,11 @@ import {
   getMyEventRegistration,
 } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
+import { EventDetailSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/events/$slug')({
+  pendingComponent: EventDetailSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const [event, myRegistration] = await Promise.all([
       getEventBySlug({ data: { slug: params.slug } }),

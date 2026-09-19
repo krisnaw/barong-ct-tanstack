@@ -11,6 +11,7 @@ import {
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
 
 export function ForgotPasswordForm({
@@ -108,7 +109,7 @@ export function ForgotPasswordForm({
           ) : null}
           <Field>
             <Button disabled={pending} type="submit">
-              {pending ? 'Please wait…' : 'Send reset link'}
+              {pending ? (<><Spinner /> Please wait…</>) : 'Send reset link'}
             </Button>
           </Field>
           <FieldDescription className="text-center">

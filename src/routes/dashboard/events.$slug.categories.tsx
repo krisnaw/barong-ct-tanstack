@@ -45,10 +45,14 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/events/$slug/categories')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const event = await getEventBySlug({
       data: { slug: params.slug, includeDraft: true },
@@ -428,7 +432,7 @@ function CategoryFormDialog({
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
           <Button disabled={saving} onClick={() => void save()} type="button">
-            {saving ? 'Saving…' : mode === 'create' ? 'Create' : 'Save'}
+            {saving ? (<><Spinner /> Saving…</>) : mode === 'create' ? 'Create' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -13,6 +13,7 @@ import {
   simulateStubEventPayment,
 } from '~/lib/payment.functions'
 import { Button } from '~/components/ui/button'
+import { Spinner } from '~/components/ui/spinner'
 import { seo } from '~/utils/seo'
 
 const searchSchema = z.object({
@@ -80,7 +81,7 @@ function EventPaymentSimulatePage() {
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Button disabled={pending} onClick={() => void markPaid()} size="lg">
-          {pending ? 'Confirming…' : 'Mark paid'}
+          {pending ? (<><Spinner /> Confirming…</>) : 'Mark paid'}
         </Button>
         <Link
           className="text-sm text-muted-foreground transition-colors hover:text-foreground"

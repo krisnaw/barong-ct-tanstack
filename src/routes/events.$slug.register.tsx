@@ -15,6 +15,7 @@ import {
 import { getSession } from '~/lib/auth.functions'
 import { getMyProfile } from '~/lib/profile.functions'
 import { seo } from '~/utils/seo'
+import { RegisterWizardSkeleton } from '~/components/page-skeletons'
 
 const registerSteps = [
   'group',
@@ -30,6 +31,8 @@ const registerSearchSchema = z.object({
 })
 
 export const Route = createFileRoute('/events/$slug/register')({
+  pendingComponent: RegisterWizardSkeleton,
+  pendingMs: 150,
   validateSearch: registerSearchSchema,
   beforeLoad: async ({ location }) => {
     const session = await getSession()

@@ -22,8 +22,11 @@ import {
   updatePickupPoint,
 } from '~/lib/pickup-point.functions'
 import { seo } from '~/utils/seo'
+import { DashboardFormSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/pickup-points/$id')({
+  pendingComponent: DashboardFormSkeleton,
+  pendingMs: 150,
   loader: async ({ params }) => {
     const point = await getPickupPoint({ data: { id: params.id } })
     if (!point) {

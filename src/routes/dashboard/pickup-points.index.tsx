@@ -11,8 +11,11 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { listPickupPoints } from '~/lib/pickup-point.functions'
 import { cn } from '~/lib/utils'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
 export const Route = createFileRoute('/dashboard/pickup-points/')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: () => listPickupPoints({ data: { includeInactive: true } }),
   component: DashboardPickupPointsPage,
 })

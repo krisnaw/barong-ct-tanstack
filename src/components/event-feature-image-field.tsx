@@ -4,6 +4,7 @@ import { Button } from '~/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
 import { eventImageSrc } from '~/data/events'
 import { uploadCatalogueImage } from '~/lib/catalogue-image.functions'
 
@@ -110,7 +111,7 @@ export function EventFeatureImageField({
                 type="button"
                 variant="outline"
               >
-                {uploading ? 'Uploading…' : imageUrl ? 'Replace' : 'Upload'}
+                {uploading ? (<><Spinner /> Uploading…</>) : imageUrl ? 'Replace' : 'Upload'}
               </Button>
               {imageUrl ? (
                 <Button

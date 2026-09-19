@@ -3,12 +3,15 @@ import { z } from 'zod'
 import { EventsList, type EventsTab } from '~/components/events-list'
 import { listEvents } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
+import { EventsListSkeleton } from '~/components/page-skeletons'
 
 const eventsSearchSchema = z.object({
   tab: z.enum(['active', 'past']).optional().catch('active'),
 })
 
 export const Route = createFileRoute('/events/')({
+  pendingComponent: EventsListSkeleton,
+  pendingMs: 150,
   validateSearch: eventsSearchSchema,
   loader: () => listEvents({ data: { status: 'open' } }),
   head: () => ({

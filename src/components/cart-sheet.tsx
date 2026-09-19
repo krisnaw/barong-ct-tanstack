@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from '@phosphor-icons/react'
+import { CartLinesSkeleton } from '~/components/page-skeletons'
 import { CartRow, useCartLines } from '~/components/shop-cart'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
@@ -82,7 +83,7 @@ export function CartSheet() {
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto px-4">
             {!ready || loadingProducts ? (
-              <p className="py-10 text-sm text-muted-foreground">Loading bag…</p>
+              <CartLinesSkeleton />
             ) : lines.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="font-heading text-lg font-medium tracking-tight">

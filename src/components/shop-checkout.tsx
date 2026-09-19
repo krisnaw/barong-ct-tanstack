@@ -9,7 +9,9 @@ import {
   QrCodeIcon,
   ShoppingBagIcon,
 } from '@phosphor-icons/react'
+import { CheckoutSkeleton } from '~/components/page-skeletons'
 import { Button } from '~/components/ui/button'
+import { Spinner } from '~/components/ui/spinner'
 import {
   findShopProduct,
   formatCustomMeasurements,
@@ -209,11 +211,7 @@ export function ShopCheckout({
   }
 
   if (!pending && (!ready || items.length === 0)) {
-    return (
-      <div className="grid min-h-dvh place-items-center bg-background text-sm text-muted-foreground">
-        Loading checkout…
-      </div>
-    )
+    return <CheckoutSkeleton />
   }
 
   const summary = (
@@ -444,7 +442,7 @@ export function ShopCheckout({
             size="lg"
             type="submit"
           >
-            {pending ? 'Redirecting…' : `Pay ${formatShopPrice(total)}`}
+            {pending ? (<><Spinner /> Redirecting…</>) : `Pay ${formatShopPrice(total)}`}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
@@ -616,7 +614,7 @@ export function CheckoutAwaitingPayment({
             onClick={() => void payAgain()}
             size="lg"
           >
-            {pending ? 'Redirecting…' : `Pay ${formatShopPrice(order.total)}`}
+            {pending ? (<><Spinner /> Redirecting…</>) : `Pay ${formatShopPrice(order.total)}`}
           </Button>
         ) : null}
         <div className="mt-6">

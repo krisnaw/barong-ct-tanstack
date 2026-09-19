@@ -46,6 +46,8 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
+import { Spinner } from '~/components/ui/spinner'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import {
   adminUserRoles,
   listUsers,
@@ -83,6 +85,8 @@ const columns = columnHelper.columns([
 ])
 
 export const Route = createFileRoute('/dashboard/users/')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
   loader: () => listUsers(),
   component: DashboardUsersPage,
 })
@@ -320,7 +324,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
               disabled={saving || role === normalizeRole(account.role)}
               onClick={() => void save()}
             >
-              {saving ? 'Saving…' : 'Save role'}
+              {saving ? (<><Spinner /> Saving…</>) : 'Save role'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -371,7 +375,7 @@ function MemberCell({ account }: { account: AdminUserListItem }) {
       type="button"
       variant="outline"
     >
-      {saving ? 'Verifying…' : 'Verify member'}
+      {saving ? (<><Spinner /> Verifying…</>) : 'Verify member'}
     </Button>
   )
 }
