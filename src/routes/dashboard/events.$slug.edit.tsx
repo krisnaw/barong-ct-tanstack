@@ -52,9 +52,11 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { toast } from '~/components/ui/toast'
 import { cn } from '~/lib/utils'
+import { EventFeatureImageField } from '~/components/event-feature-image-field'
 import {
   type EventKind,
   type EventStatus,
+  eventImageSrc,
   registerCtaCopy,
 } from '~/data/events'
 import { deleteEvent, getEventBySlug, updateEvent } from '~/lib/event.functions'
@@ -179,6 +181,12 @@ function DashboardEditEventPage() {
   )
   const [description, setDescription] = React.useState(event.description)
   const [regulation, setRegulation] = React.useState(event.regulation ?? '')
+  const [featureImage, setFeatureImage] = React.useState(
+    event.featureImage?.trim() || '',
+  )
+  const [featureImageAlt, setFeatureImageAlt] = React.useState(
+    event.featureImage?.trim() ? event.imageAlt : '',
+  )
   const [submitting, setSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
@@ -226,6 +234,8 @@ function DashboardEditEventPage() {
           slug: slug.trim(),
           description: description.trim(),
           regulation: regulation.trim() || undefined,
+          featureImage: featureImage.trim() || undefined,
+          featureImageAlt: featureImageAlt.trim() || undefined,
           kind,
           status,
           eventDate: format(date, 'yyyy-MM-dd'),
@@ -658,9 +668,15 @@ function DashboardEditEventPage() {
             </FormSection>
 
             <FormSection
-              description="Event page copy. Regulation is optional for rules riders should follow."
+              description="Event page copy and feature image. Regulation is optional for rules riders should follow."
               title="Description"
             >
+              <EventFeatureImageField
+                imageAlt={featureImageAlt}
+                imageUrl={featureImage}
+                onImageAltChange={setFeatureImageAlt}
+                onImageUrlChange={setFeatureImage}
+              />
               <Field>
                 <FieldLabel htmlFor="description">Details</FieldLabel>
                 <textarea
@@ -707,6 +723,7 @@ function DashboardEditEventPage() {
             date={date ? format(date, 'd MMMM yyyy') : ''}
             description={description}
             distance={distance}
+            featureImage={featureImage}
             fee={displayPrice}
             groupCapacity={requireGroup ? groupCapacity : undefined}
             kind={kind}
@@ -861,6 +878,7 @@ function EventPreview({
   date,
   description,
   distance,
+  featureImage,
   fee,
   groupCapacity,
   kind,
@@ -882,6 +900,7 @@ function EventPreview({
   date: string
   description: string
   distance?: string
+  featureImage?: string
   fee?: string
   groupCapacity?: string
   kind: EventKind
@@ -925,6 +944,16 @@ function EventPreview({
       </div>
 
       <div className="border border-border p-5">
+        {featureImage?.trim() ? (
+          <img
+            alt=""
+            className="mb-4 aspect-[16/10] w-full object-cover"
+            decoding="async"
+            height={400}
+            src={eventImageSrc(featureImage.trim(), 800)}
+            width={800}
+          />
+        ) : null}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">

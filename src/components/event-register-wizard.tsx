@@ -53,7 +53,6 @@ const stepLabel: Record<RegisterStep, string> = {
   jersey: 'Jersey',
   profile: 'Profile',
   payment: 'Payment',
-  done: 'Done',
 }
 
 const paymentMethods: {
@@ -273,8 +272,17 @@ export function EventRegisterWizard({
                   status: 'confirmed',
                 },
               })
-              update({ profileConfirmed: true, status: 'confirmed' })
-              goTo('done')
+              const next = {
+                ...draft,
+                profileConfirmed: true,
+                status: 'confirmed' as const,
+              }
+              saveDraft(event.slug, next)
+              setDraft(next)
+              void navigate({
+                to: '/events/$slug',
+                params: { slug: event.slug },
+              })
               return
             }
             goTo('payment')
@@ -308,20 +316,6 @@ export function EventRegisterWizard({
             })
           }}
           onUpdate={update}
-        />
-      ) : null}
-
-      {step === 'done' ? (
-        <DoneStep
-          event={event}
-          onFinish={() => {
-            const next = { ...draft, status: 'confirmed' as const }
-            saveDraft(event.slug, next)
-            void navigate({
-              to: '/events/$slug',
-              params: { slug: event.slug },
-            })
-          }}
         />
       ) : null}
     </div>
@@ -957,32 +951,6 @@ function PaymentStep({
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-    </section>
-  )
-}
-
-function DoneStep({
-  event,
-  onFinish,
-}: {
-  event: ClubEvent
-  onFinish: () => void
-}) {
-  return (
-    <section className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
-          You’re on the list
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          See you at {event.location} on {event.date}.
-        </p>
-      </div>
-      <div className="flex justify-end">
-        <Button onClick={onFinish} type="button">
-          Back to event
-        </Button>
-      </div>
     </section>
   )
 }

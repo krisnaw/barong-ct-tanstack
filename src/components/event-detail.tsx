@@ -10,6 +10,7 @@ import { Link } from '@tanstack/react-router'
 import {
   type ClubEvent,
   type EventStatus,
+  eventImageSrc,
   firstStepForKind,
   registerCtaCopy,
 } from '~/data/events'
@@ -73,7 +74,7 @@ export function EventDetail({ event }: { event: ClubEvent }) {
             className="aspect-[16/10] w-full object-cover"
             decoding="async"
             height={800}
-            src={`${event.image}&w=1200&q=75`}
+            src={eventImageSrc(event.image, 1200)}
             width={1200}
           />
 

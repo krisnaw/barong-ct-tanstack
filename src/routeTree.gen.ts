@@ -63,6 +63,7 @@ import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard
 import { Route as DashboardEventsSlugEditRouteImport } from './routes/dashboard/events.$slug.edit'
 import { Route as DashboardEventsSlugGroupsRouteImport } from './routes/dashboard/events.$slug.groups'
 import { Route as DashboardEventsSlugPromosRouteImport } from './routes/dashboard/events.$slug.promos'
+import { Route as DashboardEventsSlugParticipantsParticipantIdRouteImport } from './routes/dashboard/events.$slug.participants.$participantId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -341,6 +342,12 @@ const DashboardEventsSlugPromosRoute =
     path: '/promos',
     getParentRoute: () => DashboardEventsSlugRoute,
   } as any)
+const DashboardEventsSlugParticipantsParticipantIdRoute =
+  DashboardEventsSlugParticipantsParticipantIdRouteImport.update({
+    id: '/participants/$participantId',
+    path: '/participants/$participantId',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -397,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
   '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
+  '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -440,6 +448,7 @@ export interface FileRoutesByTo {
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugIndexRoute
+  '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -497,6 +506,7 @@ export interface FileRoutesById {
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
   '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
+  '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
     | '/dashboard/events/$slug/'
+    | '/dashboard/events/$slug/participants/$participantId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
     | '/dashboard/events/$slug'
+    | '/dashboard/events/$slug/participants/$participantId'
   id:
     | '__root__'
     | '/'
@@ -654,6 +666,7 @@ export interface FileRouteTypes {
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
     | '/dashboard/events/$slug/'
+    | '/dashboard/events/$slug/participants/$participantId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1053,6 +1066,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEventsSlugPromosRouteImport
       parentRoute: typeof DashboardEventsSlugRoute
     }
+    '/dashboard/events/$slug/participants/$participantId': {
+      id: '/dashboard/events/$slug/participants/$participantId'
+      path: '/participants/$participantId'
+      fullPath: '/dashboard/events/$slug/participants/$participantId'
+      preLoaderRoute: typeof DashboardEventsSlugParticipantsParticipantIdRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
   }
 }
 
@@ -1076,6 +1096,7 @@ interface DashboardEventsSlugRouteChildren {
   DashboardEventsSlugGroupsRoute: typeof DashboardEventsSlugGroupsRoute
   DashboardEventsSlugPromosRoute: typeof DashboardEventsSlugPromosRoute
   DashboardEventsSlugIndexRoute: typeof DashboardEventsSlugIndexRoute
+  DashboardEventsSlugParticipantsParticipantIdRoute: typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
 
 const DashboardEventsSlugRouteChildren: DashboardEventsSlugRouteChildren = {
@@ -1083,6 +1104,8 @@ const DashboardEventsSlugRouteChildren: DashboardEventsSlugRouteChildren = {
   DashboardEventsSlugGroupsRoute: DashboardEventsSlugGroupsRoute,
   DashboardEventsSlugPromosRoute: DashboardEventsSlugPromosRoute,
   DashboardEventsSlugIndexRoute: DashboardEventsSlugIndexRoute,
+  DashboardEventsSlugParticipantsParticipantIdRoute:
+    DashboardEventsSlugParticipantsParticipantIdRoute,
 }
 
 const DashboardEventsSlugRouteWithChildren =

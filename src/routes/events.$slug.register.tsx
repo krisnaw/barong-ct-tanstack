@@ -22,7 +22,6 @@ const registerSteps = [
   'jersey',
   'profile',
   'payment',
-  'done',
 ] as const
 
 const registerSearchSchema = z.object({
@@ -66,11 +65,9 @@ function EventRegisterPage() {
       ? 'course'
       : firstStepForKind(event.kind)
   const step: RegisterStep =
-    requestedStep === 'done'
-      ? 'done'
-      : requestedStep && allowed.includes(requestedStep)
-        ? requestedStep
-        : defaultStep
+    requestedStep && allowed.includes(requestedStep)
+      ? requestedStep
+      : defaultStep
 
   React.useEffect(() => {
     if (event.status !== 'open') {

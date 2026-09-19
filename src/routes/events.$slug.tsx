@@ -1,4 +1,5 @@
 import { Outlet, createFileRoute, notFound } from '@tanstack/react-router'
+import { eventImageSrc } from '~/data/events'
 import { getEventBySlug } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/events/$slug')({
       ? seo({
           title: `${loaderData.name} | Barong Cycling Team`,
           description: loaderData.blurb,
-          image: `${loaderData.image}&w=1200&q=80`,
+          image: eventImageSrc(loaderData.image, 1200),
         })
       : undefined,
   }),

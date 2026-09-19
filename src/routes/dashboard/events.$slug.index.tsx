@@ -171,6 +171,7 @@ function DashboardEventDetailPage() {
                 <tbody className="divide-y divide-border">
                   {participants.map((participant) => (
                     <ParticipantRow
+                      eventSlug={event.slug}
                       isFlagship={isFlagship}
                       isPaid={isPaid}
                       key={participant.id}
@@ -188,10 +189,12 @@ function DashboardEventDetailPage() {
 }
 
 function ParticipantRow({
+  eventSlug,
   participant,
   isFlagship,
   isPaid,
 }: {
+  eventSlug: string
   participant: EventParticipantRow
   isFlagship: boolean
   isPaid: boolean
@@ -200,8 +203,16 @@ function ParticipantRow({
     participant.status === 'confirmed' || participant.finalPrice === 0
 
   return (
-    <tr>
-      <td className="px-4 py-3 font-medium">{participant.userName}</td>
+    <tr className="relative hover:bg-muted/30">
+      <td className="px-4 py-3 font-medium">
+        <Link
+          className="after:absolute after:inset-0"
+          params={{ slug: eventSlug, participantId: participant.id }}
+          to="/dashboard/events/$slug/participants/$participantId"
+        >
+          {participant.userName}
+        </Link>
+      </td>
       <td className="px-4 py-3 text-muted-foreground">
         {participant.userEmail}
       </td>

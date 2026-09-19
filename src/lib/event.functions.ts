@@ -19,6 +19,7 @@ import {
   eventParticipant,
   eventPromo,
 } from '~/lib/event-schema'
+import { payment } from '~/lib/order-schema'
 
 const eventKindSchema = z.enum(['free', 'paid', 'flagship'])
 const eventStatusSchema = z.enum(['draft', 'open', 'closed'])
@@ -123,6 +124,7 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
       row.featureImage?.trim() ||
       'https://images.unsplash.com/photo-1517649763962-0c623066027e?auto=format&fit=crop',
     imageAlt: row.featureImageAlt?.trim() || row.name,
+    featureImage: row.featureImage,
     fee: feeAmount > 0 ? formatIdr(feeAmount) : 'Free',
     feeAmount,
     capacity: capacity != null ? String(capacity) : undefined,
@@ -474,6 +476,141 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
       categoryName: item.category?.name ?? null,
       groupName: item.group?.name ?? null,
     }))
+  })
+
+export type EventParticipantDetail = {
+  id: string
+  status: string
+  bibNumber: string | null
+  jerseySize: string | null
+  price: number
+  serviceFee: number
+  currency: string
+  promoCode: string | null
+  discountAmount: number
+  finalPrice: number
+  createdAt: string
+  event: {
+    id: string
+    name: string
+    slug: string
+    kind: EventKind
+  }
+  categoryName: string | null
+  groupName: string | null
+  user: {
+    id: string
+    name: string
+    email: string
+    phone: string | null
+    gender: string | null
+    bloodType: string | null
+    dateOfBirth: string | null
+    nationality: string | null
+    city: string | null
+    province: string | null
+    emergencyContactName: string | null
+    emergencyContactPhone: string | null
+  }
+  payment: {
+    id: string
+    status: string
+    method: string | null
+    amount: number
+    transactionId: string
+    checkoutUrl: string | null
+    paidAt: string | null
+    createdAt: string
+  } | null
+}
+
+export const getEventParticipant = createServerFn({ method: 'GET' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      participantId: z.string().min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const eventRow = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!eventRow) return null
+
+    const row = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.id, data.participantId),
+        eq(eventParticipant.eventId, eventRow.id),
+      ),
+      with: {
+        user: {
+          with: {
+            profile: true,
+          },
+        },
+        category: true,
+        group: true,
+      },
+    })
+    if (!row) return null
+
+    const latestPayment = await db.query.payment.findFirst({
+      where: eq(payment.participantId, row.id),
+      orderBy: [desc(payment.createdAt)],
+    })
+
+    const profile = row.user.profile
+    const result: EventParticipantDetail = {
+      id: row.id,
+      status: row.status,
+      bibNumber: row.bibNumber,
+      jerseySize: row.jerseySize,
+      price: row.price,
+      serviceFee: row.serviceFee,
+      currency: row.currency,
+      promoCode: row.promoCode,
+      discountAmount: row.discountAmount,
+      finalPrice: row.finalPrice,
+      createdAt: row.createdAt.toISOString(),
+      event: {
+        id: eventRow.id,
+        name: eventRow.name,
+        slug: eventRow.slug,
+        kind: eventRow.kind as EventKind,
+      },
+      categoryName: row.category?.name ?? null,
+      groupName: row.group?.name ?? null,
+      user: {
+        id: row.user.id,
+        name: row.user.name,
+        email: row.user.email,
+        phone: profile?.phone ?? null,
+        gender: profile?.gender ?? null,
+        bloodType: profile?.bloodType ?? null,
+        dateOfBirth: profile?.dateOfBirth ?? null,
+        nationality: profile?.nationality ?? null,
+        city: profile?.city ?? null,
+        province: profile?.province ?? null,
+        emergencyContactName: profile?.emergencyContactName ?? null,
+        emergencyContactPhone: profile?.emergencyContactPhone ?? null,
+      },
+      payment: latestPayment
+        ? {
+            id: latestPayment.id,
+            status: latestPayment.status,
+            method: latestPayment.method,
+            amount: latestPayment.amount,
+            transactionId: latestPayment.transactionId,
+            checkoutUrl: latestPayment.checkoutUrl,
+            paidAt: latestPayment.paidAt?.toISOString() ?? null,
+            createdAt: latestPayment.createdAt.toISOString(),
+          }
+        : null,
+    }
+
+    return result
   })
 
 export const listEventGroups = createServerFn({ method: 'GET' })

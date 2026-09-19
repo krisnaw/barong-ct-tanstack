@@ -35,15 +35,10 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { Switch } from '~/components/ui/switch'
 import { cn } from '~/lib/utils'
-import { type EventKind, type EventStatus, registerCtaCopy } from '~/data/events'
+import { type EventKind, type EventStatus, eventImageSrc, registerCtaCopy } from '~/data/events'
+import { EventFeatureImageField } from '~/components/event-feature-image-field'
 import { createEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
-
-const statusOptions: { value: Extract<EventStatus, 'draft' | 'open'>; label: string }[] =
-  [
-    { value: 'draft', label: 'Draft' },
-    { value: 'open', label: 'Open' },
-  ]
 
 const eventTypeOptions: { value: EventKind; label: string }[] = [
   { value: 'free', label: 'Free' },
@@ -105,15 +100,14 @@ function DashboardCreateEventPage() {
   const [price, setPrice] = React.useState('0')
   const [serviceFee, setServiceFee] = React.useState('0')
   const [slots, setSlots] = React.useState('')
-  const [status, setStatus] = React.useState<Extract<EventStatus, 'draft' | 'open'>>(
-    'draft',
-  )
   const [kind, setKind] = React.useState<EventKind>('free')
   const [requireJersey, setRequireJersey] = React.useState(false)
   const [requireGroup, setRequireGroup] = React.useState(false)
   const [groupCapacity, setGroupCapacity] = React.useState('8')
   const [description, setDescription] = React.useState('')
   const [regulation, setRegulation] = React.useState('')
+  const [featureImage, setFeatureImage] = React.useState('')
+  const [featureImageAlt, setFeatureImageAlt] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
@@ -159,8 +153,10 @@ function DashboardCreateEventPage() {
           slug: slug.trim(),
           description: description.trim(),
           regulation: regulation.trim() || undefined,
+          featureImage: featureImage.trim() || undefined,
+          featureImageAlt: featureImageAlt.trim() || undefined,
           kind,
-          status,
+          status: 'draft',
           eventDate: format(date, 'yyyy-MM-dd'),
           eventTime: time,
           timeZone: timezone,
@@ -410,32 +406,6 @@ function DashboardCreateEventPage() {
           </FormSection>
 
           <FormSection
-            description="Save as Draft while you prepare. Open publishes it on the ride calendar."
-            title="Publishing"
-          >
-            <Field>
-              <FieldLabel>Status</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {statusOptions.map((option) => (
-                  <button
-                    className={cn(
-                      'border px-3 py-2 text-sm font-medium transition-colors',
-                      status === option.value
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border hover:border-foreground/40',
-                    )}
-                    key={option.value}
-                    onClick={() => setStatus(option.value)}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </Field>
-          </FormSection>
-
-          <FormSection
             description={
               isFree
                 ? 'Free auto-fills category name and sets price to 0 — edit freely. Leave slots empty for unlimited.'
@@ -583,9 +553,15 @@ function DashboardCreateEventPage() {
           </FormSection>
 
           <FormSection
-            description="Event page copy. Regulation is optional for rules riders should follow."
+            description="Event page copy and feature image. Regulation is optional for rules riders should follow."
             title="Description"
           >
+            <EventFeatureImageField
+              imageAlt={featureImageAlt}
+              imageUrl={featureImage}
+              onImageAltChange={setFeatureImageAlt}
+              onImageUrlChange={setFeatureImage}
+            />
             <Field>
               <FieldLabel htmlFor="description">Details</FieldLabel>
               <textarea
@@ -631,6 +607,7 @@ function DashboardCreateEventPage() {
             date={date ? format(date, 'd MMMM yyyy') : ''}
             description={description}
             distance={distance}
+            featureImage={featureImage}
             fee={displayPrice}
             groupCapacity={requireGroup ? groupCapacity : undefined}
             kind={kind}
@@ -648,7 +625,7 @@ function DashboardCreateEventPage() {
             serviceFee={isFree ? undefined : serviceFee}
             slug={slug}
             slots={slots}
-            status={status}
+            status="draft"
             time={time}
             timezone={timezone}
           />
@@ -703,6 +680,7 @@ function EventPreview({
   date,
   description,
   distance,
+  featureImage,
   fee,
   groupCapacity,
   kind,
@@ -724,6 +702,7 @@ function EventPreview({
   date: string
   description: string
   distance?: string
+  featureImage?: string
   fee?: string
   groupCapacity?: string
   kind: EventKind
@@ -765,6 +744,16 @@ function EventPreview({
       </div>
 
       <div className="border border-border p-5">
+        {featureImage?.trim() ? (
+          <img
+            alt=""
+            className="mb-4 aspect-[16/10] w-full object-cover"
+            decoding="async"
+            height={400}
+            src={eventImageSrc(featureImage.trim(), 800)}
+            width={800}
+          />
+        ) : null}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">

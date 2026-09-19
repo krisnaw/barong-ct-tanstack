@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { type ClubEvent, type EventStatus } from '~/data/events'
+import { type ClubEvent, type EventStatus, eventImageSrc } from '~/data/events'
 import { pastEvents } from '~/data/recaps'
 import { cn } from '~/lib/utils'
 
@@ -114,7 +114,7 @@ function ActiveEventsRows({ events }: { events: ClubEvent[] }) {
               className="size-14 shrink-0 object-cover sm:size-16"
               decoding="async"
               height={128}
-              src={`${event.image}&w=128&h=128&q=70`}
+              src={eventImageSrc(event.image, 128)}
               width={128}
             />
 

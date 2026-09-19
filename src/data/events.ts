@@ -6,7 +6,6 @@ export type RegisterStep =
   | 'jersey'
   | 'profile'
   | 'payment'
-  | 'done'
 export type PaymentMethodChoice = 'qris_va' | 'card'
 
 export const JERSEY_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const
@@ -37,6 +36,7 @@ export type ClubEvent = {
   regulation?: string
   image: string
   imageAlt: string
+  featureImage?: string | null
   fee?: string
   feeAmount?: number
   capacity?: string
@@ -52,6 +52,11 @@ export type ClubEvent = {
   eventTime?: string
   timeZone?: string
   registrationClosesAt?: string
+}
+
+export function eventImageSrc(image: string, width: number) {
+  const separator = image.includes('?') ? '&' : '?'
+  return `${image}${separator}w=${width}&q=75`
 }
 
 export function formatIdr(amount: number) {
