@@ -12,15 +12,19 @@ import {
   type EventStatus,
   eventImageSrc,
   firstStepForKind,
+  formatIdr,
   registerCtaCopy,
 } from '~/data/events'
 import {
   hasRegisterProgress,
   invitePath,
+  clearDraft,
+  emptyDraft,
   loadDraft,
   nextFlagshipStep,
   type RegisterDraft,
 } from '~/lib/event-register-draft'
+import type { MyEventRegistration } from '~/lib/event.functions'
 import { Button, buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
@@ -30,17 +34,65 @@ const statusLabel: Record<EventStatus, string> = {
   closed: 'Registration closed',
 }
 
-export function EventDetail({ event }: { event: ClubEvent }) {
+export function EventDetail({
+  event,
+  registration,
+}: {
+  event: ClubEvent
+  registration: MyEventRegistration | null
+}) {
   const canRegister = event.status === 'open'
   const [draft, setDraft] = React.useState<RegisterDraft | null>(null)
   const [copied, setCopied] = React.useState(false)
+  const courses = event.courses ?? []
+  const hasMultipleCategories = courses.length > 1
 
   React.useEffect(() => {
-    setDraft(loadDraft(event.slug))
-  }, [event.slug])
+    const loaded = loadDraft(event.slug)
+    if (
+      !registration &&
+      (loaded.status === 'confirmed' || loaded.status === 'pending_payment')
+    ) {
+      clearDraft(event.slug)
+      setDraft({
+        ...emptyDraft,
+        firstName: loaded.firstName,
+        lastName: loaded.lastName,
+        email: loaded.email,
+        phone: loaded.phone,
+        gender: loaded.gender,
+        bloodType: loaded.bloodType,
+        dateOfBirth: loaded.dateOfBirth,
+        nationality: loaded.nationality,
+        idNumber: loaded.idNumber,
+        emergencyContactName: loaded.emergencyContactName,
+        emergencyContactPhone: loaded.emergencyContactPhone,
+        club: loaded.club,
+      })
+      return
+    }
+    if (registration) {
+      setDraft({
+        ...loaded,
+        groupId: registration.groupId ?? loaded.groupId,
+        groupName: registration.groupName ?? loaded.groupName,
+        status:
+          registration.status === 'confirmed'
+            ? 'confirmed'
+            : registration.status === 'pending_payment'
+              ? 'pending_payment'
+              : loaded.status,
+      })
+      return
+    }
+    setDraft(loaded)
+  }, [event.slug, registration])
 
-  const inProgress = Boolean(draft && hasRegisterProgress(draft))
-  const confirmed = draft?.status === 'confirmed'
+  const confirmed = registration?.status === 'confirmed'
+  const awaitingPayment = registration?.status === 'pending_payment'
+  const inProgress = Boolean(
+    !confirmed && !awaitingPayment && draft && hasRegisterProgress(draft),
+  )
   const continueStep =
     event.kind === 'flagship' && draft
       ? nextFlagshipStep(draft)
@@ -49,9 +101,11 @@ export function EventDetail({ event }: { event: ClubEvent }) {
           ? 'payment'
           : 'profile'
         : 'profile'
+  const groupId = registration?.groupId || draft?.groupId || ''
+  const groupName = registration?.groupName || draft?.groupName || ''
   const shareUrl =
-    typeof window !== 'undefined' && draft?.groupId
-      ? `${window.location.origin}${invitePath(event.slug, draft.groupId)}`
+    typeof window !== 'undefined' && groupId
+      ? `${window.location.origin}${invitePath(event.slug, groupId)}`
       : ''
 
   async function copyInvite() {
@@ -99,15 +153,17 @@ export function EventDetail({ event }: { event: ClubEvent }) {
               label="Start"
               value={event.location}
             />
-            <Fact
-              icon={<PathIcon className="size-4" weight="bold" />}
-              label="Distance"
-              value={
-                event.elevation
-                  ? `${event.distance} · ${event.elevation}`
-                  : event.distance
-              }
-            />
+            {!hasMultipleCategories ? (
+              <Fact
+                icon={<PathIcon className="size-4" weight="bold" />}
+                label="Distance"
+                value={
+                  event.elevation
+                    ? `${event.distance} · ${event.elevation}`
+                    : event.distance
+                }
+              />
+            ) : null}
             {event.capacity ? (
               <Fact
                 icon={<UsersIcon className="size-4" weight="bold" />}
@@ -120,39 +176,71 @@ export function EventDetail({ event }: { event: ClubEvent }) {
               />
             ) : null}
           </dl>
+
+          {hasMultipleCategories ? (
+            <section className="mt-8">
+              <h2 className="font-heading text-lg font-semibold tracking-tight">
+                Categories
+              </h2>
+              <ul className="mt-3 divide-y divide-border border border-border">
+                {courses.map((course) => (
+                  <li
+                    className="flex items-start justify-between gap-4 px-4 py-3"
+                    key={course.id}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium">{course.name}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {course.distance}
+                        {course.elevation ? ` · ${course.elevation}` : ''}
+                      </p>
+                      {course.description.trim() ? (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {course.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums">
+                      {course.price > 0 ? formatIdr(course.price) : 'Free'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         <aside className="h-fit border border-border p-5 sm:p-6 lg:sticky lg:top-6">
-          <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            Entry
-          </p>
-          <p className="mt-2 font-heading text-2xl font-semibold tracking-tight">
-            {event.fee ?? 'Free'}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">{event.blurb}</p>
-
           {confirmed ? (
-            <p className="mt-6 border border-border bg-muted/30 px-3 py-2 text-sm">
+            <p className="border border-border bg-muted/30 px-3 py-2 text-sm">
               You’re registered
-              {draft?.groupName ? ` with ${draft.groupName}` : ''}.
+              {groupName ? ` with ${groupName}` : ''}.
             </p>
           ) : canRegister ? (
             <Link
-              className={cn(buttonVariants(), 'mt-6 w-full')}
+              className={cn(buttonVariants(), 'w-full')}
               params={{ slug: event.slug }}
               search={{
-                step: inProgress ? continueStep : firstStepForKind(event.kind),
-                groupId: draft?.groupId || undefined,
+                step: awaitingPayment
+                  ? 'payment'
+                  : inProgress
+                    ? continueStep
+                    : firstStepForKind(event.kind),
+                groupId: groupId || undefined,
               }}
               to="/events/$slug/register"
             >
-              {inProgress ? 'Continue registration' : 'Register'}
+              {awaitingPayment
+                ? 'Complete payment'
+                : inProgress
+                  ? 'Continue registration'
+                  : 'Register'}
             </Link>
           ) : (
             <span
               className={cn(
                 buttonVariants(),
-                'mt-6 w-full opacity-50 pointer-events-none',
+                'w-full opacity-50 pointer-events-none',
               )}
             >
               {event.status === 'draft'
@@ -161,7 +249,7 @@ export function EventDetail({ event }: { event: ClubEvent }) {
             </span>
           )}
 
-          {confirmed && event.kind === 'flagship' && draft?.groupId && shareUrl ? (
+          {confirmed && event.kind === 'flagship' && groupId && shareUrl ? (
             <div className="mt-4 space-y-2">
               <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
                 Group invite
@@ -180,7 +268,9 @@ export function EventDetail({ event }: { event: ClubEvent }) {
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
             {canRegister && !confirmed
-              ? registerCtaCopy(event.kind)
+              ? awaitingPayment
+                ? 'Finish payment to confirm your spot.'
+                : registerCtaCopy(event.kind)
               : confirmed
                 ? event.kind === 'flagship'
                   ? 'Share the invite so teammates can join your group.'

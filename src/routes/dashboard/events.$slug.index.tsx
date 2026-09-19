@@ -25,6 +25,20 @@ const eventStatusStyles: Record<EventStatus, string> = {
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
+const participantStatusStyles: Record<string, string> = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
+  pending_payment: 'border-amber-200 bg-amber-50 text-amber-800',
+  confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  cancelled: 'border-rose-200 bg-rose-50 text-rose-800',
+}
+
+const participantStatusLabel: Record<string, string> = {
+  draft: 'Draft',
+  pending_payment: 'Pending payment',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+}
+
 export const Route = createFileRoute('/dashboard/events/$slug/')({
   loader: async ({ params }) => {
     const event = await getEventBySlug({
@@ -94,6 +108,13 @@ function DashboardEventDetailPage() {
               to="/dashboard/events/$slug/edit"
             >
               Edit
+            </Link>
+            <Link
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              params={{ slug: event.slug }}
+              to="/dashboard/events/$slug/categories"
+            >
+              Manage category
             </Link>
             <Link
               className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
@@ -232,11 +253,24 @@ function ParticipantRow({
         <td className="px-4 py-3">{paid ? 'Paid' : 'Unpaid'}</td>
       ) : null}
       <td className="px-4 py-3">
-        <span className="text-xs tracking-[0.12em] text-muted-foreground uppercase">
-          {participant.status}
-        </span>
+        <ParticipantStatusBadge status={participant.status} />
       </td>
     </tr>
+  )
+}
+
+function ParticipantStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+        participantStatusStyles[status] ??
+          'border-zinc-200 bg-zinc-100 text-zinc-600',
+      )}
+    >
+      {participantStatusLabel[status] ??
+        status.replaceAll('_', ' ')}
+    </span>
   )
 }
 

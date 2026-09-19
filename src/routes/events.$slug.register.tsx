@@ -53,7 +53,7 @@ export const Route = createFileRoute('/events/$slug/register')({
 })
 
 function EventRegisterPage() {
-  const event = useLoaderData({ from: '/events/$slug' })
+  const { event } = useLoaderData({ from: '/events/$slug' })
   const profile = Route.useLoaderData()
   const { step: requestedStep, groupId } = Route.useSearch()
   const navigate = useNavigate()

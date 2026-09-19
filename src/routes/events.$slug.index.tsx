@@ -6,6 +6,6 @@ export const Route = createFileRoute('/events/$slug/')({
 })
 
 function EventDetailPage() {
-  const event = useLoaderData({ from: '/events/$slug' })
-  return <EventDetail event={event} />
+  const { event, myRegistration } = useLoaderData({ from: '/events/$slug' })
+  return <EventDetail event={event} registration={myRegistration} />
 }

@@ -36,6 +36,7 @@ import {
   type UserProfileRow,
   upsertMyProfile,
 } from '~/lib/profile.functions'
+import { startEventPayment } from '~/lib/payment.functions'
 import { dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import { Button, buttonVariants } from '~/components/ui/button'
 import {
@@ -297,23 +298,39 @@ export function EventRegisterWizard({
           event={event}
           onBack={() => goTo('profile')}
           onPaid={async () => {
-            await registerForEvent({
+            if (!draft.paymentMethod) {
+              throw new Error('Choose a payment method')
+            }
+            const registered = await registerForEvent({
               data: {
                 eventSlug: event.slug,
                 categoryId: draft.courseId || event.courses?.[0]?.id,
                 groupId: draft.groupId || undefined,
                 groupName: draft.groupName || undefined,
                 jerseySize: draft.jerseySize || undefined,
-                status: 'confirmed',
+                status: 'pending_payment',
               },
             })
-            const next = { ...draft, status: 'confirmed' as const }
+            const started = await startEventPayment({
+              data: {
+                participantId: registered.id,
+                methodId: draft.paymentMethod,
+              },
+            })
+            if (started.confirmed || !started.url) {
+              const next = { ...draft, status: 'confirmed' as const }
+              saveDraft(event.slug, next)
+              setDraft(next)
+              void navigate({
+                to: '/events/$slug',
+                params: { slug: event.slug },
+              })
+              return
+            }
+            const next = { ...draft, status: 'pending_payment' as const }
             saveDraft(event.slug, next)
             setDraft(next)
-            void navigate({
-              to: '/events/$slug',
-              params: { slug: event.slug },
-            })
+            window.location.assign(started.url)
           }}
           onUpdate={update}
         />
@@ -864,8 +881,12 @@ function PaymentStep({
     setError('')
     try {
       await onPaid()
-    } catch {
-      setError('Could not complete registration. Try again.')
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Could not start payment. Try again.',
+      )
       setPaying(false)
     }
   }
@@ -932,10 +953,6 @@ function PaymentStep({
         })}
       </div>
 
-      <div className="border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-        Payment is stubbed for now — click pay to finish this draft flow.
-      </div>
-
       <div className="flex items-center justify-between gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
@@ -947,7 +964,7 @@ function PaymentStep({
           }}
           type="button"
         >
-          {paying ? 'Confirming…' : `Pay ${formatIdr(total)}`}
+          {paying ? 'Redirecting…' : 'Pay'}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

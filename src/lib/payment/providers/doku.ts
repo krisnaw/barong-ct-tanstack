@@ -53,6 +53,16 @@ function invoiceNumber(orderNumber: string) {
   return `${orderNumber}-${crypto.randomUUID().replaceAll('-', '').slice(0, 8)}`
 }
 
+/** DOKU rejects characters outside this set in several string fields. */
+function sanitizeDokuText(value: string, fallback = 'Barong') {
+  const cleaned = value
+    .normalize('NFKD')
+    .replace(/[^\w .\-\/+,=_:'@%()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return cleaned || fallback
+}
+
 function idPhone(phone: string) {
   const digits = phone.replace(/\D/g, '')
   if (digits.startsWith('62')) return digits
@@ -68,7 +78,7 @@ function lineItems(input: CreateCheckoutInput) {
   if (itemTotal === input.amount && input.items.length > 0) {
     return input.items.map((item, index) => ({
       id: String(index + 1),
-      name: item.name,
+      name: sanitizeDokuText(item.name, `Item ${index + 1}`),
       quantity: item.quantity,
       price: item.price,
       category: 'sports-and-outdoors',
@@ -77,7 +87,10 @@ function lineItems(input: CreateCheckoutInput) {
   return [
     {
       id: '1',
-      name: `Barong order ${input.orderNumber}`,
+      name: sanitizeDokuText(
+        `Barong order ${input.orderNumber}`,
+        'Barong order',
+      ),
       quantity: 1,
       price: input.amount,
       category: 'sports-and-outdoors',
@@ -184,8 +197,8 @@ export const dokuProvider: PaymentProvider = {
         payment_method_types: DOKU_METHOD_TYPES[input.methodId],
       },
       customer: {
-        name: input.customer.firstName,
-        last_name: input.customer.lastName,
+        name: sanitizeDokuText(input.customer.firstName, 'Rider'),
+        last_name: sanitizeDokuText(input.customer.lastName, 'Barong'),
         email: input.customer.email,
         phone: idPhone(input.customer.phone),
       },

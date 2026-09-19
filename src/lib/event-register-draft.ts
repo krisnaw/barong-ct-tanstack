@@ -24,7 +24,7 @@ export type RegisterDraft = {
   club: string
   paymentMethod: PaymentMethodChoice | ''
   profileConfirmed: boolean
-  status: 'draft' | 'confirmed'
+  status: 'draft' | 'pending_payment' | 'confirmed'
 }
 
 export const emptyDraft: RegisterDraft = {

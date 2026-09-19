@@ -217,6 +217,45 @@ export const getEventBySlug = createServerFn({ method: 'GET' })
     return loadEventBySlug(data.slug, includeDraft)
   })
 
+export type MyEventRegistration = {
+  id: string
+  status: string
+  groupId: string | null
+  groupName: string | null
+}
+
+export const getMyEventRegistration = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    if (!session) return null
+
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return null
+
+    const participant = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.eventId, row.id),
+        eq(eventParticipant.userId, session.user.id),
+      ),
+      with: {
+        group: true,
+      },
+    })
+    if (!participant) return null
+
+    const result: MyEventRegistration = {
+      id: participant.id,
+      status: participant.status,
+      groupId: participant.eventGroupId,
+      groupName: participant.group?.name ?? null,
+    }
+    return result
+  })
+
 export const createEvent = createServerFn({ method: 'POST' })
   .validator(createEventSchema)
   .handler(async ({ data }) => {
@@ -613,6 +652,165 @@ export const getEventParticipant = createServerFn({ method: 'GET' })
     return result
   })
 
+export const deleteEventParticipant = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      participantId: z.string().min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const eventRow = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!eventRow) {
+      throw new Error('Event not found')
+    }
+
+    const row = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.id, data.participantId),
+        eq(eventParticipant.eventId, eventRow.id),
+      ),
+    })
+    if (!row) {
+      throw new Error('Participant not found')
+    }
+
+    await db.delete(eventParticipant).where(eq(eventParticipant.id, row.id))
+    return { ok: true as const, eventSlug: eventRow.slug }
+  })
+
+export type EventCategoryRow = {
+  id: string
+  name: string
+  description: string | null
+  distance: string | null
+  price: number
+  serviceFee: number
+  maxParticipants: number | null
+  sortOrder: number
+}
+
+export const listEventCategories = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return [] as EventCategoryRow[]
+
+    const categories = await db.query.eventCategory.findMany({
+      where: eq(eventCategory.eventId, row.id),
+      orderBy: [asc(eventCategory.sortOrder), asc(eventCategory.name)],
+    })
+
+    return categories.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      distance: item.distance,
+      price: item.price,
+      serviceFee: item.serviceFee,
+      maxParticipants: item.maxParticipants,
+      sortOrder: item.sortOrder,
+    }))
+  })
+
+const manageCategorySchema = categoryInputSchema.extend({
+  slug: z.string().min(1),
+})
+
+export const createEventCategory = createServerFn({ method: 'POST' })
+  .validator(manageCategorySchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { categories: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const isFree = row.kind === 'free'
+    if (!isFree && data.price <= 0) {
+      throw new Error('Paid and flagship categories need a price greater than 0')
+    }
+
+    const sortOrder =
+      row.categories.reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1
+
+    await db.insert(eventCategory).values({
+      id: crypto.randomUUID(),
+      eventId: row.id,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      distance: data.distance.trim(),
+      price: isFree ? 0 : data.price,
+      serviceFee: isFree ? 0 : data.serviceFee,
+      currency: 'IDR',
+      maxParticipants: data.maxParticipants ?? null,
+      sortOrder,
+    })
+
+    return { ok: true as const }
+  })
+
+export const updateEventCategory = createServerFn({ method: 'POST' })
+  .validator(
+    manageCategorySchema.extend({
+      id: z.string().min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { categories: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const existing = row.categories.find((item) => item.id === data.id)
+    if (!existing) {
+      throw new Error('Category not found')
+    }
+
+    const isFree = row.kind === 'free'
+    if (!isFree && data.price <= 0) {
+      throw new Error('Paid and flagship categories need a price greater than 0')
+    }
+
+    await db
+      .update(eventCategory)
+      .set({
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        distance: data.distance.trim(),
+        price: isFree ? 0 : data.price,
+        serviceFee: isFree ? 0 : data.serviceFee,
+        maxParticipants: data.maxParticipants ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventCategory.id, data.id))
+
+    return { ok: true as const }
+  })
+
+export type EventGroupRow = {
+  id: string
+  eventSlug: string
+  courseId: string
+  categoryName: string | null
+  name: string
+  memberCount: number
+}
+
 export const listEventGroups = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data }) => {
@@ -620,7 +818,7 @@ export const listEventGroups = createServerFn({ method: 'GET' })
     const row = await db.query.event.findFirst({
       where: eq(event.slug, data.slug),
     })
-    if (!row) return []
+    if (!row) return [] as EventGroupRow[]
 
     const groups = await db.query.eventGroup.findMany({
       where: eq(eventGroup.eventId, row.id),
@@ -639,6 +837,139 @@ export const listEventGroups = createServerFn({ method: 'GET' })
       name: group.name,
       memberCount: group.participants.length,
     }))
+  })
+
+export const createEventGroup = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      name: z.string().min(1),
+      categoryId: z.string().min(1).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { categories: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const name = data.name.trim()
+    if (!name) {
+      throw new Error('Group name is required')
+    }
+
+    const categoryId = data.categoryId?.trim() || null
+    if (
+      categoryId &&
+      !row.categories.some((item) => item.id === categoryId)
+    ) {
+      throw new Error('Category not found for this event')
+    }
+
+    const duplicate = await db.query.eventGroup.findFirst({
+      where: and(eq(eventGroup.eventId, row.id), eq(eventGroup.name, name)),
+    })
+    if (duplicate) {
+      throw new Error('A group with this name already exists')
+    }
+
+    await db.insert(eventGroup).values({
+      id: crypto.randomUUID(),
+      eventId: row.id,
+      eventCategoryId: categoryId,
+      name,
+    })
+
+    return { ok: true as const }
+  })
+
+export const updateEventGroup = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      id: z.string().min(1),
+      name: z.string().min(1),
+      categoryId: z.string().min(1).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: {
+        categories: true,
+        groups: true,
+      },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const existing = row.groups.find((item) => item.id === data.id)
+    if (!existing) {
+      throw new Error('Group not found')
+    }
+
+    const name = data.name.trim()
+    if (!name) {
+      throw new Error('Group name is required')
+    }
+
+    const categoryId = data.categoryId?.trim() || null
+    if (
+      categoryId &&
+      !row.categories.some((item) => item.id === categoryId)
+    ) {
+      throw new Error('Category not found for this event')
+    }
+
+    const duplicate = await db.query.eventGroup.findFirst({
+      where: and(eq(eventGroup.eventId, row.id), eq(eventGroup.name, name)),
+    })
+    if (duplicate && duplicate.id !== data.id) {
+      throw new Error('A group with this name already exists')
+    }
+
+    await db
+      .update(eventGroup)
+      .set({
+        name,
+        eventCategoryId: categoryId,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventGroup.id, data.id))
+
+    return { ok: true as const }
+  })
+
+export const deleteEventGroup = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      id: z.string().min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { groups: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const existing = row.groups.find((item) => item.id === data.id)
+    if (!existing) {
+      throw new Error('Group not found')
+    }
+
+    await db.delete(eventGroup).where(eq(eventGroup.id, data.id))
+    return { ok: true as const }
   })
 
 export type EventPromoRow = {
@@ -676,6 +1007,109 @@ export const listEventPromos = createServerFn({ method: 'GET' })
       usedCount: item.usedCount,
       isActive: item.isActive,
     }))
+  })
+
+const managePromoSchema = z.object({
+  slug: z.string().min(1),
+  promo: z.string().min(1),
+  discountValue: z.number().int().min(0),
+  discountType: z.enum(['fixed', 'percent']),
+  usageLimit: z.number().int().positive().nullable().optional(),
+  isActive: z.boolean().default(true),
+})
+
+export const createEventPromo = createServerFn({ method: 'POST' })
+  .validator(managePromoSchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const code = data.promo.trim().toUpperCase()
+    if (!code) {
+      throw new Error('Promo code is required')
+    }
+    if (data.discountType === 'percent' && data.discountValue > 100) {
+      throw new Error('Percent discount cannot exceed 100')
+    }
+    if (data.discountValue <= 0) {
+      throw new Error('Discount must be greater than 0')
+    }
+
+    const duplicate = await db.query.eventPromo.findFirst({
+      where: and(eq(eventPromo.eventId, row.id), eq(eventPromo.promo, code)),
+    })
+    if (duplicate) {
+      throw new Error('A promo with this code already exists')
+    }
+
+    await db.insert(eventPromo).values({
+      id: crypto.randomUUID(),
+      eventId: row.id,
+      promo: code,
+      discountValue: data.discountValue,
+      discountType: data.discountType,
+      currency: 'IDR',
+      usageLimit: data.usageLimit ?? null,
+      usedCount: 0,
+      isActive: data.isActive,
+    })
+
+    return { ok: true as const }
+  })
+
+export const updateEventPromo = createServerFn({ method: 'POST' })
+  .validator(managePromoSchema.extend({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { promos: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+
+    const existing = row.promos.find((item) => item.id === data.id)
+    if (!existing) {
+      throw new Error('Promo not found')
+    }
+
+    const code = data.promo.trim().toUpperCase()
+    if (!code) {
+      throw new Error('Promo code is required')
+    }
+    if (data.discountType === 'percent' && data.discountValue > 100) {
+      throw new Error('Percent discount cannot exceed 100')
+    }
+    if (data.discountValue <= 0) {
+      throw new Error('Discount must be greater than 0')
+    }
+
+    const duplicate = await db.query.eventPromo.findFirst({
+      where: and(eq(eventPromo.eventId, row.id), eq(eventPromo.promo, code)),
+    })
+    if (duplicate && duplicate.id !== data.id) {
+      throw new Error('A promo with this code already exists')
+    }
+
+    await db
+      .update(eventPromo)
+      .set({
+        promo: code,
+        discountValue: data.discountValue,
+        discountType: data.discountType,
+        usageLimit: data.usageLimit ?? null,
+        isActive: data.isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventPromo.id, data.id))
+
+    return { ok: true as const }
   })
 
 const registerForEventSchema = z.object({

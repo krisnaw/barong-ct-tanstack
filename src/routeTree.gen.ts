@@ -53,6 +53,7 @@ import { Route as DashboardPickupPointsNewRouteImport } from './routes/dashboard
 import { Route as DashboardUsersIndexRouteImport } from './routes/dashboard/users.index'
 import { Route as DashboardUsersIdRouteImport } from './routes/dashboard/users.$id'
 import { Route as EventsSlugIndexRouteImport } from './routes/events.$slug.index'
+import { Route as EventsSlugPaymentRouteImport } from './routes/events.$slug.payment'
 import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.register'
 import { Route as ShopCheckoutIndexRouteImport } from './routes/shop.checkout.index'
 import { Route as ShopCheckoutCancelRouteImport } from './routes/shop.checkout.cancel'
@@ -60,9 +61,11 @@ import { Route as ShopCheckoutReturnRouteImport } from './routes/shop.checkout.r
 import { Route as ShopCheckoutSimulateRouteImport } from './routes/shop.checkout.simulate'
 import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
 import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard/events.$slug.index'
+import { Route as DashboardEventsSlugCategoriesRouteImport } from './routes/dashboard/events.$slug.categories'
 import { Route as DashboardEventsSlugEditRouteImport } from './routes/dashboard/events.$slug.edit'
 import { Route as DashboardEventsSlugGroupsRouteImport } from './routes/dashboard/events.$slug.groups'
 import { Route as DashboardEventsSlugPromosRouteImport } from './routes/dashboard/events.$slug.promos'
+import { Route as EventsSlugPaymentSimulateRouteImport } from './routes/events.$slug.payment.simulate'
 import { Route as DashboardEventsSlugParticipantsParticipantIdRouteImport } from './routes/dashboard/events.$slug.participants.$participantId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -288,6 +291,11 @@ const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => EventsSlugRoute,
 } as any)
+const EventsSlugPaymentRoute = EventsSlugPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => EventsSlugRoute,
+} as any)
 const EventsSlugRegisterRoute = EventsSlugRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -325,6 +333,12 @@ const DashboardEventsSlugIndexRoute =
     path: '/',
     getParentRoute: () => DashboardEventsSlugRoute,
   } as any)
+const DashboardEventsSlugCategoriesRoute =
+  DashboardEventsSlugCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
 const DashboardEventsSlugEditRoute = DashboardEventsSlugEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -341,6 +355,12 @@ const DashboardEventsSlugPromosRoute =
     id: '/promos',
     path: '/promos',
     getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
+const EventsSlugPaymentSimulateRoute =
+  EventsSlugPaymentSimulateRouteImport.update({
+    id: '/simulate',
+    path: '/simulate',
+    getParentRoute: () => EventsSlugPaymentRoute,
   } as any)
 const DashboardEventsSlugParticipantsParticipantIdRoute =
   DashboardEventsSlugParticipantsParticipantIdRouteImport.update({
@@ -387,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
+  '/events/$slug/payment': typeof EventsSlugPaymentRouteWithChildren
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -400,9 +421,11 @@ export interface FileRoutesByFullPath {
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/events/$slug/payment/simulate': typeof EventsSlugPaymentSimulateRoute
   '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
   '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
@@ -431,6 +454,7 @@ export interface FileRoutesByTo {
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
+  '/events/$slug/payment': typeof EventsSlugPaymentRouteWithChildren
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -444,9 +468,11 @@ export interface FileRoutesByTo {
   '/events/$slug': typeof EventsSlugIndexRoute
   '/shop/checkout': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/events/$slug/payment/simulate': typeof EventsSlugPaymentSimulateRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugIndexRoute
   '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
@@ -489,6 +515,7 @@ export interface FileRoutesById {
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
+  '/events/$slug/payment': typeof EventsSlugPaymentRouteWithChildren
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
@@ -502,9 +529,11 @@ export interface FileRoutesById {
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
   '/dashboard/events/$slug/promos': typeof DashboardEventsSlugPromosRoute
+  '/events/$slug/payment/simulate': typeof EventsSlugPaymentSimulateRoute
   '/dashboard/events/$slug/': typeof DashboardEventsSlugIndexRoute
   '/dashboard/events/$slug/participants/$participantId': typeof DashboardEventsSlugParticipantsParticipantIdRoute
 }
@@ -548,6 +577,7 @@ export interface FileRouteTypes {
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
+    | '/events/$slug/payment'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -561,9 +591,11 @@ export interface FileRouteTypes {
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
+    | '/events/$slug/payment/simulate'
     | '/dashboard/events/$slug/'
     | '/dashboard/events/$slug/participants/$participantId'
   fileRoutesByTo: FileRoutesByTo
@@ -592,6 +624,7 @@ export interface FileRouteTypes {
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
+    | '/events/$slug/payment'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -605,9 +638,11 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/shop/checkout'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
+    | '/events/$slug/payment/simulate'
     | '/dashboard/events/$slug'
     | '/dashboard/events/$slug/participants/$participantId'
   id:
@@ -649,6 +684,7 @@ export interface FileRouteTypes {
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
+    | '/events/$slug/payment'
     | '/events/$slug/register'
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
@@ -662,9 +698,11 @@ export interface FileRouteTypes {
     | '/events/$slug/'
     | '/shop/checkout/'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
     | '/dashboard/events/$slug/promos'
+    | '/events/$slug/payment/simulate'
     | '/dashboard/events/$slug/'
     | '/dashboard/events/$slug/participants/$participantId'
   fileRoutesById: FileRoutesById
@@ -996,6 +1034,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugIndexRouteImport
       parentRoute: typeof EventsSlugRoute
     }
+    '/events/$slug/payment': {
+      id: '/events/$slug/payment'
+      path: '/payment'
+      fullPath: '/events/$slug/payment'
+      preLoaderRoute: typeof EventsSlugPaymentRouteImport
+      parentRoute: typeof EventsSlugRoute
+    }
     '/events/$slug/register': {
       id: '/events/$slug/register'
       path: '/register'
@@ -1045,6 +1090,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEventsSlugIndexRouteImport
       parentRoute: typeof DashboardEventsSlugRoute
     }
+    '/dashboard/events/$slug/categories': {
+      id: '/dashboard/events/$slug/categories'
+      path: '/categories'
+      fullPath: '/dashboard/events/$slug/categories'
+      preLoaderRoute: typeof DashboardEventsSlugCategoriesRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
     '/dashboard/events/$slug/edit': {
       id: '/dashboard/events/$slug/edit'
       path: '/edit'
@@ -1065,6 +1117,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/events/$slug/promos'
       preLoaderRoute: typeof DashboardEventsSlugPromosRouteImport
       parentRoute: typeof DashboardEventsSlugRoute
+    }
+    '/events/$slug/payment/simulate': {
+      id: '/events/$slug/payment/simulate'
+      path: '/simulate'
+      fullPath: '/events/$slug/payment/simulate'
+      preLoaderRoute: typeof EventsSlugPaymentSimulateRouteImport
+      parentRoute: typeof EventsSlugPaymentRoute
     }
     '/dashboard/events/$slug/participants/$participantId': {
       id: '/dashboard/events/$slug/participants/$participantId'
@@ -1092,6 +1151,7 @@ const DashboardCatalogueRouteWithChildren =
   DashboardCatalogueRoute._addFileChildren(DashboardCatalogueRouteChildren)
 
 interface DashboardEventsSlugRouteChildren {
+  DashboardEventsSlugCategoriesRoute: typeof DashboardEventsSlugCategoriesRoute
   DashboardEventsSlugEditRoute: typeof DashboardEventsSlugEditRoute
   DashboardEventsSlugGroupsRoute: typeof DashboardEventsSlugGroupsRoute
   DashboardEventsSlugPromosRoute: typeof DashboardEventsSlugPromosRoute
@@ -1100,6 +1160,7 @@ interface DashboardEventsSlugRouteChildren {
 }
 
 const DashboardEventsSlugRouteChildren: DashboardEventsSlugRouteChildren = {
+  DashboardEventsSlugCategoriesRoute: DashboardEventsSlugCategoriesRoute,
   DashboardEventsSlugEditRoute: DashboardEventsSlugEditRoute,
   DashboardEventsSlugGroupsRoute: DashboardEventsSlugGroupsRoute,
   DashboardEventsSlugPromosRoute: DashboardEventsSlugPromosRoute,
@@ -1223,12 +1284,25 @@ const AccountRouteChildren: AccountRouteChildren = {
 const AccountRouteWithChildren =
   AccountRoute._addFileChildren(AccountRouteChildren)
 
+interface EventsSlugPaymentRouteChildren {
+  EventsSlugPaymentSimulateRoute: typeof EventsSlugPaymentSimulateRoute
+}
+
+const EventsSlugPaymentRouteChildren: EventsSlugPaymentRouteChildren = {
+  EventsSlugPaymentSimulateRoute: EventsSlugPaymentSimulateRoute,
+}
+
+const EventsSlugPaymentRouteWithChildren =
+  EventsSlugPaymentRoute._addFileChildren(EventsSlugPaymentRouteChildren)
+
 interface EventsSlugRouteChildren {
+  EventsSlugPaymentRoute: typeof EventsSlugPaymentRouteWithChildren
   EventsSlugRegisterRoute: typeof EventsSlugRegisterRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
 }
 
 const EventsSlugRouteChildren: EventsSlugRouteChildren = {
+  EventsSlugPaymentRoute: EventsSlugPaymentRouteWithChildren,
   EventsSlugRegisterRoute: EventsSlugRegisterRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
 }

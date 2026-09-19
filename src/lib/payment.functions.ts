@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { db } from '~/lib/db'
+import { eventParticipant } from '~/lib/event-schema'
 import { orders, payment } from '~/lib/order-schema'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
 import {
@@ -224,4 +225,245 @@ export const simulateStubPayment = createServerFn({ method: 'POST' })
       payload: { source: 'simulate' },
     })
     return { ok: true as const }
+  })
+
+function eventInvoiceRef(participantId: string) {
+  return `EVT${participantId.replaceAll('-', '').slice(0, 16)}`
+}
+
+function splitName(name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return { firstName: 'Rider', lastName: 'Barong' }
+  const [firstName, ...rest] = trimmed.split(/\s+/)
+  return {
+    firstName: firstName || 'Rider',
+    lastName: rest.join(' ') || 'Barong',
+  }
+}
+
+export const startEventPayment = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      participantId: z.string().min(1),
+      methodId: z.enum(PAYMENT_METHOD_IDS).default('qris_va'),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    const participant = await db.query.eventParticipant.findFirst({
+      where: eq(eventParticipant.id, data.participantId),
+      with: {
+        event: true,
+        user: {
+          with: {
+            profile: true,
+          },
+        },
+        category: true,
+      },
+    })
+    if (!participant) {
+      throw new Error('Registration not found')
+    }
+    if (
+      participant.userId !== session.user.id &&
+      !hasAdminRole(session.user.role)
+    ) {
+      throw new Error('Unauthorized')
+    }
+    if (participant.status === 'confirmed') {
+      throw new Error('Registration is already confirmed')
+    }
+    if (!participant.event || participant.event.status !== 'open') {
+      throw new Error('Registration is not open for this event')
+    }
+
+    const goodsTotal = Math.max(participant.finalPrice, 0)
+    if (goodsTotal <= 0) {
+      await db
+        .update(eventParticipant)
+        .set({ status: 'confirmed', updatedAt: new Date() })
+        .where(eq(eventParticipant.id, participant.id))
+      return { url: null as string | null, confirmed: true as const }
+    }
+
+    const provider = getProvider()
+    const serviceFee =
+      data.methodId === 'card' ? dokuCardServiceFee(goodsTotal) : 0
+    const chargeAmount = chargeAmountForMethod(goodsTotal, data.methodId)
+    const invoiceRef = eventInvoiceRef(participant.id)
+
+    const pendingRows = await db.query.payment.findMany({
+      where: and(
+        eq(payment.participantId, participant.id),
+        eq(payment.provider, provider.name),
+        eq(payment.status, 'pending'),
+      ),
+    })
+    const existing = latestPendingPayment(pendingRows, provider.name)
+    if (existing) {
+      const sameMethod =
+        !existing.method ||
+        existing.method === data.methodId ||
+        (data.methodId === 'qris_va' &&
+          (existing.method === 'qris' ||
+            existing.method === 'va' ||
+            existing.method === 'bni_va')) ||
+        (data.methodId === 'card' && existing.method === 'card')
+      const sameAmount = existing.amount === chargeAmount
+      const reusable =
+        sameMethod && sameAmount
+          ? reusableCheckoutUrl(existing, invoiceRef, provider.name)
+          : null
+      if (reusable) {
+        const url =
+          provider.name === 'stub'
+            ? `${appOriginUrl()}/events/${participant.event.slug}/payment/simulate?participant=${encodeURIComponent(participant.id)}`
+            : reusable
+        return { url, confirmed: false as const }
+      }
+      await db
+        .update(payment)
+        .set({ status: 'expired', updatedAt: new Date() })
+        .where(eq(payment.id, existing.id))
+    }
+
+    if (participant.status !== 'pending_payment') {
+      await db
+        .update(eventParticipant)
+        .set({ status: 'pending_payment', updatedAt: new Date() })
+        .where(eq(eventParticipant.id, participant.id))
+    }
+
+    const profile = participant.user.profile
+    const names = splitName(
+      `${profile?.firstName ?? ''} ${profile?.lastName ?? ''}`.trim() ||
+        participant.user.name,
+    )
+    const phone = profile?.phone?.trim() || ''
+    if (!phone) {
+      throw new Error('Phone number is required for payment')
+    }
+
+    const base = checkoutOriginUrl()
+    const returnUrl = `${base}/events/${participant.event.slug}?payment=return`
+    const cancelUrl = `${base}/events/${participant.event.slug}/register?step=payment`
+    const entryPrice = Math.max(
+      participant.price - participant.discountAmount,
+      0,
+    )
+    const items = [
+      {
+        name: participant.category?.name
+          ? `${participant.event.name} - ${participant.category.name}`
+          : participant.event.name,
+        quantity: 1,
+        price: entryPrice,
+      },
+      ...(participant.serviceFee > 0
+        ? [
+            {
+              name: 'Service fee',
+              quantity: 1,
+              price: participant.serviceFee,
+            },
+          ]
+        : []),
+      ...(serviceFee > 0
+        ? [
+            {
+              name: 'Card service fee',
+              quantity: 1,
+              price: serviceFee,
+            },
+          ]
+        : []),
+    ]
+
+    const sessionCheckout = await provider.createCheckout({
+      orderNumber: invoiceRef,
+      amount: chargeAmount,
+      currency: 'IDR',
+      methodId: data.methodId,
+      customer: {
+        email: participant.user.email,
+        firstName: names.firstName,
+        lastName: names.lastName,
+        phone,
+      },
+      items,
+      returnUrl,
+      cancelUrl,
+    })
+
+    const checkoutUrl =
+      provider.name === 'stub'
+        ? `${appOriginUrl()}/events/${participant.event.slug}/payment/simulate?participant=${encodeURIComponent(participant.id)}`
+        : sessionCheckout.url
+
+    await db.insert(payment).values({
+      id: crypto.randomUUID(),
+      orderId: null,
+      participantId: participant.id,
+      provider: provider.name,
+      transactionId: sessionCheckout.transactionId,
+      status: 'pending',
+      method: data.methodId,
+      amount: chargeAmount,
+      checkoutUrl,
+      payload: checkoutPayloadJson({
+        expiresAt: sessionCheckout.expiresAt,
+      }),
+    })
+
+    return { url: checkoutUrl, confirmed: false as const }
+  })
+
+export const simulateStubEventPayment = createServerFn({ method: 'POST' })
+  .validator(z.object({ participantId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    if (getProviderName() !== 'stub') {
+      throw new Error('Stub payment is not enabled')
+    }
+    const session = await requireSession()
+    const participant = await db.query.eventParticipant.findFirst({
+      where: eq(eventParticipant.id, data.participantId),
+      with: {
+        event: true,
+      },
+    })
+    if (!participant) {
+      throw new Error('Registration not found')
+    }
+    if (
+      participant.userId !== session.user.id &&
+      !hasAdminRole(session.user.role)
+    ) {
+      throw new Error('Unauthorized')
+    }
+
+    const payments = await db.query.payment.findMany({
+      where: and(
+        eq(payment.participantId, participant.id),
+        eq(payment.provider, 'stub'),
+      ),
+    })
+    const current =
+      [...payments].sort((a, b) => paymentCreatedAt(b) - paymentCreatedAt(a))[0] ??
+      null
+    if (!current) {
+      throw new Error('No payment to simulate')
+    }
+
+    await applyPaymentEvent('stub', {
+      transactionId: current.transactionId,
+      status: 'paid',
+      method: current.method ?? 'qris_va',
+      payload: { source: 'simulate' },
+    })
+
+    return {
+      ok: true as const,
+      eventSlug: participant.event?.slug ?? null,
+    }
   })

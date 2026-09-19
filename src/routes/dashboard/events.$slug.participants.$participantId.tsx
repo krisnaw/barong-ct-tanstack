@@ -1,8 +1,17 @@
 import * as React from 'react'
-import { Link, createFileRoute, notFound } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  notFound,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
 import { formatIdr } from '~/data/events'
 import { formatOrderDate } from '~/data/orders'
-import { getEventParticipant } from '~/lib/event.functions'
+import {
+  deleteEventParticipant,
+  getEventParticipant,
+} from '~/lib/event.functions'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,8 +20,20 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
+import { Button } from '~/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
+import { toast } from '~/components/ui/toast'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 
@@ -20,6 +41,14 @@ const participantStatusStyles: Record<string, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
   pending_payment: 'border-amber-200 bg-amber-50 text-amber-800',
   confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  cancelled: 'border-rose-200 bg-rose-50 text-rose-800',
+}
+
+const participantStatusLabel: Record<string, string> = {
+  draft: 'Draft',
+  pending_payment: 'Pending payment',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
 }
 
 export const Route = createFileRoute(
@@ -205,8 +234,100 @@ function DashboardParticipantDetailPage() {
             </DetailBlock>
           ) : null}
         </div>
+
+        <DeleteParticipantCard
+          eventSlug={event.slug}
+          participantId={participant.id}
+          participantName={user.name}
+        />
       </div>
     </>
+  )
+}
+
+function DeleteParticipantCard({
+  eventSlug,
+  participantId,
+  participantName,
+}: {
+  eventSlug: string
+  participantId: string
+  participantName: string
+}) {
+  const navigate = useNavigate()
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
+
+  async function confirmDelete() {
+    setDeleting(true)
+    try {
+      await deleteEventParticipant({
+        data: { slug: eventSlug, participantId },
+      })
+      await router.invalidate()
+      toast.add({ type: 'success', title: 'Participant deleted' })
+      void navigate({
+        to: '/dashboard/events/$slug',
+        params: { slug: eventSlug },
+      })
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error
+            ? error.message
+            : 'Could not delete participant',
+      })
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <section className="border border-destructive/25 bg-destructive/5 p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-heading text-base font-semibold tracking-tight text-destructive">
+            Delete participant
+          </h2>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            Permanently remove this registration and related payment records.
+            This cannot be undone.
+          </p>
+        </div>
+        <Dialog onOpenChange={setOpen} open={open}>
+          <DialogTrigger
+            render={
+              <Button className="shrink-0" type="button" variant="destructive" />
+            }
+          >
+            Delete participant
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete {participantName}?</DialogTitle>
+              <DialogDescription>
+                This permanently removes their registration for this event and
+                any related payment records. You cannot recover it.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>
+                Cancel
+              </DialogClose>
+              <Button
+                disabled={deleting}
+                onClick={() => void confirmDelete()}
+                type="button"
+                variant="destructive"
+              >
+                {deleting ? 'Deleting…' : 'Delete permanently'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </section>
   )
 }
 
@@ -219,7 +340,7 @@ function ParticipantStatusBadge({ status }: { status: string }) {
           'border-zinc-200 bg-zinc-100 text-zinc-600',
       )}
     >
-      {status.replaceAll('_', ' ')}
+      {participantStatusLabel[status] ?? status.replaceAll('_', ' ')}
     </span>
   )
 }
