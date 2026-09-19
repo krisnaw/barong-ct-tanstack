@@ -90,6 +90,7 @@ function mapCourse(row: CategoryRow): CourseOption {
     description: row.description?.trim() || '',
     price: row.price,
     serviceFee: row.serviceFee,
+    maxParticipants: row.maxParticipants,
   }
 }
 
@@ -518,11 +519,20 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
     }))
   })
 
+const participantStatusSchema = z.enum([
+  'draft',
+  'pending_payment',
+  'confirmed',
+  'cancelled',
+])
+
 export type EventParticipantDetail = {
   id: string
   status: string
   bibNumber: string | null
   jerseySize: string | null
+  categoryId: string | null
+  groupId: string | null
   price: number
   serviceFee: number
   currency: string
@@ -535,6 +545,7 @@ export type EventParticipantDetail = {
     name: string
     slug: string
     kind: EventKind
+    hasJersey: boolean
   }
   categoryName: string | null
   groupName: string | null
@@ -607,6 +618,8 @@ export const getEventParticipant = createServerFn({ method: 'GET' })
       status: row.status,
       bibNumber: row.bibNumber,
       jerseySize: row.jerseySize,
+      categoryId: row.eventCategoryId,
+      groupId: row.eventGroupId,
       price: row.price,
       serviceFee: row.serviceFee,
       currency: row.currency,
@@ -619,6 +632,7 @@ export const getEventParticipant = createServerFn({ method: 'GET' })
         name: eventRow.name,
         slug: eventRow.slug,
         kind: eventRow.kind as EventKind,
+        hasJersey: eventRow.hasJersey,
       },
       categoryName: row.category?.name ?? null,
       groupName: row.group?.name ?? null,
@@ -651,6 +665,106 @@ export const getEventParticipant = createServerFn({ method: 'GET' })
     }
 
     return result
+  })
+
+export const updateEventParticipant = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      participantId: z.string().min(1),
+      status: participantStatusSchema,
+      jerseySize: z.string().nullable().optional(),
+      bibNumber: z.string().nullable().optional(),
+      categoryId: z.string().nullable().optional(),
+      groupId: z.string().nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const eventRow = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: {
+        categories: true,
+        groups: true,
+      },
+    })
+    if (!eventRow) {
+      throw new Error('Event not found')
+    }
+
+    const row = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.id, data.participantId),
+        eq(eventParticipant.eventId, eventRow.id),
+      ),
+    })
+    if (!row) {
+      throw new Error('Participant not found')
+    }
+
+    const categoryId =
+      data.categoryId === undefined
+        ? row.eventCategoryId
+        : data.categoryId?.trim() || null
+    const groupId =
+      data.groupId === undefined
+        ? row.eventGroupId
+        : data.groupId?.trim() || null
+
+    const category = categoryId
+      ? eventRow.categories.find((item) => item.id === categoryId)
+      : null
+    if (categoryId && !category) {
+      throw new Error('Category not found for this event')
+    }
+
+    const group = groupId
+      ? eventRow.groups.find((item) => item.id === groupId)
+      : null
+    if (groupId && !group) {
+      throw new Error('Group not found for this event')
+    }
+    if (
+      group &&
+      group.eventCategoryId &&
+      categoryId &&
+      group.eventCategoryId !== categoryId
+    ) {
+      throw new Error('Group does not belong to the selected category')
+    }
+
+    const jerseySize =
+      data.jerseySize === undefined
+        ? row.jerseySize
+        : data.jerseySize?.trim().toUpperCase() || null
+    const bibNumber =
+      data.bibNumber === undefined
+        ? row.bibNumber
+        : data.bibNumber?.trim() || null
+
+    const categoryChanged = categoryId !== row.eventCategoryId
+    const price = categoryChanged && category ? category.price : row.price
+    const serviceFee =
+      categoryChanged && category ? category.serviceFee : row.serviceFee
+    const finalPrice = Math.max(0, price + serviceFee - row.discountAmount)
+
+    await db
+      .update(eventParticipant)
+      .set({
+        status: data.status,
+        jerseySize,
+        bibNumber,
+        eventCategoryId: categoryId,
+        eventGroupId: groupId,
+        price,
+        serviceFee,
+        finalPrice,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventParticipant.id, row.id))
+
+    return { ok: true as const }
   })
 
 export const deleteEventParticipant = createServerFn({ method: 'POST' })

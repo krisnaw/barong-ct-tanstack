@@ -149,6 +149,9 @@ function DashboardEventDetailPage() {
                     <span className="ml-2 text-muted-foreground">
                       {course.distance}
                       {course.elevation ? ` · ${course.elevation}` : ''}
+                      {course.maxParticipants != null
+                        ? ` · ${course.maxParticipants} spots`
+                        : ''}
                     </span>
                   </p>
                   <p className="mt-1 text-muted-foreground">

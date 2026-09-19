@@ -393,6 +393,9 @@ function CourseStep({
               <p className="mt-1 text-sm text-muted-foreground">
                 {course.distance}
                 {course.elevation ? ` · ${course.elevation}` : ''}
+                {course.maxParticipants != null
+                  ? ` · ${course.maxParticipants} spots`
+                  : ''}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {course.description}

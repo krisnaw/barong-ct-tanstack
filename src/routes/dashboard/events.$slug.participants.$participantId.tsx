@@ -6,11 +6,17 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { formatIdr } from '~/data/events'
+import { formatIdr, JERSEY_SIZES } from '~/data/events'
 import { formatOrderDate } from '~/data/orders'
 import {
   deleteEventParticipant,
   getEventParticipant,
+  listEventCategories,
+  listEventGroups,
+  updateEventParticipant,
+  type EventCategoryRow,
+  type EventGroupRow,
+  type EventParticipantDetail,
 } from '~/lib/event.functions'
 import {
   Breadcrumb,
@@ -31,6 +37,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '~/components/ui/dialog'
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
+import { Input } from '~/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
@@ -53,20 +73,35 @@ const participantStatusLabel: Record<string, string> = {
   cancelled: 'Cancelled',
 }
 
+const participantStatuses = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending_payment', label: 'Pending payment' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+] as const
+
+type ParticipantStatus = (typeof participantStatuses)[number]['value']
+
+const NONE_VALUE = '__none__'
+
 export const Route = createFileRoute(
   '/dashboard/events/$slug/participants/$participantId',
 )({
   pendingComponent: DashboardDetailSkeleton,
   pendingMs: 150,
   loader: async ({ params }) => {
-    const participant = await getEventParticipant({
-      data: {
-        slug: params.slug,
-        participantId: params.participantId,
-      },
-    })
+    const [participant, categories, groups] = await Promise.all([
+      getEventParticipant({
+        data: {
+          slug: params.slug,
+          participantId: params.participantId,
+        },
+      }),
+      listEventCategories({ data: { slug: params.slug } }),
+      listEventGroups({ data: { slug: params.slug } }),
+    ])
     if (!participant) throw notFound()
-    return { participant }
+    return { participant, categories, groups }
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -80,7 +115,7 @@ export const Route = createFileRoute(
 })
 
 function DashboardParticipantDetailPage() {
-  const { participant } = Route.useLoaderData()
+  const { participant, categories, groups } = Route.useLoaderData()
   const { user, event, payment } = participant
   const isPaid = event.kind === 'paid' || event.kind === 'flagship'
 
@@ -123,23 +158,30 @@ function DashboardParticipantDetailPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 px-4 pb-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <ParticipantStatusBadge status={participant.status} />
-            {participant.bibNumber ? (
-              <span className="inline-flex items-center border border-border px-2 py-0.5 font-mono text-[0.65rem] font-medium tracking-[0.08em] text-muted-foreground">
-                #{participant.bibNumber}
-              </span>
-            ) : null}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <ParticipantStatusBadge status={participant.status} />
+              {participant.bibNumber ? (
+                <span className="inline-flex items-center border border-border px-2 py-0.5 font-mono text-[0.65rem] font-medium tracking-[0.08em] text-muted-foreground">
+                  #{participant.bibNumber}
+                </span>
+              ) : null}
+            </div>
+            <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
+              {user.name}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {user.email}
+              <span className="text-border"> · </span>
+              Registered {formatOrderDate(participant.createdAt)}
+            </p>
           </div>
-          <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
-            {user.name}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {user.email}
-            <span className="text-border"> · </span>
-            Registered {formatOrderDate(participant.createdAt)}
-          </p>
+          <EditParticipantDialog
+            categories={categories}
+            groups={groups}
+            participant={participant}
+          />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
@@ -249,6 +291,258 @@ function DashboardParticipantDetailPage() {
   )
 }
 
+function EditParticipantDialog({
+  participant,
+  categories,
+  groups,
+}: {
+  participant: EventParticipantDetail
+  categories: EventCategoryRow[]
+  groups: EventGroupRow[]
+}) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [status, setStatus] = React.useState<ParticipantStatus>(
+    normalizeStatus(participant.status),
+  )
+  const [jerseySize, setJerseySize] = React.useState(
+    participant.jerseySize?.toUpperCase() ?? NONE_VALUE,
+  )
+  const [bibNumber, setBibNumber] = React.useState(participant.bibNumber ?? '')
+  const [categoryId, setCategoryId] = React.useState(
+    participant.categoryId ?? NONE_VALUE,
+  )
+  const [groupId, setGroupId] = React.useState(
+    participant.groupId ?? NONE_VALUE,
+  )
+
+  React.useEffect(() => {
+    if (!open) return
+    setStatus(normalizeStatus(participant.status))
+    setJerseySize(participant.jerseySize?.toUpperCase() ?? NONE_VALUE)
+    setBibNumber(participant.bibNumber ?? '')
+    setCategoryId(participant.categoryId ?? NONE_VALUE)
+    setGroupId(participant.groupId ?? NONE_VALUE)
+  }, [open, participant])
+
+  const selectedCategoryId = categoryId === NONE_VALUE ? null : categoryId
+  const visibleGroups = groups.filter(
+    (group) =>
+      !group.courseId ||
+      !selectedCategoryId ||
+      group.courseId === selectedCategoryId,
+  )
+
+  React.useEffect(() => {
+    if (groupId === NONE_VALUE) return
+    if (visibleGroups.some((group) => group.id === groupId)) return
+    setGroupId(NONE_VALUE)
+  }, [groupId, visibleGroups])
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateEventParticipant({
+        data: {
+          slug: participant.event.slug,
+          participantId: participant.id,
+          status,
+          jerseySize: jerseySize === NONE_VALUE ? null : jerseySize,
+          bibNumber: bibNumber.trim() || null,
+          categoryId: categoryId === NONE_VALUE ? null : categoryId,
+          groupId: groupId === NONE_VALUE ? null : groupId,
+        },
+      })
+      await router.invalidate()
+      toast.add({ type: 'success', title: 'Participant updated' })
+      setOpen(false)
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error
+            ? error.message
+            : 'Could not update participant',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger
+        render={<Button className="shrink-0" type="button" variant="outline" />}
+      >
+        Edit registration
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit registration</DialogTitle>
+          <DialogDescription>
+            Update registration details for {participant.user.name}. Changing
+            category recalculates price from that category.
+          </DialogDescription>
+        </DialogHeader>
+
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel htmlFor="participant-status">Status</FieldLabel>
+            <Select
+              items={participantStatuses.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              onValueChange={(value) => {
+                if (value == null) return
+                setStatus(value as ParticipantStatus)
+              }}
+              value={status}
+            >
+              <SelectTrigger className="w-full" id="participant-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {participantStatuses.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="participant-jersey">Jersey size</FieldLabel>
+            <Select
+              items={[
+                { value: NONE_VALUE, label: 'Not set' },
+                ...JERSEY_SIZES.map((size) => ({ value: size, label: size })),
+              ]}
+              onValueChange={(value) => {
+                if (value == null) return
+                setJerseySize(value)
+              }}
+              value={jerseySize}
+            >
+              <SelectTrigger className="w-full" id="participant-jersey">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>Not set</SelectItem>
+                {JERSEY_SIZES.map((size) => (
+                  <SelectItem key={size} value={size}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {participant.event.hasJersey ? (
+              <FieldDescription>
+                This event collects jersey sizes at registration.
+              </FieldDescription>
+            ) : null}
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="participant-bib">Bib number</FieldLabel>
+            <Input
+              id="participant-bib"
+              onChange={(event) => setBibNumber(event.target.value)}
+              placeholder="Optional"
+              value={bibNumber}
+            />
+          </Field>
+
+          {categories.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="participant-category">Category</FieldLabel>
+              <Select
+                items={[
+                  { value: NONE_VALUE, label: 'No category' },
+                  ...categories.map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  })),
+                ]}
+                onValueChange={(value) => {
+                  if (value == null) return
+                  setCategoryId(value)
+                }}
+                value={categoryId}
+              >
+                <SelectTrigger className="w-full" id="participant-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>No category</SelectItem>
+                  {categories.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
+
+          {groups.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="participant-group">Group</FieldLabel>
+              <Select
+                items={[
+                  { value: NONE_VALUE, label: 'No group' },
+                  ...visibleGroups.map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  })),
+                ]}
+                onValueChange={(value) => {
+                  if (value == null) return
+                  setGroupId(value)
+                }}
+                value={groupId}
+              >
+                <SelectTrigger className="w-full" id="participant-group">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>No group</SelectItem>
+                  {visibleGroups.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
+        </FieldGroup>
+
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <Button disabled={saving} onClick={() => void save()} type="button">
+            {saving ? (
+              <>
+                <Spinner /> Saving…
+              </>
+            ) : (
+              'Save changes'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function normalizeStatus(status: string): ParticipantStatus {
+  return participantStatuses.some((item) => item.value === status)
+    ? (status as ParticipantStatus)
+    : 'draft'
+}
+
 function DeleteParticipantCard({
   eventSlug,
   participantId,
@@ -325,7 +619,13 @@ function DeleteParticipantCard({
                 type="button"
                 variant="destructive"
               >
-                {deleting ? (<><Spinner /> Deleting…</>) : 'Delete permanently'}
+                {deleting ? (
+                  <>
+                    <Spinner /> Deleting…
+                  </>
+                ) : (
+                  'Delete permanently'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -376,9 +676,7 @@ function InfoRow({
   return (
     <div className="flex items-start justify-between gap-4 px-4 py-3">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="text-right break-all">
-        {value?.trim() ? value : '—'}
-      </dd>
+      <dd className="text-right break-all">{value?.trim() ? value : '—'}</dd>
     </div>
   )
 }

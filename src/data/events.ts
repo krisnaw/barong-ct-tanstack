@@ -18,6 +18,7 @@ export type CourseOption = {
   description: string
   price: number
   serviceFee?: number
+  maxParticipants?: number | null
 }
 
 export type ClubEvent = {

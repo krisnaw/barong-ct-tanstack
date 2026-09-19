@@ -4,7 +4,6 @@ import {
   CopyIcon,
   MapPinIcon,
   PathIcon,
-  UsersIcon,
 } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import {
@@ -153,7 +152,7 @@ export function EventDetail({
               label="Start"
               value={event.location}
             />
-            {!hasMultipleCategories ? (
+            {!courses.length ? (
               <Fact
                 icon={<PathIcon className="size-4" weight="bold" />}
                 label="Distance"
@@ -164,23 +163,12 @@ export function EventDetail({
                 }
               />
             ) : null}
-            {event.capacity ? (
-              <Fact
-                icon={<UsersIcon className="size-4" weight="bold" />}
-                label="Field"
-                value={
-                  event.registered
-                    ? `${event.registered} / ${event.capacity} riders`
-                    : `${event.capacity} spots`
-                }
-              />
-            ) : null}
           </dl>
 
-          {hasMultipleCategories ? (
+          {courses.length > 0 ? (
             <section className="mt-8">
               <h2 className="font-heading text-lg font-semibold tracking-tight">
-                Categories
+                {hasMultipleCategories ? 'Categories' : 'Category'}
               </h2>
               <ul className="mt-3 divide-y divide-border border border-border">
                 {courses.map((course) => (
@@ -193,6 +181,9 @@ export function EventDetail({
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         {course.distance}
                         {course.elevation ? ` · ${course.elevation}` : ''}
+                        {course.maxParticipants != null
+                          ? ` · ${course.maxParticipants} spots`
+                          : ''}
                       </p>
                       {course.description.trim() ? (
                         <p className="mt-1 text-sm text-muted-foreground">
