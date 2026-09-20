@@ -8,7 +8,8 @@
     "enabled": true
   },
   "triggers": {
-    "crons": ["0 * * * *"]
+    // Payment due window is 5 minutes — check often enough to expire unpaid checkouts.
+    "crons": ["*/5 * * * *"]
   },
   "vars": {
     "EMAIL_PROVIDER": "cloudflare",
@@ -52,7 +53,7 @@
         "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com",
       },
       "triggers": {
-        "crons": ["0 * * * *"]
+        "crons": ["*/5 * * * *"]
       },
       "send_email": [
         {
