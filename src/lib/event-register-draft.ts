@@ -23,6 +23,8 @@ export type RegisterDraft = {
   emergencyContactPhone: string
   club: string
   paymentMethod: PaymentMethodChoice | ''
+  promoCode: string
+  promoDiscount: number
   profileConfirmed: boolean
   status: 'draft' | 'pending_payment' | 'confirmed'
 }
@@ -45,6 +47,8 @@ export const emptyDraft: RegisterDraft = {
   emergencyContactPhone: '',
   club: '',
   paymentMethod: '',
+  promoCode: '',
+  promoDiscount: 0,
   profileConfirmed: false,
   status: 'draft',
 }

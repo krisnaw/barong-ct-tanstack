@@ -31,7 +31,7 @@ import {
   saveCreatedGroup,
   saveDraft,
 } from '~/lib/event-register-draft'
-import { registerForEvent } from '~/lib/event.functions'
+import { registerForEvent, validateEventPromo } from '~/lib/event.functions'
 import {
   type UserProfileRow,
   upsertMyProfile,
@@ -295,9 +295,6 @@ export function EventRegisterWizard({
           event={event}
           onBack={() => goTo('profile')}
           onPaid={async () => {
-            if (!draft.paymentMethod) {
-              throw new Error('Choose a payment method')
-            }
             const registered = await registerForEvent({
               data: {
                 eventSlug: event.slug,
@@ -305,13 +302,17 @@ export function EventRegisterWizard({
                 groupId: draft.groupId || undefined,
                 groupName: draft.groupName || undefined,
                 jerseySize: draft.jerseySize || undefined,
+                promoCode: draft.promoCode || undefined,
                 status: 'pending_payment',
               },
             })
+            if (registered.finalPrice > 0 && !draft.paymentMethod) {
+              throw new Error('Choose a payment method')
+            }
             const started = await startEventPayment({
               data: {
                 participantId: registered.id,
-                methodId: draft.paymentMethod,
+                methodId: draft.paymentMethod || 'qris_va',
               },
             })
             if (started.confirmed || !started.url) {
@@ -375,7 +376,11 @@ function CourseStep({
               )}
               key={course.id}
               onClick={() => {
-                onUpdate({ courseId: course.id })
+                onUpdate({
+                  courseId: course.id,
+                  promoCode: '',
+                  promoDiscount: 0,
+                })
                 if (draft.groupId) {
                   patchCreatedGroup(eventSlug, draft.groupId, {
                     courseId: course.id,
@@ -873,12 +878,55 @@ function PaymentStep({
     event.kind === 'flagship'
       ? (course?.serviceFee ?? 0)
       : (event.serviceFeeAmount ?? 0)
-  const total = amount + serviceFee
+  const discount = Math.max(0, draft.promoDiscount || 0)
+  const total = Math.max(0, amount + serviceFee - discount)
+  const [promoInput, setPromoInput] = React.useState(draft.promoCode)
+  const [promoError, setPromoError] = React.useState('')
+  const [applyingPromo, setApplyingPromo] = React.useState(false)
   const [paying, setPaying] = React.useState(false)
   const [error, setError] = React.useState('')
 
+  React.useEffect(() => {
+    setPromoInput(draft.promoCode)
+  }, [draft.promoCode])
+
+  async function applyPromo() {
+    const code = promoInput.trim()
+    if (!code || applyingPromo) return
+    setApplyingPromo(true)
+    setPromoError('')
+    try {
+      const result = await validateEventPromo({
+        data: {
+          slug: event.slug,
+          code,
+          categoryId: draft.courseId || event.courses?.[0]?.id,
+        },
+      })
+      onUpdate({
+        promoCode: result.promo,
+        promoDiscount: result.discountAmount,
+      })
+      setPromoInput(result.promo)
+    } catch (caught) {
+      onUpdate({ promoCode: '', promoDiscount: 0 })
+      setPromoError(
+        caught instanceof Error ? caught.message : 'Could not apply promo code',
+      )
+    } finally {
+      setApplyingPromo(false)
+    }
+  }
+
+  function clearPromo() {
+    setPromoInput('')
+    setPromoError('')
+    onUpdate({ promoCode: '', promoDiscount: 0 })
+  }
+
   async function handlePay() {
-    if (!draft.paymentMethod || paying) return
+    if (paying) return
+    if (total > 0 && !draft.paymentMethod) return
     setPaying(true)
     setError('')
     try {
@@ -925,48 +973,124 @@ function PaymentStep({
         {serviceFee > 0 ? (
           <SummaryRow label="Service fee" value={formatIdr(serviceFee)} />
         ) : null}
+        {discount > 0 && draft.promoCode ? (
+          <SummaryRow
+            label={`Promo (${draft.promoCode})`}
+            value={`−${formatIdr(discount)}`}
+          />
+        ) : null}
         <SummaryRow label="Total" value={formatIdr(total)} />
       </dl>
 
-      <div className="grid gap-3">
-        {paymentMethods.map((method) => {
-          const active = draft.paymentMethod === method.id
-          return (
-            <button
-              className={cn(
-                'flex items-start gap-3 border p-4 text-left transition-colors',
-                active
-                  ? 'border-foreground bg-muted/40'
-                  : 'border-border hover:border-foreground/40',
-              )}
-              key={method.id}
-              onClick={() => onUpdate({ paymentMethod: method.id })}
-              type="button"
-            >
-              <span className="mt-0.5 text-muted-foreground">{method.icon}</span>
-              <span>
-                <span className="block font-medium">{method.label}</span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  {method.detail}
+      <FieldGroup className="gap-3">
+        <Field>
+          <FieldLabel htmlFor="event-promo">Promo code</FieldLabel>
+          <div className="flex gap-2">
+            <Input
+              autoCapitalize="characters"
+              className="uppercase"
+              id="event-promo"
+              onChange={(event) => {
+                setPromoInput(event.target.value.toUpperCase())
+                setPromoError('')
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  void applyPromo()
+                }
+              }}
+              placeholder="Optional"
+              value={promoInput}
+            />
+            {draft.promoCode ? (
+              <Button
+                onClick={clearPromo}
+                type="button"
+                variant="outline"
+              >
+                Clear
+              </Button>
+            ) : (
+              <Button
+                disabled={!promoInput.trim() || applyingPromo}
+                onClick={() => void applyPromo()}
+                type="button"
+                variant="outline"
+              >
+                {applyingPromo ? (
+                  <>
+                    <Spinner /> Applying…
+                  </>
+                ) : (
+                  'Apply'
+                )}
+              </Button>
+            )}
+          </div>
+          {promoError ? (
+            <p className="text-sm text-destructive">{promoError}</p>
+          ) : draft.promoCode ? (
+            <FieldDescription>
+              Promo applied — {formatIdr(discount)} off entry.
+            </FieldDescription>
+          ) : (
+            <FieldDescription>
+              Have a code? Apply it before paying.
+            </FieldDescription>
+          )}
+        </Field>
+      </FieldGroup>
+
+      {total > 0 ? (
+        <div className="grid gap-3">
+          {paymentMethods.map((method) => {
+            const active = draft.paymentMethod === method.id
+            return (
+              <button
+                className={cn(
+                  'flex items-start gap-3 border p-4 text-left transition-colors',
+                  active
+                    ? 'border-foreground bg-muted/40'
+                    : 'border-border hover:border-foreground/40',
+                )}
+                key={method.id}
+                onClick={() => onUpdate({ paymentMethod: method.id })}
+                type="button"
+              >
+                <span className="mt-0.5 text-muted-foreground">{method.icon}</span>
+                <span>
+                  <span className="block font-medium">{method.label}</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">
+                    {method.detail}
+                  </span>
                 </span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between gap-3">
         <Button onClick={onBack} type="button" variant="outline">
           Back
         </Button>
         <Button
-          disabled={!draft.paymentMethod || paying}
+          disabled={(total > 0 && !draft.paymentMethod) || paying}
           onClick={() => {
             void handlePay()
           }}
           type="button"
         >
-          {paying ? (<><Spinner /> Redirecting…</>) : 'Pay'}
+          {paying ? (
+            <>
+              <Spinner /> {total > 0 ? 'Redirecting…' : 'Confirming…'}
+            </>
+          ) : total > 0 ? (
+            'Pay'
+          ) : (
+            'Confirm'
+          )}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
-import { eventParticipant } from '~/lib/event-schema'
+import { eventParticipant, eventPromo } from '~/lib/event-schema'
 import { loadShopOrderByDbId } from '~/lib/order-load'
 import { orders, payment } from '~/lib/order-schema'
 import { mergePaymentPayload } from '~/lib/payment/checkout-payload'
@@ -54,6 +54,9 @@ export async function applyPaymentEvent(
     }
 
     if (row.participantId) {
+      const participant = await db.query.eventParticipant.findFirst({
+        where: eq(eventParticipant.id, row.participantId),
+      })
       await db
         .update(eventParticipant)
         .set({
@@ -61,6 +64,25 @@ export async function applyPaymentEvent(
           updatedAt: new Date(),
         })
         .where(eq(eventParticipant.id, row.participantId))
+
+      if (
+        event.status === 'paid' &&
+        participant?.promoId &&
+        participant.status !== 'confirmed'
+      ) {
+        const promo = await db.query.eventPromo.findFirst({
+          where: eq(eventPromo.id, participant.promoId),
+        })
+        if (promo) {
+          await db
+            .update(eventPromo)
+            .set({
+              usedCount: promo.usedCount + 1,
+              updatedAt: new Date(),
+            })
+            .where(eq(eventPromo.id, promo.id))
+        }
+      }
     }
   }
 

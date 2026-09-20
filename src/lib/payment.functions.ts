@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { db } from '~/lib/db'
-import { eventParticipant } from '~/lib/event-schema'
+import { eventParticipant, eventPromo } from '~/lib/event-schema'
 import { orders, payment } from '~/lib/order-schema'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
 import {
@@ -284,6 +284,20 @@ export const startEventPayment = createServerFn({ method: 'POST' })
         .update(eventParticipant)
         .set({ status: 'confirmed', updatedAt: new Date() })
         .where(eq(eventParticipant.id, participant.id))
+      if (participant.promoId && participant.status !== 'confirmed') {
+        const promo = await db.query.eventPromo.findFirst({
+          where: eq(eventPromo.id, participant.promoId),
+        })
+        if (promo) {
+          await db
+            .update(eventPromo)
+            .set({
+              usedCount: promo.usedCount + 1,
+              updatedAt: new Date(),
+            })
+            .where(eq(eventPromo.id, promo.id))
+        }
+      }
       return { url: null as string | null, confirmed: true as const }
     }
 

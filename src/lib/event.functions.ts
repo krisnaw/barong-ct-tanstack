@@ -1133,6 +1133,119 @@ const managePromoSchema = z.object({
   isActive: z.boolean().default(true),
 })
 
+type PromoRow = typeof eventPromo.$inferSelect
+
+function computePromoDiscount(promo: PromoRow, entryPrice: number) {
+  if (entryPrice <= 0 || promo.discountValue <= 0) return 0
+  if (promo.discountType === 'percent') {
+    return Math.min(
+      entryPrice,
+      Math.round((entryPrice * promo.discountValue) / 100),
+    )
+  }
+  return Math.min(entryPrice, promo.discountValue)
+}
+
+function assertPromoUsable(promo: PromoRow, now = new Date()) {
+  if (!promo.isActive) {
+    throw new Error('This promo code is not active')
+  }
+  if (promo.startsAt && promo.startsAt > now) {
+    throw new Error('This promo code is not active yet')
+  }
+  if (promo.endsAt && promo.endsAt < now) {
+    throw new Error('This promo code has expired')
+  }
+  if (promo.usageLimit != null && promo.usedCount >= promo.usageLimit) {
+    throw new Error('This promo code has reached its usage limit')
+  }
+}
+
+async function resolveEventPromo(input: {
+  eventId: string
+  code: string
+  entryPrice: number
+}) {
+  const code = input.code.trim().toUpperCase()
+  if (!code) {
+    return {
+      promoId: null as string | null,
+      promoCode: null as string | null,
+      discountAmount: 0,
+    }
+  }
+
+  const promo = await db.query.eventPromo.findFirst({
+    where: and(eq(eventPromo.eventId, input.eventId), eq(eventPromo.promo, code)),
+  })
+  if (!promo) {
+    throw new Error('Invalid promo code')
+  }
+  assertPromoUsable(promo)
+  const discountAmount = computePromoDiscount(promo, input.entryPrice)
+  if (discountAmount <= 0) {
+    throw new Error('This promo code does not apply to this category')
+  }
+
+  return {
+    promoId: promo.id,
+    promoCode: promo.promo,
+    discountAmount,
+  }
+}
+
+export const validateEventPromo = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      code: z.string().min(1),
+      categoryId: z.string().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireSession()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: {
+        categories: {
+          orderBy: [asc(eventCategory.sortOrder)],
+        },
+      },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+    if (row.kind === 'free') {
+      throw new Error('Promo codes are only for paid events')
+    }
+
+    const category =
+      (data.categoryId
+        ? row.categories.find((item) => item.id === data.categoryId)
+        : undefined) ?? row.categories[0]
+    if (!category) {
+      throw new Error('Event has no category')
+    }
+
+    const resolved = await resolveEventPromo({
+      eventId: row.id,
+      code: data.code,
+      entryPrice: category.price,
+    })
+
+    return {
+      promo: resolved.promoCode!,
+      discountAmount: resolved.discountAmount,
+      entryPrice: category.price,
+      serviceFee: category.serviceFee,
+      total: Math.max(
+        0,
+        category.price + category.serviceFee - resolved.discountAmount,
+      ),
+    }
+  })
+
+
 export const createEventPromo = createServerFn({ method: 'POST' })
   .validator(managePromoSchema)
   .handler(async ({ data }) => {
@@ -1233,6 +1346,7 @@ const registerForEventSchema = z.object({
   groupId: z.string().optional(),
   groupName: z.string().optional(),
   jerseySize: z.string().optional(),
+  promoCode: z.string().optional(),
   status: z.enum(['draft', 'pending_payment', 'confirmed']).default('confirmed'),
 })
 
@@ -1304,7 +1418,12 @@ export const registerForEvent = createServerFn({ method: 'POST' })
 
     const price = category.price
     const serviceFee = category.serviceFee
-    const finalPrice = Math.max(0, price + serviceFee)
+    const promo = await resolveEventPromo({
+      eventId: row.id,
+      code: data.promoCode ?? '',
+      entryPrice: price,
+    })
+    const finalPrice = Math.max(0, price + serviceFee - promo.discountAmount)
     const existing = await db.query.eventParticipant.findFirst({
       where: and(
         eq(eventParticipant.userId, session.user.id),
@@ -1323,11 +1442,14 @@ export const registerForEvent = createServerFn({ method: 'POST' })
           price,
           serviceFee,
           currency: category.currency,
+          promoId: promo.promoId,
+          promoCode: promo.promoCode,
+          discountAmount: promo.discountAmount,
           finalPrice,
           updatedAt: new Date(),
         })
         .where(eq(eventParticipant.id, existing.id))
-      return { id: existing.id, status: data.status }
+      return { id: existing.id, status: data.status, finalPrice }
     }
 
     const id = crypto.randomUUID()
@@ -1342,9 +1464,11 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       price,
       serviceFee,
       currency: category.currency,
-      discountAmount: 0,
+      promoId: promo.promoId,
+      promoCode: promo.promoCode,
+      discountAmount: promo.discountAmount,
       finalPrice,
     })
 
-    return { id, status: data.status }
+    return { id, status: data.status, finalPrice }
   })
