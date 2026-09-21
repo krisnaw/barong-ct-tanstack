@@ -3,9 +3,9 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { env } from 'cloudflare:workers'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { user } from 'db/schemas/auth'
 import { auth } from '~/lib/auth'
-import { user } from '~/lib/auth-schema'
-import { db } from '~/lib/db'
 
 const MAX_BYTES = 2 * 1024 * 1024
 

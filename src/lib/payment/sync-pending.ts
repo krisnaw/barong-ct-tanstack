@@ -1,8 +1,8 @@
 import { and, asc, eq, inArray, isNotNull, lt } from 'drizzle-orm'
 import { env } from 'cloudflare:workers'
-import { db } from '~/lib/db'
-import { event, eventParticipant } from '~/lib/event-schema'
-import { payment } from '~/lib/order-schema'
+import { db } from 'db'
+import { event, eventParticipant } from 'db/schemas/event'
+import { payment } from 'db/schemas/order'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
 import {

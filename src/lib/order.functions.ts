@@ -16,15 +16,15 @@ import {
   customMeasurementsComplete,
   isSizePurchasable,
 } from '~/data/shop'
+import { db } from 'db'
+import { loadShopOrderByDbId, mapOrder } from 'db/query/order-load'
+import { lineItems, orders, payment } from 'db/schemas/order'
+import { pickupPoint, product } from 'db/schemas/shop'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { db } from '~/lib/db'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
 import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
-import { loadShopOrderByDbId, mapOrder } from '~/lib/order-load'
-import { lineItems, orders, payment } from '~/lib/order-schema'
 import { orderLookupIds } from '~/lib/payment/order-search'
-import { pickupPoint, product } from '~/lib/shop-schema'
 
 const customSchema = z.object({
   chest: z.string(),
@@ -434,6 +434,7 @@ export const updateOrderPayment = createServerFn({ method: 'POST' })
           transactionId: manualTxn,
           status: 'paid',
           amount: existing.total,
+          currency: 'IDR',
           paidAt: new Date(),
         })
       }

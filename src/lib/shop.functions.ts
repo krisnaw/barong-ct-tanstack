@@ -2,11 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { product, productSize } from 'db/schemas/shop'
+import type { ShopProduct } from '~/data/shop'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { db } from '~/lib/db'
-import { product, productSize } from '~/lib/shop-schema'
-import type { ShopProduct } from '~/data/shop'
 
 const sizeStockSchema = z.object({
   size: z.string().min(1),

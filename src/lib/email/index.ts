@@ -1,4 +1,5 @@
 export { sendEmail } from '~/lib/email/send'
+export { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 export { sendMagicLinkEmail } from '~/lib/email/magic-link'
 export { sendOrderPaidEmail } from '~/lib/email/order-paid'
 export { sendOrderShippedEmail } from '~/lib/email/order-shipped'

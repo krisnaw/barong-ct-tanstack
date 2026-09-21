@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from '..'
+import { lineItems, orders, payment } from '../schemas/order'
 import {
   resolveOrderStatus,
   type PaymentStatus,
@@ -8,8 +10,6 @@ import {
   type ShopPayment,
 } from '~/data/orders'
 import type { CustomMeasurements } from '~/data/shop'
-import { db } from '~/lib/db'
-import { lineItems, orders, payment } from '~/lib/order-schema'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
 import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
 

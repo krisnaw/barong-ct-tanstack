@@ -2,9 +2,9 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { userShippingAddress } from 'db/schemas/auth'
 import { auth } from '~/lib/auth'
-import { db } from '~/lib/db'
-import { userShippingAddress } from '~/lib/auth-schema'
 
 export type ShippingAddressRow = {
   id: string

@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm'
-import { db } from '~/lib/db'
+import { db } from 'db'
+import { loadShopOrderByDbId } from 'db/query/order-load'
+import { eventParticipant, eventPromo } from 'db/schemas/event'
+import { orders, payment } from 'db/schemas/order'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
-import { eventParticipant, eventPromo } from '~/lib/event-schema'
-import { loadShopOrderByDbId } from '~/lib/order-load'
-import { orders, payment } from '~/lib/order-schema'
 import type { PaymentEvent } from '~/lib/payment/types'
 
 export async function applyPaymentEvent(

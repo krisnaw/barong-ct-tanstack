@@ -3,8 +3,8 @@ import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { admin, magicLink } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { waitUntil } from 'cloudflare:workers'
-import { db } from '~/lib/db'
-import * as schema from '~/lib/auth-schema'
+import { db } from 'db'
+import * as schema from 'db/schemas/auth'
 import { ac, authRoles } from '~/lib/auth-permissions'
 import {
   sendMagicLinkEmail,

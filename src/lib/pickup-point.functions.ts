@@ -2,11 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { pickupPoint } from 'db/schemas/shop'
+import type { PickupPoint } from '~/data/pickup-points'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { db } from '~/lib/db'
-import { pickupPoint } from '~/lib/shop-schema'
-import type { PickupPoint } from '~/data/pickup-points'
 
 const pickupPointInputSchema = z.object({
   name: z.string().trim().min(1).max(80),

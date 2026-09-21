@@ -2,12 +2,20 @@ import * as React from 'react'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftIcon,
+  CalendarBlankIcon,
   CheckIcon,
   CopyIcon,
   CreditCardIcon,
   TruckIcon,
 } from '@phosphor-icons/react'
+import { format, startOfDay } from 'date-fns'
 import { Button, buttonVariants } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 import { OrderStatusBadge } from '~/components/order-status-badge'
 import {
   courierLabel,
@@ -392,12 +400,10 @@ export function AccountProfilePanel() {
             </option>
           ))}
         </AccountSelect>
-        <AccountField
-          autoComplete="bday"
+        <AccountDateOfBirthField
           id="dateOfBirth"
           label="Date of birth"
           onChange={(value) => setField('dateOfBirth', value)}
-          type="date"
           value={draft.dateOfBirth}
         />
         <AccountField
@@ -987,6 +993,81 @@ function AddressFields({
       </div>
     </div>
   )
+}
+
+function AccountDateOfBirthField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const selected = parseDateOfBirth(value)
+  const today = startOfDay(new Date())
+  const startMonth = new Date(1920, 0)
+  const defaultMonth =
+    selected ?? new Date(today.getFullYear() - 25, today.getMonth(), 1)
+
+  return (
+    <div>
+      <label
+        className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase"
+        htmlFor={id}
+      >
+        {label}
+      </label>
+      <Popover onOpenChange={setOpen} open={open}>
+        <PopoverTrigger
+          render={
+            <button
+              className={cn(
+                'mt-1.5 flex h-11 w-full items-center gap-2 border border-border bg-background px-3 text-left text-sm outline-none transition-shadow focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+                !selected && 'text-muted-foreground',
+              )}
+              id={id}
+              type="button"
+            />
+          }
+        >
+          <CalendarBlankIcon className="size-4 shrink-0" weight="bold" />
+          <span className="min-w-0 flex-1 truncate">
+            {selected ? format(selected, 'd MMMM yyyy') : 'Pick a date'}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            captionLayout="dropdown"
+            defaultMonth={defaultMonth}
+            disabled={{ after: today }}
+            endMonth={today}
+            mode="single"
+            onSelect={(next) => {
+              onChange(next ? format(next, 'yyyy-MM-dd') : '')
+              if (next) setOpen(false)
+            }}
+            selected={selected}
+            startMonth={startMonth}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
+function parseDateOfBirth(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (!match) return undefined
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  )
+  return Number.isNaN(date.getTime()) ? undefined : date
 }
 
 function AccountField({

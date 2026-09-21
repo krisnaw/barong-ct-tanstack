@@ -2,9 +2,9 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { user, userProfile } from 'db/schemas/auth'
 import { auth } from '~/lib/auth'
-import { user, userProfile } from '~/lib/auth-schema'
-import { db } from '~/lib/db'
 
 const profilePatchSchema = z.object({
   firstName: z.string().optional(),
