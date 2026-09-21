@@ -1,5 +1,12 @@
 import { relations, sql } from 'drizzle-orm'
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { user } from '~/lib/auth-schema'
 
 export const event = sqliteTable(
@@ -119,6 +126,7 @@ export const eventParticipant = sqliteTable(
     promoCode: text('promo_code'),
     discountAmount: integer('discount_amount').default(0).notNull(),
     finalPrice: integer('final_price').default(0).notNull(),
+    kitCollectedAt: integer('kit_collected_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -164,11 +172,84 @@ export const eventPromo = sqliteTable(
   ],
 )
 
+/** Race / ride checkpoints for an event. */
+export const eventCheckpoint = sqliteTable(
+  'event_checkpoint',
+  {
+    id: text('id').primaryKey(),
+    eventId: text('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').default(1).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('event_checkpoint_eventId_idx').on(table.eventId),
+    uniqueIndex('event_checkpoint_event_name_uidx').on(table.eventId, table.name),
+    uniqueIndex('event_checkpoint_event_sort_uidx').on(
+      table.eventId,
+      table.sortOrder,
+    ),
+  ],
+)
+
+/** Which event categories may use this checkpoint. No rows = all categories. */
+export const checkpointCategory = sqliteTable(
+  'checkpoint_category',
+  {
+    checkpointId: text('checkpoint_id')
+      .notNull()
+      .references(() => eventCheckpoint.id, { onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => eventCategory.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.checkpointId, table.categoryId],
+      name: 'checkpoint_category_pk',
+    }),
+  ],
+)
+
+export const checkpointCheckin = sqliteTable(
+  'checkpoint_checkin',
+  {
+    id: text('id').primaryKey(),
+    checkpointId: text('checkpoint_id')
+      .notNull()
+      .references(() => eventCheckpoint.id, { onDelete: 'cascade' }),
+    participantId: text('participant_id')
+      .notNull()
+      .references(() => eventParticipant.id, { onDelete: 'cascade' }),
+    checkedInAt: integer('checked_in_at', { mode: 'timestamp_ms' }).notNull(),
+    checkedInBy: text('checked_in_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => [
+    index('checkpoint_checkin_checkpointId_idx').on(table.checkpointId),
+    index('checkpoint_checkin_participantId_idx').on(table.participantId),
+    uniqueIndex('checkpoint_checkin_checkpoint_participant_uidx').on(
+      table.checkpointId,
+      table.participantId,
+    ),
+  ],
+)
+
 export const eventRelations = relations(event, ({ many }) => ({
   categories: many(eventCategory),
   groups: many(eventGroup),
   participants: many(eventParticipant),
   promos: many(eventPromo),
+  checkpoints: many(eventCheckpoint),
 }))
 
 export const eventCategoryRelations = relations(eventCategory, ({ one, many }) => ({
@@ -178,6 +259,7 @@ export const eventCategoryRelations = relations(eventCategory, ({ one, many }) =
   }),
   groups: many(eventGroup),
   participants: many(eventParticipant),
+  checkpointLinks: many(checkpointCategory),
 }))
 
 export const eventGroupRelations = relations(eventGroup, ({ one, many }) => ({
@@ -194,7 +276,7 @@ export const eventGroupRelations = relations(eventGroup, ({ one, many }) => ({
 
 export const eventParticipantRelations = relations(
   eventParticipant,
-  ({ one }) => ({
+  ({ one, many }) => ({
     event: one(event, {
       fields: [eventParticipant.eventId],
       references: [event.id],
@@ -211,6 +293,7 @@ export const eventParticipantRelations = relations(
       fields: [eventParticipant.eventGroupId],
       references: [eventGroup.id],
     }),
+    checkins: many(checkpointCheckin),
   }),
 )
 
@@ -220,3 +303,47 @@ export const eventPromoRelations = relations(eventPromo, ({ one }) => ({
     references: [event.id],
   }),
 }))
+
+export const eventCheckpointRelations = relations(
+  eventCheckpoint,
+  ({ one, many }) => ({
+    event: one(event, {
+      fields: [eventCheckpoint.eventId],
+      references: [event.id],
+    }),
+    checkins: many(checkpointCheckin),
+    categoryLinks: many(checkpointCategory),
+  }),
+)
+
+export const checkpointCategoryRelations = relations(
+  checkpointCategory,
+  ({ one }) => ({
+    checkpoint: one(eventCheckpoint, {
+      fields: [checkpointCategory.checkpointId],
+      references: [eventCheckpoint.id],
+    }),
+    category: one(eventCategory, {
+      fields: [checkpointCategory.categoryId],
+      references: [eventCategory.id],
+    }),
+  }),
+)
+
+export const checkpointCheckinRelations = relations(
+  checkpointCheckin,
+  ({ one }) => ({
+    checkpoint: one(eventCheckpoint, {
+      fields: [checkpointCheckin.checkpointId],
+      references: [eventCheckpoint.id],
+    }),
+    participant: one(eventParticipant, {
+      fields: [checkpointCheckin.participantId],
+      references: [eventParticipant.id],
+    }),
+    checkedInByUser: one(user, {
+      fields: [checkpointCheckin.checkedInBy],
+      references: [user.id],
+    }),
+  }),
+)

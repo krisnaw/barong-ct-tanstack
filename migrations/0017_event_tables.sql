@@ -76,6 +76,7 @@ CREATE TABLE `event_participant` (
 	`promo_code` text,
 	`discount_amount` integer DEFAULT 0 NOT NULL,
 	`final_price` integer DEFAULT 0 NOT NULL,
+	`kit_collected_at` integer,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
@@ -108,6 +109,43 @@ CREATE TABLE `event_promo` (
 CREATE INDEX `event_promo_eventId_idx` ON `event_promo` (`event_id`);
 CREATE UNIQUE INDEX `event_promo_event_code_uidx` ON `event_promo` (`event_id`, `promo`);
 
+CREATE TABLE `event_checkpoint` (
+	`id` text PRIMARY KEY NOT NULL,
+	`event_id` text NOT NULL,
+	`name` text NOT NULL,
+	`sort_order` integer DEFAULT 1 NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	FOREIGN KEY (`event_id`) REFERENCES `event`(`id`) ON UPDATE no action ON DELETE cascade
+);
+
+CREATE INDEX `event_checkpoint_eventId_idx` ON `event_checkpoint` (`event_id`);
+CREATE UNIQUE INDEX `event_checkpoint_event_name_uidx` ON `event_checkpoint` (`event_id`, `name`);
+CREATE UNIQUE INDEX `event_checkpoint_event_sort_uidx` ON `event_checkpoint` (`event_id`, `sort_order`);
+
+CREATE TABLE `checkpoint_category` (
+	`checkpoint_id` text NOT NULL,
+	`category_id` text NOT NULL,
+	PRIMARY KEY (`checkpoint_id`, `category_id`),
+	FOREIGN KEY (`checkpoint_id`) REFERENCES `event_checkpoint`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`category_id`) REFERENCES `event_category`(`id`) ON UPDATE no action ON DELETE cascade
+);
+
+CREATE TABLE `checkpoint_checkin` (
+	`id` text PRIMARY KEY NOT NULL,
+	`checkpoint_id` text NOT NULL,
+	`participant_id` text NOT NULL,
+	`checked_in_at` integer NOT NULL,
+	`checked_in_by` text,
+	FOREIGN KEY (`checkpoint_id`) REFERENCES `event_checkpoint`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`participant_id`) REFERENCES `event_participant`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`checked_in_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE set null
+);
+
+CREATE INDEX `checkpoint_checkin_checkpointId_idx` ON `checkpoint_checkin` (`checkpoint_id`);
+CREATE INDEX `checkpoint_checkin_participantId_idx` ON `checkpoint_checkin` (`participant_id`);
+CREATE UNIQUE INDEX `checkpoint_checkin_checkpoint_participant_uidx` ON `checkpoint_checkin` (`checkpoint_id`, `participant_id`);
+
 CREATE TABLE `payment_new` (
 	`id` text PRIMARY KEY NOT NULL,
 	`order_id` text,
@@ -117,9 +155,10 @@ CREATE TABLE `payment_new` (
 	`status` text DEFAULT 'pending' NOT NULL,
 	`method` text,
 	`amount` integer NOT NULL,
+	`currency` text DEFAULT 'IDR' NOT NULL,
 	`checkout_url` text,
-	`payload` text,
 	`paid_at` integer,
+	`expires_at` integer,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE cascade,
@@ -135,9 +174,10 @@ INSERT INTO `payment_new` (
 	`status`,
 	`method`,
 	`amount`,
+	`currency`,
 	`checkout_url`,
-	`payload`,
 	`paid_at`,
+	`expires_at`,
 	`created_at`,
 	`updated_at`
 )
@@ -150,9 +190,13 @@ SELECT
 	`status`,
 	`method`,
 	`amount`,
+	'IDR',
 	`checkout_url`,
-	`payload`,
 	`paid_at`,
+	CAST(
+		(julianday(json_extract(`payload`, '$.expiresAt')) - 2440587.5) * 86400000
+		AS integer
+	),
 	`created_at`,
 	`updated_at`
 FROM `payment`;
@@ -163,139 +207,3 @@ ALTER TABLE `payment_new` RENAME TO `payment`;
 CREATE INDEX `payment_orderId_idx` ON `payment` (`order_id`);
 CREATE INDEX `payment_participantId_idx` ON `payment` (`participant_id`);
 CREATE UNIQUE INDEX `payment_provider_transaction_uidx` ON `payment` (`provider`, `transaction_id`);
-
-INSERT INTO `event` (
-	`id`, `slug`, `name`, `description`, `feature_image`, `feature_image_alt`,
-	`kind`, `status`, `event_date`, `event_time`, `time_zone`,
-	`location_name`, `has_jersey`, `is_group_ride`, `group_capacity`
-) VALUES
-(
-	'evt_melali_2027',
-	'barong-melali-2027',
-	'Barong Melali 2027',
-	'Barong Melali returns as the club''s annual jalan-jalan across Gianyar. Long and short courses, a named group ride, and the same rule: keep the bunch together. Create a group, pick your course, choose a jersey size, then complete payment to lock your spot.',
-	'https://images.unsplash.com/photo-1471506480208-91b3a4cc78be?auto=format&fit=crop',
-	'A cyclist climbing an open country road toward the hills',
-	'flagship',
-	'open',
-	'2027-08-28',
-	'04:00',
-	'GMT+8',
-	'UC Silver, Batubulan',
-	1,
-	1,
-	8
-),
-(
-	'evt_climb_clinic',
-	'climb-clinic-bedugul',
-	'Climb Clinic — Bedugul',
-	'A coached climbing session on the Bedugul approaches. Profile required, then pay to confirm your spot. Pace groups form on the day.',
-	'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop',
-	'Cyclists riding together on a mountain road',
-	'paid',
-	'open',
-	'2026-10-12',
-	'06:00',
-	'GMT+8',
-	'Bedugul meet point',
-	0,
-	0,
-	NULL
-),
-(
-	'evt_saturday_climax',
-	'saturday-climax-kintamani',
-	'Saturday Climax — Kintamani',
-	'Saturday Climax is the club''s long social. No race, no drop if you stay in a group — just kilometres, coffee, and the climb to Kintamani.',
-	'https://images.unsplash.com/photo-1517649763962-0c623066027e?auto=format&fit=crop',
-	'A group of road cyclists on an open climb',
-	'free',
-	'open',
-	'2026-09-20',
-	'05:30',
-	'GMT+8',
-	'Denpasar meet point',
-	0,
-	0,
-	NULL
-),
-(
-	'evt_thursday_foreplay',
-	'thursday-foreplay',
-	'Thursday Foreplay',
-	'Foreplay is the midweek social spin. Easy pace, no drop, coffee stop optional. Ideal if you are new to the club or easing back after time off the bike.',
-	'https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop',
-	'Two cyclists riding together on a coastal road',
-	'free',
-	'open',
-	'2026-09-25',
-	'05:45',
-	'GMT+8',
-	'Denpasar meet point',
-	0,
-	0,
-	NULL
-);
-
-INSERT INTO `event_category` (
-	`id`, `event_id`, `name`, `description`, `distance`, `price`, `service_fee`, `max_participants`, `sort_order`
-) VALUES
-(
-	'cat_melali_long',
-	'evt_melali_2027',
-	'Long course',
-	'Sidemen, Besakih, Bukit Jambul — full Melali loop.',
-	'145 km',
-	350000,
-	0,
-	400,
-	0
-),
-(
-	'cat_melali_short',
-	'evt_melali_2027',
-	'Short course',
-	'Shorter Gianyar loop — same bunch rules, less climbing.',
-	'80 km',
-	300000,
-	0,
-	400,
-	1
-),
-(
-	'cat_climb_open',
-	'evt_climb_clinic',
-	'Open',
-	'Coached climb clinic entry.',
-	'60 km',
-	150000,
-	0,
-	30,
-	0
-),
-(
-	'cat_climax_open',
-	'evt_saturday_climax',
-	'Saturday Climax — Kintamani',
-	'Open social ride.',
-	'110 km',
-	0,
-	0,
-	60,
-	0
-),
-(
-	'cat_foreplay_open',
-	'evt_thursday_foreplay',
-	'Thursday Foreplay',
-	'Midweek social spin.',
-	'55 km',
-	0,
-	0,
-	40,
-	0
-);
-
-INSERT INTO `event_group` (`id`, `event_id`, `event_category_id`, `name`) VALUES
-('grp_melali_demo', 'evt_melali_2027', 'cat_melali_long', 'Peloton A');
