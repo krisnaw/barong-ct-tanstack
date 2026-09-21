@@ -67,7 +67,7 @@ export function orderFulfillmentEmailCopy(input: {
   }
 }
 
-const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong_logo.png'
+const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong-no-bg.png'
 
 export function OrderShipped({
   companyName = 'Barong',
@@ -110,9 +110,9 @@ export function OrderShipped({
                   <Img
                     alt={companyName}
                     className="block"
-                    height={32}
+                    height={56}
                     src={logoUrl}
-                    width={25}
+                    width={44}
                   />
                 </Section>
 

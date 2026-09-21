@@ -1,5 +1,4 @@
 import { render } from '@react-email/render'
-import { env } from 'cloudflare:workers'
 import { formatCustomMeasurements, formatShopPrice, shopImageSrc } from '~/data/shop'
 import {
   formatInvoiceDateTime,
@@ -10,11 +9,8 @@ import {
   type ShopOrder,
 } from '~/data/orders'
 import { OrderPaid, orderPaidEmailCopy } from '~/emails/order-paid'
+import { emailLogoUrl, emailPublicBaseUrl } from '~/lib/email/public-url'
 import { sendEmail } from '~/lib/email/send'
-
-function publicBaseUrl() {
-  return (env.BETTER_AUTH_URL || 'https://barongcycling.com').replace(/\/$/, '')
-}
 
 function addressLines(order: ShopOrder) {
   return [
@@ -33,7 +29,7 @@ function pickupAddressLines(order: ShopOrder): string[] {
 }
 
 export async function sendOrderPaidEmail(order: ShopOrder) {
-  const baseUrl = publicBaseUrl()
+  const baseUrl = emailPublicBaseUrl()
   const orderUrl = `${baseUrl}/account/orders/${order.id}`
   const isPickup = order.delivery === 'pickup'
   const pickupPointName = orderPickupPointName(order)
@@ -44,7 +40,7 @@ export async function sendOrderPaidEmail(order: ShopOrder) {
   })
   const element = OrderPaid({
     companyName: 'Barong',
-    logoUrl: `${baseUrl}/barong_logo.png`,
+    logoUrl: emailLogoUrl(),
     firstName: order.firstName,
     invoiceNumber: formatInvoiceNumber(order.placedAt),
     invoiceDateTime: formatInvoiceDateTime(order.placedAt),

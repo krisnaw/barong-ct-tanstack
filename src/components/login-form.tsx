@@ -1,8 +1,8 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { RowsIcon } from '@phosphor-icons/react'
 import * as React from 'react'
 import { cn } from 'cn'
 
+import { AuthBrandLink } from '~/components/auth-brand-link'
 import { Button } from '~/components/ui/button'
 import {
   Field,
@@ -103,15 +103,7 @@ export function LoginForm({
       <div className={cn('flex flex-col gap-6', className)} {...props}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <Link
-              to="/"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <div className="flex size-8 items-center justify-center rounded-md">
-                <RowsIcon className="size-6" />
-              </div>
-              <span className="sr-only">Barong Cycling Team</span>
-            </Link>
+            <AuthBrandLink />
             <h1 className="text-xl font-bold">Check your email</h1>
             <FieldDescription>
               We sent a sign-in link to {email}. It expires in 15 minutes.
@@ -139,15 +131,7 @@ export function LoginForm({
       <form onSubmit={onSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <Link
-              to="/"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <div className="flex size-8 items-center justify-center rounded-md">
-                <RowsIcon className="size-6" />
-              </div>
-              <span className="sr-only">Barong Cycling Team</span>
-            </Link>
+            <AuthBrandLink />
             <h1 className="text-xl font-bold">Welcome to Barong CT</h1>
             {PASSWORD_AUTH_ENABLED ? (
               <FieldDescription>

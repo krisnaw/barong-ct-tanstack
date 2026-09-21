@@ -1,18 +1,14 @@
 import { render } from '@react-email/render'
 import { eq } from 'drizzle-orm'
-import { env } from 'cloudflare:workers'
+import { db } from 'db'
+import { eventParticipant } from 'db/schemas/event'
 import { formatIdr } from '~/data/events'
 import {
   EventRegistered,
   eventRegisteredEmailCopy,
 } from '~/emails/event-registered'
-import { db } from '~/lib/db'
+import { emailLogoUrl, emailPublicBaseUrl } from '~/lib/email/public-url'
 import { sendEmail } from '~/lib/email/send'
-import { eventParticipant } from '~/lib/event-schema'
-
-function publicBaseUrl() {
-  return (env.BETTER_AUTH_URL || 'https://barongcycling.com').replace(/\/$/, '')
-}
 
 function formatEventDate(isoDate: string) {
   const parsed = new Date(`${isoDate}T12:00:00`)
@@ -44,7 +40,7 @@ export async function sendEventRegisteredEmail(participantId: string) {
   const profile = row.user.profile
   const firstName =
     profile?.firstName?.trim() || row.user.name.trim().split(/\s+/)[0] || ''
-  const baseUrl = publicBaseUrl()
+  const baseUrl = emailPublicBaseUrl()
   const eventUrl = `${baseUrl}/events/${event.slug}`
   const details = [
     row.category
@@ -74,7 +70,7 @@ export async function sendEventRegisteredEmail(participantId: string) {
   })
   const element = EventRegistered({
     companyName: 'Barong',
-    logoUrl: `${baseUrl}/barong_logo.png`,
+    logoUrl: emailLogoUrl(),
     firstName,
     eventName: event.name,
     eventDate: formatEventDate(event.eventDate),

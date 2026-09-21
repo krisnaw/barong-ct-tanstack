@@ -21,7 +21,7 @@ type ResetPasswordEmailProps = {
   url: string
 }
 
-const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong_logo.png'
+const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong-no-bg.png'
 
 export function ResetPasswordEmail({
   companyName = 'Barong',
@@ -44,9 +44,9 @@ export function ResetPasswordEmail({
                   <Img
                     alt={companyName}
                     className="block"
-                    height={32}
+                    height={56}
                     src={logoUrl}
-                    width={25}
+                    width={44}
                   />
                 </Section>
 

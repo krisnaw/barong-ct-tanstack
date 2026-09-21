@@ -1,6 +1,6 @@
 import { render } from '@react-email/render'
-import { env } from 'cloudflare:workers'
 import { MagicLinkEmail } from '~/emails/magic-link'
+import { emailLogoUrl } from '~/lib/email/public-url'
 import { sendEmail } from '~/lib/email/send'
 
 export async function sendMagicLinkEmail({
@@ -12,13 +12,9 @@ export async function sendMagicLinkEmail({
   name: string
   url: string
 }) {
-  const baseUrl = (env.BETTER_AUTH_URL || 'https://barongcycling.com').replace(
-    /\/$/,
-    '',
-  )
   const element = MagicLinkEmail({
     companyName: 'Barong',
-    logoUrl: `${baseUrl}/barong_logo.png`,
+    logoUrl: emailLogoUrl(),
     name,
     url,
   })
