@@ -1,4 +1,4 @@
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useMatchRoute } from '@tanstack/react-router'
 import {
   SidebarGroup,
   SidebarMenu,
@@ -15,14 +15,15 @@ export function NavMain({
     icon: React.ReactNode
   }[]
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const matchRoute = useMatchRoute()
 
   return (
     <SidebarGroup>
       <SidebarMenu>
         {items.map((item) => {
-          const isActive =
-            pathname === item.url || pathname.startsWith(`${item.url}/`)
+          const isActive = Boolean(
+            matchRoute({ to: item.url, fuzzy: true }),
+          )
 
           return (
             <SidebarMenuItem key={item.title}>

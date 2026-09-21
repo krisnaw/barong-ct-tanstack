@@ -2,6 +2,15 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { asc, desc, eq, and } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import {
+  event,
+  eventCategory,
+  eventGroup,
+  eventParticipant,
+  eventPromo,
+} from 'db/schemas/event'
+import { payment } from 'db/schemas/order'
 import {
   type ClubEvent,
   type CourseOption,
@@ -11,15 +20,6 @@ import {
 } from '~/data/events'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { db } from '~/lib/db'
-import {
-  event,
-  eventCategory,
-  eventGroup,
-  eventParticipant,
-  eventPromo,
-} from '~/lib/event-schema'
-import { payment } from '~/lib/order-schema'
 
 const eventKindSchema = z.enum(['free', 'paid', 'flagship'])
 const eventStatusSchema = z.enum(['draft', 'open', 'closed'])
@@ -1116,7 +1116,9 @@ export const listEventPromos = createServerFn({ method: 'GET' })
       id: item.id,
       promo: item.promo,
       discountValue: item.discountValue,
-      discountType: item.discountType,
+      discountType: isPercentDiscountType(item.discountType)
+        ? 'percent'
+        : 'fixed',
       currency: item.currency,
       usageLimit: item.usageLimit,
       usedCount: item.usedCount,
@@ -1137,13 +1139,18 @@ type PromoRow = typeof eventPromo.$inferSelect
 
 function computePromoDiscount(promo: PromoRow, entryPrice: number) {
   if (entryPrice <= 0 || promo.discountValue <= 0) return 0
-  if (promo.discountType === 'percent') {
+  if (isPercentDiscountType(promo.discountType)) {
     return Math.min(
       entryPrice,
       Math.round((entryPrice * promo.discountValue) / 100),
     )
   }
   return Math.min(entryPrice, promo.discountValue)
+}
+
+function isPercentDiscountType(type: string) {
+  const normalized = type.trim().toLowerCase()
+  return normalized === 'percent' || normalized === 'percentage'
 }
 
 function assertPromoUsable(promo: PromoRow, now = new Date()) {

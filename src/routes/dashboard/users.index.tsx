@@ -1,17 +1,14 @@
 import * as React from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import {
-  columnFilteringFeature,
   createColumnHelper,
-  createFilteredRowModel,
   createPaginatedRowModel,
-  filterFn_includesString,
   rowPaginationFeature,
   tableFeatures,
   useTable,
-  type ColumnFiltersState,
   type PaginationState,
 } from '@tanstack/react-table'
+import { z } from 'zod'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -65,11 +62,8 @@ import {
 } from '~/lib/user.functions'
 
 const features = tableFeatures({
-  columnFilteringFeature,
-  filteredRowModel: createFilteredRowModel(),
   rowPaginationFeature,
   paginatedRowModel: createPaginatedRowModel(),
-  filterFns: { includesString: filterFn_includesString },
 })
 
 const columnHelper = createColumnHelper<typeof features, AdminUserListItem>()
@@ -78,12 +72,10 @@ const columns = columnHelper.columns([
   columnHelper.accessor((row) => `${row.name} ${row.email}`, {
     id: 'user',
     header: 'User',
-    filterFn: 'includesString',
     cell: ({ row }) => <UserCell account={row.original} />,
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    enableColumnFilter: false,
     cell: ({ row }) => <RoleCell account={row.original} />,
   }),
   columnHelper.display({
@@ -93,33 +85,66 @@ const columns = columnHelper.columns([
   }),
 ])
 
+const usersSearchSchema = z.object({
+  q: z.string().trim().optional().catch(undefined),
+})
+
 export const Route = createFileRoute('/dashboard/users/')({
   pendingComponent: DashboardTableSkeleton,
   pendingMs: 150,
-  loader: () => listUsers(),
+  validateSearch: usersSearchSchema,
+  loaderDeps: ({ search: { q } }) => ({ q }),
+  loader: ({ deps: { q } }) => listUsers({ data: { q } }),
   component: DashboardUsersPage,
 })
 
 function DashboardUsersPage() {
   const { users } = Route.useLoaderData()
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  )
+  const { q } = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const [draft, setDraft] = React.useState(q ?? '')
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: TABLE_PAGE_SIZE,
   })
+
+  React.useEffect(() => {
+    setDraft(q ?? '')
+  }, [q])
+
+  React.useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const next = draft.trim()
+      const current = (q ?? '').trim()
+      if (next === current) return
+      void navigate({
+        replace: true,
+        search: (prev) => ({
+          ...prev,
+          q: next || undefined,
+        }),
+      })
+    }, 300)
+    return () => window.clearTimeout(handle)
+  }, [draft, navigate, q])
+
+  React.useEffect(() => {
+    setPagination((prev) =>
+      prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 },
+    )
+  }, [q])
+
   const table = useTable({
     features,
     data: users,
     columns,
     getRowId: (row) => row.id,
-    state: { columnFilters, pagination },
-    onColumnFiltersChange: setColumnFilters,
+    state: { pagination },
     onPaginationChange: setPagination,
   })
   const rows = table.getRowModel().rows
   const pageCount = table.getPageCount()
+  const hasQuery = Boolean((q ?? '').trim())
 
   return (
     <>
@@ -143,11 +168,9 @@ function DashboardUsersPage() {
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
         <Input
           className="max-w-sm"
-          onChange={(event) =>
-            table.getColumn('user')?.setFilterValue(event.target.value)
-          }
-          placeholder="Search users…"
-          value={(table.getColumn('user')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Search by name or email…"
+          value={draft}
         />
 
         <div className="border border-border">
@@ -190,7 +213,7 @@ function DashboardUsersPage() {
                     className="h-24 px-4 text-center text-muted-foreground"
                     colSpan={columns.length}
                   >
-                    {users.length === 0 ? 'No users yet.' : 'No matching users.'}
+                    {hasQuery ? 'No matching users.' : 'No users yet.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -199,9 +222,7 @@ function DashboardUsersPage() {
         </div>
 
         <TablePagination
-          onPageChange={(pageIndex) =>
-            table.setPageIndex(pageIndex)
-          }
+          onPageChange={(pageIndex) => table.setPageIndex(pageIndex)}
           pageCount={pageCount}
           pageIndex={pagination.pageIndex}
         />

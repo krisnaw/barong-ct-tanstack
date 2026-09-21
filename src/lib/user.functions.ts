@@ -1,11 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, like, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { db } from 'db'
+import { user, userProfile } from 'db/schemas/auth'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { user, userProfile } from '~/lib/auth-schema'
-import { db } from '~/lib/db'
 
 export type AdminUserListItem = {
   id: string
@@ -79,31 +79,78 @@ async function requireAdmin() {
   return session
 }
 
-export const listUsers = createServerFn({ method: 'GET' }).handler(async () => {
-  await requireAdmin()
-  const rows = await db.query.user.findMany({
-    with: { profile: true },
-    orderBy: [desc(user.createdAt)],
-    limit: 100,
-  })
-
-  return {
-    total: rows.length,
-    users: rows.map((row) => {
-      const name = displayName(row, row.profile)
-      return {
-        id: row.id,
-        name,
-        email: row.email,
-        image: row.image ?? null,
-        role: row.role || 'user',
-        banned: Boolean(row.banned),
-        jerseySize: row.profile?.jerseySize || 'M',
-        verifiedAt: toIso(row.profile?.verifiedAt),
-      } satisfies AdminUserListItem
+export const listUsers = createServerFn({ method: 'GET' })
+  .validator(
+    z.object({
+      q: z.string().trim().optional(),
     }),
-  }
-})
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const query = data.q?.trim() ?? ''
+    const pattern = query
+      ? `%${query.toLowerCase().replace(/[%_]/g, '')}%`
+      : null
+
+    const rows = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        role: user.role,
+        banned: user.banned,
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
+        jerseySize: userProfile.jerseySize,
+        verifiedAt: userProfile.verifiedAt,
+      })
+      .from(user)
+      .leftJoin(userProfile, eq(userProfile.userId, user.id))
+      .where(
+        pattern
+          ? or(
+              like(sql`lower(${user.name})`, pattern),
+              like(sql`lower(${user.email})`, pattern),
+              like(
+                sql`lower(coalesce(${userProfile.firstName}, ''))`,
+                pattern,
+              ),
+              like(
+                sql`lower(coalesce(${userProfile.lastName}, ''))`,
+                pattern,
+              ),
+              like(
+                sql`lower(trim(coalesce(${userProfile.firstName}, '') || ' ' || coalesce(${userProfile.lastName}, '')))`,
+                pattern,
+              ),
+            )
+          : undefined,
+      )
+      .orderBy(desc(user.createdAt))
+      .limit(100)
+
+    return {
+      total: rows.length,
+      users: rows.map((row) => {
+        const name = displayName(row, {
+          firstName: row.firstName,
+          lastName: row.lastName,
+        })
+        return {
+          id: row.id,
+          name,
+          email: row.email,
+          image: row.image ?? null,
+          role: row.role || 'user',
+          banned: Boolean(row.banned),
+          jerseySize: row.jerseySize || 'M',
+          verifiedAt: toIso(row.verifiedAt),
+        } satisfies AdminUserListItem
+      }),
+    }
+  })
 
 export const getUserById = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().min(1) }))

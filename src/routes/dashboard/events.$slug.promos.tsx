@@ -174,9 +174,7 @@ function DashboardEventPromosPage() {
                       {promo.promo}
                     </TableCell>
                     <TableCell className="px-4 py-3 tabular-nums">
-                      {promo.discountType === 'percent'
-                        ? `${promo.discountValue}%`
-                        : formatIdr(promo.discountValue)}
+                      {formatPromoDiscount(promo)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground">
                       {promo.usedCount}
@@ -225,9 +223,7 @@ function PromoFormDialog({
     if (!open) return
     if (mode === 'edit' && promo) {
       setCode(promo.promo)
-      setDiscountType(
-        promo.discountType === 'percent' ? 'percent' : 'fixed',
-      )
+      setDiscountType(isPercentDiscount(promo.discountType) ? 'percent' : 'fixed')
       setDiscountValue(String(promo.discountValue))
       setUsageLimit(promo.usageLimit != null ? String(promo.usageLimit) : '')
       setIsActive(promo.isActive)
@@ -415,4 +411,16 @@ function PromoFormDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function isPercentDiscount(type: string) {
+  const normalized = type.trim().toLowerCase()
+  return normalized === 'percent' || normalized === 'percentage'
+}
+
+function formatPromoDiscount(promo: EventPromoRow) {
+  if (isPercentDiscount(promo.discountType)) {
+    return `${promo.discountValue}%`
+  }
+  return formatIdr(promo.discountValue)
 }
