@@ -8,11 +8,7 @@ import { db } from '~/lib/db'
 import { eventParticipant, eventPromo } from '~/lib/event-schema'
 import { orders, payment } from '~/lib/order-schema'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
-import {
-  checkoutPayloadJson,
-  isCheckoutExpired,
-  parseCheckoutPayload,
-} from '~/lib/payment/checkout-payload'
+import { isCheckoutExpired } from '~/lib/payment/expiry'
 import { chargeAmountForMethod, dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import {
   getPaymentDisplay as readPaymentDisplay,
@@ -22,6 +18,7 @@ import {
 import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
 import { appOriginUrl, checkoutOriginUrl } from '~/lib/payment/public-url'
 import { PAYMENT_METHOD_IDS } from '~/lib/payment/types'
+import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 
 async function requireSession() {
   const headers = getRequestHeaders()
@@ -66,10 +63,9 @@ function reusableCheckoutUrl(
   orderNumber: string,
   providerName: string,
 ) {
-  const stored = parseCheckoutPayload(row.payload)
   const fallbackMinutes =
     providerName === 'doku' ? DOKU_PAYMENT_DUE_MINUTES : 60
-  if (isCheckoutExpired(stored.expiresAt, row.createdAt, fallbackMinutes)) {
+  if (isCheckoutExpired(row.expiresAt, row.createdAt, fallbackMinutes)) {
     return null
   }
   if (row.checkoutUrl) return row.checkoutUrl
@@ -186,10 +182,9 @@ export const startPayment = createServerFn({ method: 'POST' })
       status: 'pending',
       method: data.methodId,
       amount: chargeAmount,
+      currency: 'IDR',
       checkoutUrl: sessionCheckout.url,
-      payload: checkoutPayloadJson({
-        expiresAt: sessionCheckout.expiresAt,
-      }),
+      expiresAt: sessionCheckout.expiresAt ?? null,
     })
 
     return { url: sessionCheckout.url }
@@ -222,7 +217,6 @@ export const simulateStubPayment = createServerFn({ method: 'POST' })
       transactionId: current.transactionId,
       status: 'paid',
       method: current.method ?? 'qris_va',
-      payload: { source: 'simulate' },
     })
     return { ok: true as const }
   })
@@ -280,11 +274,12 @@ export const startEventPayment = createServerFn({ method: 'POST' })
 
     const goodsTotal = Math.max(participant.finalPrice, 0)
     if (goodsTotal <= 0) {
+      const wasConfirmed = participant.status === 'confirmed'
       await db
         .update(eventParticipant)
         .set({ status: 'confirmed', updatedAt: new Date() })
         .where(eq(eventParticipant.id, participant.id))
-      if (participant.promoId && participant.status !== 'confirmed') {
+      if (participant.promoId && !wasConfirmed) {
         const promo = await db.query.eventPromo.findFirst({
           where: eq(eventPromo.id, participant.promoId),
         })
@@ -296,6 +291,13 @@ export const startEventPayment = createServerFn({ method: 'POST' })
               updatedAt: new Date(),
             })
             .where(eq(eventPromo.id, promo.id))
+        }
+      }
+      if (!wasConfirmed) {
+        try {
+          await sendEventRegisteredEmail(participant.id)
+        } catch (error) {
+          console.error('Failed to send event registration email', error)
         }
       }
       return { url: null as string | null, confirmed: true as const }
@@ -413,10 +415,9 @@ export const startEventPayment = createServerFn({ method: 'POST' })
       status: 'pending',
       method: data.methodId,
       amount: chargeAmount,
+      currency: 'IDR',
       checkoutUrl,
-      payload: checkoutPayloadJson({
-        expiresAt: sessionCheckout.expiresAt,
-      }),
+      expiresAt: sessionCheckout.expiresAt ?? null,
     })
 
     return { url: checkoutUrl, confirmed: false as const }
@@ -462,7 +463,6 @@ export const simulateStubEventPayment = createServerFn({ method: 'POST' })
       transactionId: current.transactionId,
       status: 'paid',
       method: current.method ?? 'qris_va',
-      payload: { source: 'simulate' },
     })
 
     return {

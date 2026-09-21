@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '~/lib/db'
+import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
 import { eventParticipant, eventPromo } from '~/lib/event-schema'
 import { loadShopOrderByDbId } from '~/lib/order-load'
 import { orders, payment } from '~/lib/order-schema'
-import { mergePaymentPayload } from '~/lib/payment/checkout-payload'
 import type { PaymentEvent } from '~/lib/payment/types'
 
 export async function applyPaymentEvent(
@@ -26,9 +26,6 @@ export async function applyPaymentEvent(
     .set({
       status: event.status,
       method: event.method ?? row.method,
-      payload: event.payload
-        ? mergePaymentPayload(row.payload, event.payload)
-        : row.payload,
       paidAt,
       updatedAt: new Date(),
     })
@@ -57,6 +54,7 @@ export async function applyPaymentEvent(
       const participant = await db.query.eventParticipant.findFirst({
         where: eq(eventParticipant.id, row.participantId),
       })
+      const wasConfirmed = participant?.status === 'confirmed'
       await db
         .update(eventParticipant)
         .set({
@@ -68,7 +66,7 @@ export async function applyPaymentEvent(
       if (
         event.status === 'paid' &&
         participant?.promoId &&
-        participant.status !== 'confirmed'
+        !wasConfirmed
       ) {
         const promo = await db.query.eventPromo.findFirst({
           where: eq(eventPromo.id, participant.promoId),
@@ -81,6 +79,14 @@ export async function applyPaymentEvent(
               updatedAt: new Date(),
             })
             .where(eq(eventPromo.id, promo.id))
+        }
+      }
+
+      if (event.status === 'paid' && !wasConfirmed) {
+        try {
+          await sendEventRegisteredEmail(row.participantId)
+        } catch (error) {
+          console.error('Failed to send event registration email', error)
         }
       }
     }

@@ -89,9 +89,10 @@ export const payment = sqliteTable(
     status: text('status').default('pending').notNull(),
     method: text('method'),
     amount: integer('amount').notNull(),
+    currency: text('currency').default('IDR').notNull(),
     checkoutUrl: text('checkout_url'),
-    payload: text('payload'),
     paidAt: integer('paid_at', { mode: 'timestamp_ms' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

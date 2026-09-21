@@ -38,7 +38,6 @@ export type PaymentEvent = {
   transactionId: string
   status: PaymentEventStatus
   method?: string
-  payload?: unknown
 }
 
 export type PaymentProvider = {

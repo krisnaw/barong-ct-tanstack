@@ -147,7 +147,6 @@ function eventFromNotification(
     transactionId,
     status,
     method: mapMethod(payload.channel?.id ?? payload.service?.id),
-    payload,
   }
 }
 

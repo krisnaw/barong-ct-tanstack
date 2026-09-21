@@ -48,7 +48,6 @@ export const stubProvider: PaymentProvider = {
         transactionId: body.transactionId,
         status: body.status,
         method: body.method,
-        payload: body,
       }
     } catch {
       return null

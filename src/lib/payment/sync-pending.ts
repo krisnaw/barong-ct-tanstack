@@ -4,10 +4,7 @@ import { db } from '~/lib/db'
 import { event, eventParticipant } from '~/lib/event-schema'
 import { payment } from '~/lib/order-schema'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
-import {
-  isCheckoutExpired,
-  parseCheckoutPayload,
-} from '~/lib/payment/checkout-payload'
+import { isCheckoutExpired } from '~/lib/payment/expiry'
 import {
   checkDokuPaymentStatus,
   DOKU_PAYMENT_DUE_MINUTES,
@@ -24,9 +21,8 @@ function paymentCreatedAt(row: typeof payment.$inferSelect) {
 }
 
 function isPaymentPastDue(row: typeof payment.$inferSelect) {
-  const { expiresAt } = parseCheckoutPayload(row.payload)
   return isCheckoutExpired(
-    expiresAt,
+    row.expiresAt,
     row.createdAt,
     DOKU_PAYMENT_DUE_MINUTES,
   )
@@ -40,14 +36,12 @@ async function resolvePastDueStatus(row: typeof payment.$inferSelect) {
         | 'paid'
         | 'expired',
       method: event?.method ?? row.method ?? undefined,
-      payload: event?.payload ?? { source: 'cron' },
     }
   }
 
   return {
     status: 'expired' as const,
     method: row.method ?? undefined,
-    payload: { source: 'cron' },
   }
 }
 
@@ -84,7 +78,6 @@ export async function syncPendingPayments() {
         transactionId: row.transactionId,
         status: resolved.status,
         method: resolved.method,
-        payload: resolved.payload,
       })
       updated += 1
     } catch (error) {
@@ -134,12 +127,6 @@ export async function syncUnpaidEventPayments() {
         transactionId: row.transactionId,
         status: resolved.status,
         method: resolved.method,
-        payload: {
-          ...(resolved.payload && typeof resolved.payload === 'object'
-            ? (resolved.payload as Record<string, unknown>)
-            : { source: 'cron' }),
-          scope: 'event',
-        },
       })
       updated += 1
     } catch (error) {
@@ -192,12 +179,6 @@ export async function syncUnpaidEventPayments() {
           transactionId: row.transactionId,
           status: resolved.status,
           method: resolved.method,
-          payload: {
-            ...(resolved.payload && typeof resolved.payload === 'object'
-              ? (resolved.payload as Record<string, unknown>)
-              : { source: 'cron' }),
-            scope: 'event',
-          },
         })
         if (resolved.status === 'paid') {
           confirmed += 1
