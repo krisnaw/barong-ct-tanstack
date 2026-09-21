@@ -4,10 +4,13 @@ import {
   columnFilteringFeature,
   createColumnHelper,
   createFilteredRowModel,
+  createPaginatedRowModel,
   filterFn_includesString,
+  rowPaginationFeature,
   tableFeatures,
   useTable,
   type ColumnFiltersState,
+  type PaginationState,
 } from '@tanstack/react-table'
 import {
   Breadcrumb,
@@ -49,6 +52,10 @@ import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import {
+  TABLE_PAGE_SIZE,
+  TablePagination,
+} from '~/components/table-pagination'
+import {
   adminUserRoles,
   listUsers,
   markUserVerified,
@@ -60,6 +67,8 @@ import {
 const features = tableFeatures({
   columnFilteringFeature,
   filteredRowModel: createFilteredRowModel(),
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
   filterFns: { includesString: filterFn_includesString },
 })
 
@@ -96,15 +105,21 @@ function DashboardUsersPage() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: TABLE_PAGE_SIZE,
+  })
   const table = useTable({
     features,
     data: users,
     columns,
     getRowId: (row) => row.id,
-    state: { columnFilters },
+    state: { columnFilters, pagination },
     onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
   })
   const rows = table.getRowModel().rows
+  const pageCount = table.getPageCount()
 
   return (
     <>
@@ -182,6 +197,14 @@ function DashboardUsersPage() {
             </TableBody>
           </Table>
         </div>
+
+        <TablePagination
+          onPageChange={(pageIndex) =>
+            table.setPageIndex(pageIndex)
+          }
+          pageCount={pageCount}
+          pageIndex={pagination.pageIndex}
+        />
       </div>
     </>
   )

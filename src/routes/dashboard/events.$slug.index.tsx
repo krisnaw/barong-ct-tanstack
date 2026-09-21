@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
 import { type EventStatus } from '~/data/events'
 import {
@@ -19,6 +20,10 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
+import {
+  TABLE_PAGE_SIZE,
+  TablePagination,
+} from '~/components/table-pagination'
 
 const eventStatusStyles: Record<EventStatus, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -70,6 +75,13 @@ function DashboardEventDetailPage() {
   const { event, participants } = Route.useLoaderData()
   const isFlagship = event.kind === 'flagship'
   const isPaid = event.kind === 'paid' || isFlagship
+  const [pageIndex, setPageIndex] = React.useState(0)
+  const pageCount = Math.max(1, Math.ceil(participants.length / TABLE_PAGE_SIZE))
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
+  const pageParticipants = participants.slice(
+    safePageIndex * TABLE_PAGE_SIZE,
+    safePageIndex * TABLE_PAGE_SIZE + TABLE_PAGE_SIZE,
+  )
 
   return (
     <>
@@ -173,40 +185,50 @@ function DashboardEventDetailPage() {
               No one has registered for this event yet.
             </p>
           ) : (
-            <div className="mt-3 overflow-x-auto border border-border">
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead className="border-b border-border bg-muted/40">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">Name</th>
-                    <th className="px-4 py-2.5 font-medium">Email</th>
-                    {!isFlagship ? (
-                      <th className="px-4 py-2.5 font-medium">Phone</th>
-                    ) : null}
-                    {isFlagship ? (
-                      <>
-                        <th className="px-4 py-2.5 font-medium">Category</th>
-                        <th className="px-4 py-2.5 font-medium">Group</th>
-                        <th className="px-4 py-2.5 font-medium">Jersey</th>
-                      </>
-                    ) : null}
-                    {isPaid ? (
-                      <th className="px-4 py-2.5 font-medium">Payment</th>
-                    ) : null}
-                    <th className="px-4 py-2.5 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {participants.map((participant) => (
-                    <ParticipantRow
-                      eventSlug={event.slug}
-                      isFlagship={isFlagship}
-                      isPaid={isPaid}
-                      key={participant.id}
-                      participant={participant}
-                    />
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-3 flex flex-col gap-4">
+              <div className="overflow-x-auto border border-border">
+                <table className="w-full min-w-[40rem] text-left text-sm">
+                  <thead className="border-b border-border bg-muted/40">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Name</th>
+                      <th className="px-4 py-2.5 font-medium">Email</th>
+                      {!isFlagship ? (
+                        <th className="px-4 py-2.5 font-medium">Phone</th>
+                      ) : null}
+                      {isFlagship ? (
+                        <>
+                          <th className="px-4 py-2.5 font-medium">Category</th>
+                          <th className="px-4 py-2.5 font-medium">Group</th>
+                          <th className="px-4 py-2.5 font-medium">Jersey</th>
+                        </>
+                      ) : null}
+                      {isPaid ? (
+                        <th className="px-4 py-2.5 font-medium">Payment</th>
+                      ) : null}
+                      <th className="px-4 py-2.5 font-medium">Status</th>
+                      <th className="px-4 py-2.5 text-right font-medium">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {pageParticipants.map((participant) => (
+                      <ParticipantRow
+                        eventSlug={event.slug}
+                        isFlagship={isFlagship}
+                        isPaid={isPaid}
+                        key={participant.id}
+                        participant={participant}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <TablePagination
+                onPageChange={setPageIndex}
+                pageCount={pageCount}
+                pageIndex={safePageIndex}
+              />
             </div>
           )}
         </section>
@@ -230,16 +252,8 @@ function ParticipantRow({
     participant.status === 'confirmed' || participant.finalPrice === 0
 
   return (
-    <tr className="relative hover:bg-muted/30">
-      <td className="px-4 py-3 font-medium">
-        <Link
-          className="after:absolute after:inset-0"
-          params={{ slug: eventSlug, participantId: participant.id }}
-          to="/dashboard/events/$slug/participants/$participantId"
-        >
-          {participant.userName}
-        </Link>
-      </td>
+    <tr className="hover:bg-muted/30">
+      <td className="px-4 py-3 font-medium">{participant.userName}</td>
       <td className="px-4 py-3 text-muted-foreground">
         {participant.userEmail}
       </td>
@@ -260,6 +274,15 @@ function ParticipantRow({
       ) : null}
       <td className="px-4 py-3">
         <ParticipantStatusBadge status={participant.status} />
+      </td>
+      <td className="px-4 py-3 text-right">
+        <Link
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+          params={{ slug: eventSlug, participantId: participant.id }}
+          to="/dashboard/events/$slug/participants/$participantId"
+        >
+          Detail
+        </Link>
       </td>
     </tr>
   )
