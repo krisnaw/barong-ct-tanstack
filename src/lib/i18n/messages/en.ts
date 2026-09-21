@@ -91,6 +91,6 @@ export const en: Messages = {
     distance: 'Distance',
     start: 'Start',
     field: 'Field',
-    viewRecap: 'View recap',
+    viewRecap: 'View event',
   },
 }

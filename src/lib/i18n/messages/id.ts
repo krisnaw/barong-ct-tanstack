@@ -91,6 +91,6 @@ export const id: Messages = {
     distance: 'Jarak',
     start: 'Start',
     field: 'Peserta',
-    viewRecap: 'Lihat recap',
+    viewRecap: 'Lihat acara',
   },
 }

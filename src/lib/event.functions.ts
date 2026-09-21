@@ -20,9 +20,11 @@ import {
 } from '~/data/events'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
+import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
+import { formatEventDateLabel } from '~/lib/event-datetime'
 
 const eventKindSchema = z.enum(['free', 'paid', 'flagship'])
-const eventStatusSchema = z.enum(['draft', 'open', 'closed'])
+const eventStatusSchema = z.enum(['draft', 'open', 'closed', 'archived'])
 
 const categoryInputSchema = z.object({
   name: z.string().min(1),
@@ -65,16 +67,6 @@ const updateEventSchema = createEventSchema.extend({
 type EventRow = typeof event.$inferSelect
 type CategoryRow = typeof eventCategory.$inferSelect
 
-function formatEventDate(isoDate: string) {
-  const parsed = new Date(`${isoDate}T12:00:00`)
-  if (Number.isNaN(parsed.getTime())) return isoDate
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(parsed)
-}
-
 function blurbFromDescription(description: string) {
   const trimmed = description.trim()
   if (!trimmed) return ''
@@ -109,7 +101,7 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    date: formatEventDate(row.eventDate),
+    date: formatEventDateLabel(row.eventDate),
     time: `${row.eventTime} ${row.timeZone}`.trim(),
     location: row.locationName,
     locationAddress: row.locationAddress ?? undefined,
@@ -171,7 +163,9 @@ async function loadEventBySlug(slug: string, includeDraft: boolean) {
     },
   })
   if (!row) return null
-  if (!includeDraft && row.status === 'draft') return null
+  if (!includeDraft && (row.status === 'draft' || row.status === 'archived')) {
+    return null
+  }
   return mapClubEvent(row, row.categories)
 }
 
@@ -200,7 +194,9 @@ export const listEvents = createServerFn({ method: 'GET' })
     return rows
       .filter((row) => {
         if (data?.status) return row.status === data.status
-        if (!includeDraft) return row.status !== 'draft'
+        if (!includeDraft) {
+          return row.status === 'open' || row.status === 'closed'
+        }
         return true
       })
       .map((row) => mapClubEvent(row, row.categories))
@@ -748,6 +744,7 @@ export const updateEventParticipant = createServerFn({ method: 'POST' })
     const serviceFee =
       categoryChanged && category ? category.serviceFee : row.serviceFee
     const finalPrice = Math.max(0, price + serviceFee - row.discountAmount)
+    const wasConfirmed = row.status === 'confirmed'
 
     await db
       .update(eventParticipant)
@@ -763,6 +760,14 @@ export const updateEventParticipant = createServerFn({ method: 'POST' })
         updatedAt: new Date(),
       })
       .where(eq(eventParticipant.id, row.id))
+
+    if (data.status === 'confirmed' && !wasConfirmed) {
+      try {
+        await sendEventRegisteredEmail(row.id)
+      } catch (error) {
+        console.error('Failed to send event registration email', error)
+      }
+    }
 
     return { ok: true as const }
   })
@@ -1439,6 +1444,7 @@ export const registerForEvent = createServerFn({ method: 'POST' })
     })
 
     if (existing) {
+      const wasConfirmed = existing.status === 'confirmed'
       await db
         .update(eventParticipant)
         .set({
@@ -1456,6 +1462,13 @@ export const registerForEvent = createServerFn({ method: 'POST' })
           updatedAt: new Date(),
         })
         .where(eq(eventParticipant.id, existing.id))
+      if (data.status === 'confirmed' && !wasConfirmed) {
+        try {
+          await sendEventRegisteredEmail(existing.id)
+        } catch (error) {
+          console.error('Failed to send event registration email', error)
+        }
+      }
       return { id: existing.id, status: data.status, finalPrice }
     }
 
@@ -1476,6 +1489,14 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       discountAmount: promo.discountAmount,
       finalPrice,
     })
+
+    if (data.status === 'confirmed') {
+      try {
+        await sendEventRegisteredEmail(id)
+      } catch (error) {
+        console.error('Failed to send event registration email', error)
+      }
+    }
 
     return { id, status: data.status, finalPrice }
   })

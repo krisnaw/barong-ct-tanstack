@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import { type ClubEvent, type EventStatus, eventImageSrc } from '~/data/events'
-import { pastEvents } from '~/data/recaps'
 import { cn } from '~/lib/utils'
 
 export type EventsTab = 'active' | 'past'
@@ -9,12 +8,18 @@ const statusLabel: Record<EventStatus, string> = {
   draft: 'Draft',
   open: 'Open',
   closed: 'Closed',
+  archived: 'Archived',
 }
 
 const statusStyles: Record<EventStatus, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
   open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+  archived: 'border-amber-200 bg-amber-50 text-amber-900',
+}
+
+function byEventDateDesc(a: ClubEvent, b: ClubEvent) {
+  return (b.eventDate ?? '').localeCompare(a.eventDate ?? '')
 }
 
 export function EventsList({
@@ -26,7 +31,10 @@ export function EventsList({
 }) {
   const isPast = tab === 'past'
   const activeEvents = events.filter((event) => event.status === 'open')
-  const count = isPast ? pastEvents.length : activeEvents.length
+  const pastEvents = events
+    .filter((event) => event.status === 'closed')
+    .sort(byEventDateDesc)
+  const shown = isPast ? pastEvents : activeEvents
 
   return (
     <section className="px-5 py-10 sm:px-8 sm:py-12 lg:px-12">
@@ -40,9 +48,9 @@ export function EventsList({
           </h1>
         </div>
         <p className="max-w-sm text-sm text-muted-foreground">
-          {count} {isPast ? 'past' : 'active'}{' '}
-          {count === 1 ? 'event' : 'events'}
-          {isPast ? ' · Recaps' : ' · Register for open rides'}
+          {shown.length} {isPast ? 'past' : 'active'}{' '}
+          {shown.length === 1 ? 'event' : 'events'}
+          {isPast ? ' · Closed rides' : ' · Register for open rides'}
         </p>
       </div>
 
@@ -59,11 +67,14 @@ export function EventsList({
         </TabLink>
       </div>
 
-      {isPast ? (
-        <PastEventsRows />
-      ) : (
-        <ActiveEventsRows events={activeEvents} />
-      )}
+      <EventRows
+        emptyMessage={
+          isPast
+            ? 'No past events yet.'
+            : 'No active or upcoming events right now.'
+        }
+        events={shown}
+      />
     </section>
   )
 }
@@ -95,9 +106,15 @@ function TabLink({
   )
 }
 
-function ActiveEventsRows({ events }: { events: ClubEvent[] }) {
+function EventRows({
+  events,
+  emptyMessage,
+}: {
+  events: ClubEvent[]
+  emptyMessage: string
+}) {
   if (events.length === 0) {
-    return <EmptyState message="No active or upcoming events right now." />
+    return <EmptyState message={emptyMessage} />
   }
 
   return (
@@ -134,77 +151,6 @@ function ActiveEventsRows({ events }: { events: ClubEvent[] }) {
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
             </div>
-
-            <dl className="shrink-0 text-right text-sm sm:flex sm:items-center sm:gap-8">
-              <div className="hidden sm:block">
-                <dt className="sr-only">Distance</dt>
-                <dd className="font-medium whitespace-nowrap tabular-nums">
-                  {event.distance}
-                </dd>
-              </div>
-              <div>
-                <dt className="sr-only">Fee</dt>
-                <dd className="whitespace-nowrap text-muted-foreground sm:min-w-[9rem]">
-                  {event.fee ?? 'Free'}
-                </dd>
-              </div>
-            </dl>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function PastEventsRows() {
-  if (pastEvents.length === 0) {
-    return <EmptyState message="No past event recaps yet." />
-  }
-
-  return (
-    <ul className="divide-y divide-border border-b border-border">
-      {pastEvents.map((event) => (
-        <li key={event.slug}>
-          <Link
-            className="group flex items-center gap-4 py-3 outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 sm:gap-5 sm:py-3.5"
-            params={{ slug: event.slug }}
-            to="/recaps/$slug"
-          >
-            <img
-              alt=""
-              className="size-14 shrink-0 object-cover sm:size-16"
-              decoding="async"
-              height={128}
-              src={`${event.image}&w=128&h=128&q=70`}
-              width={128}
-            />
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-heading text-base font-semibold tracking-tight sm:truncate sm:text-lg">
-                  {event.name}
-                </h2>
-                <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-zinc-600 uppercase">
-                  Recap
-                </span>
-              </div>
-              <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
-            </div>
-
-            <dl className="shrink-0 text-right text-sm sm:flex sm:items-center sm:gap-8">
-              <div className="hidden sm:block">
-                <dt className="sr-only">Distance</dt>
-                <dd className="font-medium whitespace-nowrap tabular-nums">
-                  {event.distance}
-                </dd>
-              </div>
-              <div>
-                <dt className="sr-only">Field</dt>
-                <dd className="whitespace-nowrap text-muted-foreground">
-                  {event.highlight}
-                </dd>
-              </div>
-            </dl>
           </Link>
         </li>
       ))}

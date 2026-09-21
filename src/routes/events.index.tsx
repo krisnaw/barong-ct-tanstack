@@ -13,7 +13,7 @@ export const Route = createFileRoute('/events/')({
   pendingComponent: EventsListSkeleton,
   pendingMs: 150,
   validateSearch: eventsSearchSchema,
-  loader: () => listEvents({ data: { status: 'open' } }),
+  loader: () => listEvents(),
   head: () => ({
     meta: seo({
       title: 'Events | Barong Cycling Team',

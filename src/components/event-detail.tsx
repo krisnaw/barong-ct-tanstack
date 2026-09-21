@@ -31,6 +31,7 @@ const statusLabel: Record<EventStatus, string> = {
   draft: 'Draft',
   open: 'Registration open',
   closed: 'Registration closed',
+  archived: 'Archived',
 }
 
 export function EventDetail({

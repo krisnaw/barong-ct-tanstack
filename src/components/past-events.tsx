@@ -1,11 +1,21 @@
 import { ArrowUpRightIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
-import { pastEvents, type PastEvent } from '~/data/recaps'
+import { type ClubEvent, eventImageSrc } from '~/data/events'
 import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
-export function PastEvents() {
+function eventYear(event: ClubEvent) {
+  if (event.eventDate) {
+    const year = Number(event.eventDate.slice(0, 4))
+    if (!Number.isNaN(year)) return String(year)
+  }
+  const match = event.date.match(/\b(20\d{2})\b/)
+  return match?.[1] ?? ''
+}
+
+export function PastEvents({ events }: { events: ClubEvent[] }) {
   const t = useTranslations()
+  const featuredSlug = events[0]?.slug
 
   return (
     <section
@@ -27,22 +37,41 @@ export function PastEvents() {
         </p>
       </div>
 
-      <ul className="grid gap-4 lg:grid-cols-5 lg:gap-5">
-        {pastEvents.map((event) => (
-          <li
-            className={event.featured ? 'lg:col-span-3' : 'lg:col-span-2'}
-            key={event.slug}
-          >
-            <EventCard event={event} />
-          </li>
-        ))}
-      </ul>
+      {events.length === 0 ? (
+        <p className="border-y border-border py-10 text-sm text-muted-foreground">
+          No past events yet.
+        </p>
+      ) : (
+        <ul className="grid gap-4 lg:grid-cols-5 lg:gap-5">
+          {events.map((event) => {
+            const featured = event.slug === featuredSlug
+            return (
+              <li
+                className={featured ? 'lg:col-span-3' : 'lg:col-span-2'}
+                key={event.slug}
+              >
+                <EventCard event={event} featured={featured} />
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </section>
   )
 }
 
-function EventCard({ event }: { event: PastEvent }) {
+function EventCard({
+  event,
+  featured,
+}: {
+  event: ClubEvent
+  featured: boolean
+}) {
   const t = useTranslations()
+  const year = eventYear(event)
+  const highlight = event.capacity
+    ? `${event.capacity} riders`
+    : (event.fee ?? 'Free')
 
   return (
     <Link
@@ -53,7 +82,7 @@ function EventCard({ event }: { event: PastEvent }) {
         'motion-reduce:transition-none',
       )}
       params={{ slug: event.slug }}
-      to="/recaps/$slug"
+      to="/events/$slug"
     >
       <img
         alt={event.imageAlt}
@@ -61,26 +90,28 @@ function EventCard({ event }: { event: PastEvent }) {
         decoding="async"
         height={1200}
         sizes={
-          event.featured
+          featured
             ? '(min-width: 1024px) 60vw, 100vw'
             : '(min-width: 1024px) 40vw, 100vw'
         }
-        src={`${event.image}&w=1200&q=75`}
-        srcSet={`${event.image}&w=800&q=70 800w, ${event.image}&w=1200&q=75 1200w, ${event.image}&w=1800&q=80 1800w`}
+        src={eventImageSrc(event.image, 1200)}
+        srcSet={`${eventImageSrc(event.image, 800)} 800w, ${eventImageSrc(event.image, 1200)} 1200w, ${eventImageSrc(event.image, 1800)} 1800w`}
         width={1800}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/55 to-foreground/15" />
 
-      <span
-        aria-hidden
-        className="pointer-events-none absolute top-4 right-4 font-heading text-[clamp(4.5rem,12vw,8rem)] leading-none font-semibold tracking-[-0.08em] text-white/15"
-      >
-        {event.year}
-      </span>
+      {year ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-4 right-4 font-heading text-[clamp(4.5rem,12vw,8rem)] leading-none font-semibold tracking-[-0.08em] text-white/15"
+        >
+          {year}
+        </span>
+      ) : null}
 
       <div className="relative z-10 flex flex-col gap-5 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
-          {event.featured ? (
+          {featured ? (
             <span className="rounded-full bg-white px-2.5 py-0.5 text-[0.65rem] font-medium tracking-[0.16em] text-foreground uppercase">
               {t.events.latest}
             </span>
@@ -116,7 +147,7 @@ function EventCard({ event }: { event: PastEvent }) {
             <dt className="text-[0.65rem] tracking-[0.16em] text-white/50 uppercase">
               {t.events.field}
             </dt>
-            <dd className="mt-1 font-heading font-medium">{event.highlight}</dd>
+            <dd className="mt-1 font-heading font-medium">{highlight}</dd>
           </div>
         </dl>
 

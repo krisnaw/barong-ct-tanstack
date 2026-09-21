@@ -1,4 +1,4 @@
-export type EventStatus = 'draft' | 'open' | 'closed'
+export type EventStatus = 'draft' | 'open' | 'closed' | 'archived'
 export type EventKind = 'free' | 'paid' | 'flagship'
 export type RegisterStep =
   | 'course'

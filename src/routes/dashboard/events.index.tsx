@@ -39,6 +39,7 @@ import {
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
+import { formatEventWhenParts } from '~/lib/event-datetime'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
@@ -47,18 +48,21 @@ const eventStatusStyles: Record<EventStatus, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
   open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+  archived: 'border-amber-200 bg-amber-50 text-amber-900',
 }
 
 const eventStatusLabel: Record<EventStatus, string> = {
   draft: 'Draft',
   open: 'Open',
   closed: 'Closed',
+  archived: 'Archived',
 }
 
 const statusSelectItems = [
   { value: 'draft', label: 'Draft' },
   { value: 'open', label: 'Open' },
   { value: 'closed', label: 'Closed' },
+  { value: 'archived', label: 'Archived' },
 ] as const
 
 export const Route = createFileRoute('/dashboard/events/')({
@@ -145,7 +149,7 @@ function DashboardEventsPage() {
                       {event.name}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {event.date}
+                      <EventWhenCell event={event} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <span
@@ -168,6 +172,21 @@ function DashboardEventsPage() {
         )}
       </div>
     </>
+  )
+}
+
+function EventWhenCell({ event }: { event: ClubEvent }) {
+  const { date, time } = formatEventWhenParts(
+    event.eventDate,
+    event.eventTime,
+    event.timeZone,
+  )
+
+  return (
+    <div className="leading-snug">
+      <p>{date}</p>
+      <p className="text-xs text-muted-foreground">{time}</p>
+    </div>
   )
 }
 

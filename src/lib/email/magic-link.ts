@@ -25,7 +25,7 @@ export async function sendMagicLinkEmail({
 
   await sendEmail({
     to,
-    subject: 'Your Barong CT sign-in link',
+    subject: 'Sign in to your account',
     html,
     text,
   })
