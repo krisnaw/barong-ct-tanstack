@@ -164,9 +164,12 @@ export function EventDetailSkeleton() {
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.4fr_1fr] lg:gap-12 lg:px-12 lg:py-12">
         <div>
           <Skeleton className="aspect-[4/5] w-full rounded-none" />
-          <Skeleton className="mt-6 h-3 w-28" />
-          <Skeleton className="mt-2 h-10 w-3/4 max-w-md" />
-          <div className="mt-3 space-y-2">
+          <Skeleton className="mt-6 h-10 w-3/4 max-w-md" />
+          <div className="mt-5 flex gap-3 border-b border-border pb-2.5">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="mt-4 space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <Skeleton className="h-4 w-2/3" />

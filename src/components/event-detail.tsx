@@ -8,7 +8,6 @@ import {
 import { Link } from '@tanstack/react-router'
 import {
   type ClubEvent,
-  type EventStatus,
   eventImageSrc,
   firstStepForKind,
   formatIdr,
@@ -28,12 +27,7 @@ import { Button, buttonVariants } from '~/components/ui/button'
 import { HtmlContent } from '~/components/html-content'
 import { cn } from '~/lib/utils'
 
-const statusLabel: Record<EventStatus, string> = {
-  draft: 'Draft',
-  open: 'Registration open',
-  closed: 'Registration closed',
-  archived: 'Archived',
-}
+type DetailTab = 'description' | 'regulation'
 
 export function EventDetail({
   event,
@@ -45,8 +39,11 @@ export function EventDetail({
   const canRegister = event.status === 'open'
   const [draft, setDraft] = React.useState<RegisterDraft | null>(null)
   const [copied, setCopied] = React.useState(false)
+  const [tab, setTab] = React.useState<DetailTab>('description')
   const courses = event.courses ?? []
   const hasMultipleCategories = courses.length > 1
+  const regulation = event.regulation?.trim() ?? ''
+  const hasRegulation = Boolean(regulation)
 
   React.useEffect(() => {
     const loaded = loadDraft(event.slug)
@@ -133,13 +130,40 @@ export function EventDetail({
             width={1080}
           />
 
-          <p className="mt-6 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-            {statusLabel[event.status]}
-          </p>
-          <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+          <h1 className="mt-6 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
             {event.name}
           </h1>
-          <HtmlContent className="mt-3 max-w-2xl" html={event.description} />
+
+          <div
+            aria-label="Event details"
+            className="mt-5 flex gap-1 border-b border-border"
+            role="tablist"
+          >
+            <DetailTabButton
+              active={tab === 'description'}
+              onClick={() => setTab('description')}
+            >
+              Description
+            </DetailTabButton>
+            <DetailTabButton
+              active={tab === 'regulation'}
+              onClick={() => setTab('regulation')}
+            >
+              Regulation
+            </DetailTabButton>
+          </div>
+
+          <div className="mt-4 max-w-2xl" role="tabpanel">
+            {tab === 'description' ? (
+              <HtmlContent html={event.description} />
+            ) : hasRegulation ? (
+              <HtmlContent html={regulation} />
+            ) : (
+              <p className="leading-relaxed text-muted-foreground">
+                No regulation published for this event yet.
+              </p>
+            )}
+          </div>
 
           <dl className="mt-8 grid gap-4 border-y border-border py-5 sm:grid-cols-2">
             <Fact
@@ -271,6 +295,33 @@ export function EventDetail({
         </aside>
       </div>
     </article>
+  )
+}
+
+function DetailTabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      aria-selected={active}
+      className={cn(
+        '-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors',
+        active
+          ? 'border-foreground font-medium text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground',
+      )}
+      onClick={onClick}
+      role="tab"
+      type="button"
+    >
+      {children}
+    </button>
   )
 }
 
