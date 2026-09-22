@@ -4,7 +4,7 @@ import { env } from 'cloudflare:workers'
 import { z } from 'zod'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
-import { catalogueObjectKey } from '~/lib/catalogue-image'
+import { catalogueImagePath, catalogueObjectKey } from '~/lib/catalogue-image'
 
 const MAX_BYTES = 5 * 1024 * 1024
 
@@ -26,11 +26,6 @@ async function requireAdmin() {
     throw new Error('Unauthorized')
   }
   return session
-}
-
-function publicCatalogueImageUrl(imageId: string) {
-  const base = (env.BETTER_AUTH_URL || '').replace(/\/$/, '')
-  return `${base}/api/catalogue-images/${imageId}?v=${Date.now()}`
 }
 
 function decodeBase64(data: string) {
@@ -65,6 +60,6 @@ export const uploadCatalogueImage = createServerFn({ method: 'POST' })
 
     return {
       imageId,
-      url: publicCatalogueImageUrl(imageId),
+      url: catalogueImagePath(imageId),
     }
   })

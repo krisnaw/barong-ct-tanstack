@@ -22,6 +22,7 @@ import { lineItems, orders, payment } from 'db/schemas/order'
 import { pickupPoint, product } from 'db/schemas/shop'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
+import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
 import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
 import { orderLookupIds } from '~/lib/payment/order-search'
@@ -148,7 +149,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         stockBySize,
         preOrder: row.preOrder,
         membersOnly: row.membersOnly,
-        image: row.image,
+        image: normalizeStoredImageRef(row.image),
         images: [],
         imageAlt: row.imageAlt,
       }
@@ -171,7 +172,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         size: line.size,
         quantity: line.quantity,
         price: row.price,
-        image: row.image,
+        image: normalizeStoredImageRef(row.image),
         preOrder: row.preOrder,
         custom: line.size === CUSTOM_SIZE ? line.custom : undefined,
       }

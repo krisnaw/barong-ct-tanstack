@@ -25,3 +25,12 @@ export function emailPublicBaseUrl() {
 export function emailLogoUrl() {
   return `${emailPublicBaseUrl()}/barong-no-bg.png`
 }
+
+/** Turn a site-relative path into an absolute URL for email clients. */
+export function emailAbsoluteUrl(pathOrUrl: string) {
+  const value = pathOrUrl.trim()
+  if (!value) return value
+  if (/^https?:\/\//i.test(value)) return value
+  const base = emailPublicBaseUrl()
+  return `${base}${value.startsWith('/') ? '' : '/'}${value}`
+}

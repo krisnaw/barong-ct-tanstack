@@ -10,6 +10,7 @@ import {
   type ShopPayment,
 } from '~/data/orders'
 import type { CustomMeasurements } from '~/data/shop'
+import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
 import { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 
@@ -78,7 +79,7 @@ function mapLine(row: typeof lineItems.$inferSelect): ShopOrderLine {
     size: row.size,
     quantity: row.quantity,
     price: row.price,
-    image: row.image,
+    image: normalizeStoredImageRef(row.image),
     custom,
     preOrder: row.preOrder,
   }

@@ -56,9 +56,25 @@ export type ClubEvent = {
   registrationClosesAt?: string
 }
 
+function eventImageHref(image: string) {
+  const trimmed = image.trim()
+  if (!trimmed) return trimmed
+  if (!/^https?:\/\//i.test(trimmed)) return trimmed
+  try {
+    const url = new URL(trimmed)
+    if (url.pathname.startsWith('/api/catalogue-images/')) {
+      return url.pathname
+    }
+  } catch {
+    // keep original
+  }
+  return trimmed
+}
+
 export function eventImageSrc(image: string, width: number) {
-  const separator = image.includes('?') ? '&' : '?'
-  return `${image}${separator}w=${width}&q=75`
+  const href = eventImageHref(image)
+  const separator = href.includes('?') ? '&' : '?'
+  return `${href}${separator}w=${width}&q=75`
 }
 
 export function formatIdr(amount: number) {

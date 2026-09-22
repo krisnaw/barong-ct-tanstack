@@ -9,7 +9,7 @@ import {
   type ShopOrder,
 } from '~/data/orders'
 import { OrderPaid, orderPaidEmailCopy } from '~/emails/order-paid'
-import { emailLogoUrl, emailPublicBaseUrl } from '~/lib/email/public-url'
+import { emailAbsoluteUrl, emailLogoUrl, emailPublicBaseUrl } from '~/lib/email/public-url'
 import { sendEmail } from '~/lib/email/send'
 
 function addressLines(order: ShopOrder) {
@@ -58,7 +58,7 @@ export async function sendOrderPaidEmail(order: ShopOrder) {
       ]
         .filter(Boolean)
         .join(' · '),
-      image: shopImageSrc(line.image, 96),
+      image: emailAbsoluteUrl(shopImageSrc(line.image, 96)),
       price: formatShopPrice(line.price * line.quantity),
     })),
     total: formatShopPrice(order.total),

@@ -20,6 +20,7 @@ import {
 } from '~/data/events'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
+import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 import { formatEventDateLabel } from '~/lib/event-datetime'
 import { stripHtml } from '~/lib/rich-html'
@@ -115,11 +116,17 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
     blurb: blurbFromDescription(row.description),
     description: row.description,
     regulation: row.regulation ?? undefined,
-    image:
-      row.featureImage?.trim() ||
-      'https://images.unsplash.com/photo-1517649763962-0c623066027e?auto=format&fit=crop',
+    image: (() => {
+      const feature = row.featureImage?.trim()
+      if (!feature) {
+        return 'https://images.unsplash.com/photo-1517649763962-0c623066027e?auto=format&fit=crop'
+      }
+      return normalizeStoredImageRef(feature)
+    })(),
     imageAlt: row.featureImageAlt?.trim() || row.name,
-    featureImage: row.featureImage,
+    featureImage: row.featureImage
+      ? normalizeStoredImageRef(row.featureImage)
+      : row.featureImage,
     fee: feeAmount > 0 ? formatIdr(feeAmount) : 'Free',
     feeAmount,
     capacity: capacity != null ? String(capacity) : undefined,
@@ -284,7 +291,9 @@ export const createEvent = createServerFn({ method: 'POST' })
         name: data.name.trim(),
         description: data.description.trim(),
         regulation: data.regulation?.trim() || null,
-        featureImage: data.featureImage?.trim() || null,
+        featureImage: data.featureImage?.trim()
+          ? normalizeStoredImageRef(data.featureImage)
+          : null,
         featureImageAlt: data.featureImageAlt?.trim() || null,
         kind: data.kind,
         status: data.status,
@@ -394,7 +403,9 @@ export const updateEvent = createServerFn({ method: 'POST' })
         name: data.name.trim(),
         description: data.description.trim(),
         regulation: data.regulation?.trim() || null,
-        featureImage: data.featureImage?.trim() || null,
+        featureImage: data.featureImage?.trim()
+          ? normalizeStoredImageRef(data.featureImage)
+          : null,
         featureImageAlt: data.featureImageAlt?.trim() || null,
         kind: data.kind,
         status: data.status,

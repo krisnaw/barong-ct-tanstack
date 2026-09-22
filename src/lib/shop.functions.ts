@@ -7,6 +7,7 @@ import { product, productSize } from 'db/schemas/shop'
 import type { ShopProduct } from '~/data/shop'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
+import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 
 const sizeStockSchema = z.object({
   size: z.string().min(1),
@@ -55,7 +56,7 @@ function mapProduct(
   for (const size of ordered) {
     stockBySize[size.size] = size.stock
   }
-  const images = parseJsonArray(row.images)
+  const images = parseJsonArray(row.images).map(normalizeStoredImageRef)
   return {
     id: row.id,
     slug: row.slug,
@@ -71,8 +72,8 @@ function mapProduct(
     preOrder: row.preOrder,
     membersOnly: row.membersOnly,
     active: row.active,
-    image: row.image,
-    images: images.length > 0 ? images : [row.image],
+    image: normalizeStoredImageRef(row.image),
+    images: images.length > 0 ? images : [normalizeStoredImageRef(row.image)],
     imageAlt: row.imageAlt,
   }
 }
@@ -169,8 +170,10 @@ export const createProduct = createServerFn({ method: 'POST' })
       throw new Error('A product with this slug already exists')
     }
 
-    const images =
+    const images = (
       data.images.length > 0 ? data.images : data.image ? [data.image] : []
+    ).map(normalizeStoredImageRef)
+    const image = normalizeStoredImageRef(data.image)
 
     await db.batch([
       db.insert(product).values({
@@ -183,7 +186,7 @@ export const createProduct = createServerFn({ method: 'POST' })
         description: data.description.trim(),
         fabric: data.fabric?.trim() || '',
         features: JSON.stringify(data.features),
-        image: data.image.trim(),
+        image,
         images: JSON.stringify(images),
         imageAlt: data.imageAlt.trim(),
         preOrder: data.preOrder,
@@ -238,8 +241,10 @@ export const updateProduct = createServerFn({ method: 'POST' })
       }
     }
 
-    const images =
+    const images = (
       data.images.length > 0 ? data.images : data.image ? [data.image] : []
+    ).map(normalizeStoredImageRef)
+    const image = normalizeStoredImageRef(data.image)
 
     const statements = [
       db
@@ -253,7 +258,7 @@ export const updateProduct = createServerFn({ method: 'POST' })
           description: data.description.trim(),
           fabric: data.fabric?.trim() || existing.fabric,
           features: JSON.stringify(data.features),
-          image: data.image.trim(),
+          image,
           images: JSON.stringify(images),
           imageAlt: data.imageAlt.trim(),
           preOrder: data.preOrder,

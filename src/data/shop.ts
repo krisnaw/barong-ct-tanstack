@@ -42,12 +42,29 @@ export function customMeasurementsComplete(custom: CustomMeasurements) {
   )
 }
 
-export function shopImageSrc(image: string, width: number) {
-  const separator = image.includes('?') ? '&' : '?'
-  if (image.includes('cdn.shopify.com')) {
-    return `${image}${separator}width=${width}`
+function shopImageHref(image: string) {
+  const trimmed = image.trim()
+  if (!trimmed) return trimmed
+  if (trimmed.includes('cdn.shopify.com')) return trimmed
+  if (!/^https?:\/\//i.test(trimmed)) return trimmed
+  try {
+    const url = new URL(trimmed)
+    if (url.pathname.startsWith('/api/catalogue-images/')) {
+      return url.pathname
+    }
+  } catch {
+    // keep original
   }
-  return `${image}${separator}w=${width}&q=75`
+  return trimmed
+}
+
+export function shopImageSrc(image: string, width: number) {
+  const href = shopImageHref(image)
+  const separator = href.includes('?') ? '&' : '?'
+  if (href.includes('cdn.shopify.com')) {
+    return `${href}${separator}width=${width}`
+  }
+  return `${href}${separator}w=${width}&q=75`
 }
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
