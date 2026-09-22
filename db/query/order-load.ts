@@ -11,7 +11,7 @@ import {
 } from '~/data/orders'
 import type { CustomMeasurements } from '~/data/shop'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
-import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
+import { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 
 const customSchema = z.object({
   chest: z.string(),
@@ -52,12 +52,10 @@ function pickCurrentPayment(
 }
 
 function mapPayment(row: typeof payment.$inferSelect): ShopPayment {
-  const fallbackMinutes =
-    row.provider === 'doku' ? DOKU_PAYMENT_DUE_MINUTES : 60
   const checkoutUrl =
     row.checkoutUrl &&
     row.status === 'pending' &&
-    !isCheckoutExpired(row.expiresAt, row.createdAt, fallbackMinutes)
+    !isCheckoutExpired(row.expiresAt, row.createdAt, PAYMENT_DUE_MINUTES)
       ? row.checkoutUrl
       : undefined
   return {

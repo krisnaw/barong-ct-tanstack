@@ -23,12 +23,7 @@ export const ACCOUNT_PROVINCES = [
   'Yogyakarta',
 ] as const
 
-export const ACCOUNT_GENDERS = [
-  'Male',
-  'Female',
-  'Other',
-  'Prefer not to say',
-] as const
+export const ACCOUNT_GENDERS = ['Male', 'Female'] as const
 
 export const ACCOUNT_BLOOD_TYPES = [
   'A+',

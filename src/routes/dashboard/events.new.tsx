@@ -750,9 +750,9 @@ function EventPreview({
         {featureImage?.trim() ? (
           <img
             alt=""
-            className="mb-4 aspect-[16/10] w-full object-cover"
+            className="mb-4 aspect-[4/5] w-full object-cover"
             decoding="async"
-            height={400}
+            height={1000}
             src={eventImageSrc(featureImage.trim(), 800)}
             width={800}
           />

@@ -1,4 +1,5 @@
 export { applyPaymentEvent } from '~/lib/payment/apply-event'
+export { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 export {
   getPaymentDisplay,
   getProvider,

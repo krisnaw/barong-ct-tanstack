@@ -4,11 +4,9 @@ import { db } from 'db'
 import { event, eventParticipant } from 'db/schemas/event'
 import { payment } from 'db/schemas/order'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
+import { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
-import {
-  checkDokuPaymentStatus,
-  DOKU_PAYMENT_DUE_MINUTES,
-} from '~/lib/payment/providers/doku'
+import { checkDokuPaymentStatus } from '~/lib/payment/providers/doku'
 
 function dokuConfigured() {
   return Boolean(env.DOKU_API_URL && env.DOKU_CLIENT_ID && env.DOKU_SECRET_KEY)
@@ -24,7 +22,7 @@ function isPaymentPastDue(row: typeof payment.$inferSelect) {
   return isCheckoutExpired(
     row.expiresAt,
     row.createdAt,
-    DOKU_PAYMENT_DUE_MINUTES,
+    PAYMENT_DUE_MINUTES,
   )
 }
 
@@ -58,7 +56,7 @@ async function hasOpenPaidEvent() {
 
 /** Expire or confirm overdue shop checkout payments. */
 export async function syncPendingPayments() {
-  const cutoff = new Date(Date.now() - DOKU_PAYMENT_DUE_MINUTES * 60 * 1000)
+  const cutoff = new Date(Date.now() - PAYMENT_DUE_MINUTES * 60 * 1000)
   const rows = await db.query.payment.findMany({
     where: and(
       isNotNull(payment.orderId),
@@ -107,7 +105,7 @@ export async function syncUnpaidEventPayments() {
     }
   }
 
-  const cutoff = new Date(Date.now() - DOKU_PAYMENT_DUE_MINUTES * 60 * 1000)
+  const cutoff = new Date(Date.now() - PAYMENT_DUE_MINUTES * 60 * 1000)
   const rows = await db.query.payment.findMany({
     where: and(
       isNotNull(payment.participantId),
@@ -202,7 +200,7 @@ export async function syncUnpaidEventPayments() {
     if (
       newest &&
       paymentCreatedAt(newest) >
-        Date.now() - DOKU_PAYMENT_DUE_MINUTES * 60 * 1000
+        Date.now() - PAYMENT_DUE_MINUTES * 60 * 1000
     ) {
       continue
     }

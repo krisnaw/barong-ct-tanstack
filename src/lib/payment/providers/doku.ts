@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers'
+import { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 import {
   dokuCheckoutHeaders,
   dokuRequestHeaders,
@@ -19,7 +20,6 @@ const DOKU_METHOD_TYPES: Record<PaymentMethodId, string[]> = {
 }
 
 const CHECKOUT_PATH = '/checkout/v1/payment'
-export const DOKU_PAYMENT_DUE_MINUTES = 5
 
 type DokuCheckoutResponse = {
   error_messages?: string[]
@@ -192,7 +192,7 @@ export const dokuProvider: PaymentProvider = {
         line_items: lineItems(input),
       },
       payment: {
-        payment_due_date: DOKU_PAYMENT_DUE_MINUTES,
+        payment_due_date: PAYMENT_DUE_MINUTES,
         payment_method_types: DOKU_METHOD_TYPES[input.methodId],
       },
       customer: {

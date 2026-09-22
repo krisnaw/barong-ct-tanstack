@@ -126,11 +126,11 @@ export function EventDetail({
         <div>
           <img
             alt={event.imageAlt}
-            className="aspect-[16/10] w-full object-cover"
+            className="aspect-[4/5] w-full object-cover"
             decoding="async"
-            height={800}
-            src={eventImageSrc(event.image, 1200)}
-            width={1200}
+            height={1350}
+            src={eventImageSrc(event.image, 1080)}
+            width={1080}
           />
 
           <p className="mt-6 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">

@@ -8,6 +8,7 @@ import { orders, payment } from 'db/schemas/order'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { applyPaymentEvent } from '~/lib/payment/apply-event'
+import { PAYMENT_DUE_MINUTES } from '~/lib/payment/config'
 import { isCheckoutExpired } from '~/lib/payment/expiry'
 import { chargeAmountForMethod, dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import {
@@ -15,7 +16,6 @@ import {
   getProvider,
   getProviderName,
 } from '~/lib/payment/get-provider'
-import { DOKU_PAYMENT_DUE_MINUTES } from '~/lib/payment/providers/doku'
 import { appOriginUrl, checkoutOriginUrl } from '~/lib/payment/public-url'
 import { PAYMENT_METHOD_IDS } from '~/lib/payment/types'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
@@ -63,9 +63,7 @@ function reusableCheckoutUrl(
   orderNumber: string,
   providerName: string,
 ) {
-  const fallbackMinutes =
-    providerName === 'doku' ? DOKU_PAYMENT_DUE_MINUTES : 60
-  if (isCheckoutExpired(row.expiresAt, row.createdAt, fallbackMinutes)) {
+  if (isCheckoutExpired(row.expiresAt, row.createdAt, PAYMENT_DUE_MINUTES)) {
     return null
   }
   if (row.checkoutUrl) return row.checkoutUrl
