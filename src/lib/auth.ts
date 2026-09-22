@@ -46,7 +46,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     'http://localhost:*',
     'https://localhost:*',
-    'https://staging.barongcycling.com',
+    'https://staging.barongmelali.com',
     'https://prod.barongcycling.com',
     'https://barongcycling.com',
   ],

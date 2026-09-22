@@ -48,7 +48,7 @@
       "name": "staging-barong-ct",
       "routes": [
         {
-          "pattern": "staging.barongcycling.com",
+          "pattern": "staging.barongmelali.com",
           "custom_domain": true
         }
       ],
@@ -57,7 +57,7 @@
         "EMAIL_FROM": "noreply@barongmelali.com",
         "EMAIL_FROM_NAME": "Barong Cycling Team",
         "PAYMENT_PROVIDER": "doku",
-        "PAYMENT_PUBLIC_URL": "https://staging.barongcycling.com",
+        "PAYMENT_PUBLIC_URL": "https://staging.barongmelali.com",
       },
       "triggers": {
         "crons": ["*/5 * * * *"]

@@ -6,6 +6,7 @@ import {
   Heading,
   Html,
   Img,
+  Link,
   Preview,
   Section,
   Tailwind,
@@ -16,8 +17,8 @@ import { BarebonesFonts } from '~/emails/theme-fonts'
 
 type MagicLinkEmailProps = {
   companyName?: string
+  email: string
   logoUrl?: string
-  name?: string
   url: string
 }
 
@@ -25,6 +26,7 @@ const DEFAULT_LOGO_URL = 'https://barongcycling.com/barong-no-bg.png'
 
 export function MagicLinkEmail({
   companyName = 'Barong',
+  email,
   logoUrl = DEFAULT_LOGO_URL,
   url,
 }: MagicLinkEmailProps) {
@@ -53,12 +55,16 @@ export function MagicLinkEmail({
                 <Section className="bg-bg-2 mobile:px-6 mobile:py-12 rounded-[8px] px-[40px] py-[64px] text-center">
                   <Section className="mb-3">
                     <Heading as="h1" className="font-28 text-fg m-0 font-sans">
-                      Sign in to {companyName}
+                      Hello Cyclist,
                     </Heading>
                   </Section>
 
                   <Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans">
-                    Use the button below to sign in or create your account.
+                    Click the button below to continue with{' '}
+                    <Link className="text-fg-2 underline" href={`mailto:${email}`}>
+                      {email}
+                    </Link>
+                    .
                     <br />
                     This link expires in 15 minutes.
                   </Text>
@@ -72,16 +78,20 @@ export function MagicLinkEmail({
                     </Button>
                   </Section>
 
-                  <Text className="font-13 text-fg-3 mx-auto mt-8 mb-0 max-w-[400px] text-center font-sans">
-                    If you didn&apos;t request this,
+                  <Text className="font-13 text-fg-3 mx-auto mt-8 mb-0 max-w-[400px] text-center font-sans break-all">
+                    If the button doesn&apos;t work, copy and paste this link:
                     <br />
-                    please ignore this email.
+                    <Link className="text-fg-3 underline" href={url}>
+                      {url}
+                    </Link>
                   </Text>
                 </Section>
 
                 <Section className="bg-bg">
                   <Text className="font-11 text-fg-3 m-0 px-6 py-10 text-center font-sans">
-                    Barong Cycling Team, est 2016
+                    Best,
+                    <br />
+                    Barong Cycling Team
                   </Text>
                 </Section>
               </Section>
@@ -95,6 +105,7 @@ export function MagicLinkEmail({
 
 MagicLinkEmail.PreviewProps = {
   companyName: 'Barong',
+  email: 'krisna.w2010@gmail.com',
   logoUrl: DEFAULT_LOGO_URL,
   url: 'https://example.com/',
 } satisfies MagicLinkEmailProps

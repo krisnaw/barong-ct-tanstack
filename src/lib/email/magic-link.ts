@@ -5,17 +5,16 @@ import { sendEmail } from '~/lib/email/send'
 
 export async function sendMagicLinkEmail({
   to,
-  name,
   url,
 }: {
   to: string
-  name: string
+  name?: string
   url: string
 }) {
   const element = MagicLinkEmail({
     companyName: 'Barong',
+    email: to,
     logoUrl: emailLogoUrl(),
-    name,
     url,
   })
   const [html, text] = await Promise.all([

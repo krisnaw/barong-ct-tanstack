@@ -34,5 +34,5 @@ export function paymentPublicUrl() {
   const auth = env.BETTER_AUTH_URL?.trim()
   if (auth && !isLocalHost(auth)) return stripSlash(auth)
 
-  return 'https://staging.barongcycling.com'
+  return 'https://staging.barongmelali.com'
 }
