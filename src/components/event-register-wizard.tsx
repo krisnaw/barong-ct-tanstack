@@ -1,9 +1,11 @@
 import * as React from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
+  CalendarBlankIcon,
   CreditCardIcon,
   QrCodeIcon,
 } from '@phosphor-icons/react'
+import { format, startOfDay } from 'date-fns'
 import {
   ACCOUNT_BLOOD_TYPES,
   ACCOUNT_GENDERS,
@@ -39,13 +41,27 @@ import {
 import { startEventPayment } from '~/lib/payment.functions'
 import { RegisterWizardSkeleton } from '~/components/page-skeletons'
 import { Button, buttonVariants } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 
@@ -76,9 +92,6 @@ const paymentMethods: {
     icon: <CreditCardIcon className="size-4" weight="bold" />,
   },
 ]
-
-const selectClassName =
-  'h-8 w-full appearance-none rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function EventRegisterWizard({
   event,
@@ -515,7 +528,7 @@ function GroupStep({
           <p className="mt-1 font-medium">{draft.groupName}</p>
         </div>
       ) : (
-        <Field>
+        <Field data-invalid={Boolean(error)}>
           <FieldLabel htmlFor="groupName">Group name</FieldLabel>
           <Input
             id="groupName"
@@ -527,7 +540,7 @@ function GroupStep({
             value={name}
           />
           {error ? (
-            <p className="mt-2 text-sm text-destructive">{error}</p>
+            <FieldError>{error}</FieldError>
           ) : (
             <FieldDescription>
               Names must be unique for this event.
@@ -708,6 +721,7 @@ function ProfileStep({
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
+            className="cursor-default bg-muted text-muted-foreground"
             id="email"
             readOnly
             required
@@ -728,54 +742,36 @@ function ProfileStep({
           />
         </Field>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="gender">Gender</FieldLabel>
-            <select
-              className={selectClassName}
-              id="gender"
-              onChange={(event) => onUpdate({ gender: event.target.value })}
-              required
-              value={draft.gender}
-            >
-              <option value="">Select</option>
-              {ACCOUNT_GENDERS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="bloodType">Blood type</FieldLabel>
-            <select
-              className={selectClassName}
-              id="bloodType"
-              onChange={(event) => onUpdate({ bloodType: event.target.value })}
-              required
-              value={draft.bloodType}
-            >
-              <option value="">Select</option>
-              {ACCOUNT_BLOOD_TYPES.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <RegisterSelectField
+            allowEmpty
+            id="gender"
+            label="Gender"
+            onChange={(value) => onUpdate({ gender: value })}
+            options={ACCOUNT_GENDERS.map((option) => ({
+              value: option,
+              label: option,
+            }))}
+            value={draft.gender}
+          />
+          <RegisterSelectField
+            allowEmpty
+            id="bloodType"
+            label="Blood type"
+            onChange={(value) => onUpdate({ bloodType: value })}
+            options={ACCOUNT_BLOOD_TYPES.map((option) => ({
+              value: option,
+              label: option,
+            }))}
+            value={draft.bloodType}
+          />
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="dateOfBirth">Date of birth</FieldLabel>
-            <Input
-              id="dateOfBirth"
-              onChange={(event) =>
-                onUpdate({ dateOfBirth: event.target.value })
-              }
-              required
-              type="date"
-              value={draft.dateOfBirth}
-            />
-          </Field>
+          <RegisterDateOfBirthField
+            id="dateOfBirth"
+            label="Date of birth"
+            onChange={(value) => onUpdate({ dateOfBirth: value })}
+            value={draft.dateOfBirth}
+          />
           <Field>
             <FieldLabel htmlFor="nationality">Nationality</FieldLabel>
             <Input
@@ -1029,7 +1025,7 @@ function PaymentStep({
             )}
           </div>
           {promoError ? (
-            <p className="text-sm text-destructive">{promoError}</p>
+            <FieldError>{promoError}</FieldError>
           ) : draft.promoCode ? (
             <FieldDescription>
               Promo applied — {formatIdr(discount)} off entry.
@@ -1096,6 +1092,124 @@ function PaymentStep({
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </section>
   )
+}
+
+function RegisterSelectField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  allowEmpty = false,
+  placeholder = 'Select',
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: readonly { value: string; label: string }[]
+  allowEmpty?: boolean
+  placeholder?: string
+}) {
+  const items = allowEmpty
+    ? [{ value: '', label: placeholder }, ...options]
+    : options
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Select
+        items={items}
+        onValueChange={(next) => {
+          if (next != null) onChange(next)
+        }}
+        value={value}
+      >
+        <SelectTrigger className="w-full" id={id}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((option) => (
+            <SelectItem
+              key={option.value || '__empty__'}
+              value={option.value}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+function RegisterDateOfBirthField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const selected = parseRegisterDateOfBirth(value)
+  const today = startOfDay(new Date())
+  const startMonth = new Date(1920, 0)
+  const defaultMonth =
+    selected ?? new Date(today.getFullYear() - 25, today.getMonth(), 1)
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Popover onOpenChange={setOpen} open={open}>
+        <PopoverTrigger
+          render={
+            <Button
+              className="w-full justify-start gap-2 font-normal data-[empty=true]:text-muted-foreground"
+              data-empty={!selected}
+              id={id}
+              type="button"
+              variant="outline"
+            />
+          }
+        >
+          <CalendarBlankIcon className="size-4 shrink-0" weight="bold" />
+          <span className="min-w-0 flex-1 truncate text-left">
+            {selected ? format(selected, 'd MMMM yyyy') : 'Pick a date'}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            captionLayout="dropdown"
+            defaultMonth={defaultMonth}
+            disabled={{ after: today }}
+            endMonth={today}
+            mode="single"
+            onSelect={(next) => {
+              onChange(next ? format(next, 'yyyy-MM-dd') : '')
+              if (next) setOpen(false)
+            }}
+            selected={selected}
+            startMonth={startMonth}
+          />
+        </PopoverContent>
+      </Popover>
+    </Field>
+  )
+}
+
+function parseRegisterDateOfBirth(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (!match) return undefined
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  )
+  return Number.isNaN(date.getTime()) ? undefined : date
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
