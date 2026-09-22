@@ -19,7 +19,7 @@ export function emailPublicBaseUrl() {
   const auth = env.BETTER_AUTH_URL?.trim()
   if (auth && !isLocalHost(auth)) return stripSlash(auth)
 
-  return 'https://barongcycling.com'
+  return 'https://www.barongmelali.com'
 }
 
 export function emailLogoUrl() {

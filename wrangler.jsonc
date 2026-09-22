@@ -9,7 +9,7 @@
   },
   "routes": [
     {
-      "pattern": "prod.barongcycling.com",
+      "pattern": "www.barongmelali.com",
       "custom_domain": true
     }
   ],
@@ -22,7 +22,7 @@
     "EMAIL_FROM": "noreply@barongmelali.com",
     "EMAIL_FROM_NAME": "Barong Cycling Team",
     "PAYMENT_PROVIDER": "doku",
-    "PAYMENT_PUBLIC_URL": "https://prod.barongcycling.com"
+    "PAYMENT_PUBLIC_URL": "https://www.barongmelali.com"
   },
   "send_email": [
     {
