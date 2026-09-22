@@ -39,6 +39,7 @@ import { cn } from '~/lib/utils'
 import { type EventKind, type EventStatus, eventImageSrc, registerCtaCopy } from '~/data/events'
 import { EventFeatureImageField } from '~/components/event-feature-image-field'
 import { HtmlContent } from '~/components/html-content'
+import { TextEditor } from '~/components/text-editor'
 import { createEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
@@ -566,22 +567,27 @@ function DashboardCreateEventPage() {
             />
             <Field>
               <FieldLabel htmlFor="description">Details</FieldLabel>
-              <textarea
-                className="min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              <TextEditor
                 id="description"
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 placeholder="What riders should know before joining."
+                value={description}
+              />
+              <input
+                aria-hidden
+                className="sr-only"
+                readOnly
                 required
+                tabIndex={-1}
                 value={description}
               />
             </Field>
 
             <Field>
               <FieldLabel htmlFor="regulation">Regulation</FieldLabel>
-              <textarea
-                className="min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              <TextEditor
                 id="regulation"
-                onChange={(e) => setRegulation(e.target.value)}
+                onChange={setRegulation}
                 placeholder="Optional rules, cut-offs, and kit requirements."
                 value={regulation}
               />
