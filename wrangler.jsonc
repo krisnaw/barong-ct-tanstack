@@ -7,15 +7,22 @@
   "observability": {
     "enabled": true
   },
+  "routes": [
+    {
+      "pattern": "prod.barongcycling.com",
+      "custom_domain": true
+    }
+  ],
   "triggers": {
     // Payment due window is 5 minutes — check often enough to expire unpaid checkouts.
     "crons": ["*/5 * * * *"]
   },
   "vars": {
-    "EMAIL_PROVIDER": "cloudflare",
+    "EMAIL_PROVIDER": "resend",
     "EMAIL_FROM": "noreply@barongmelali.com",
     "EMAIL_FROM_NAME": "Barong Cycling Team",
-    "PAYMENT_PROVIDER": "stub"
+    "PAYMENT_PROVIDER": "doku",
+    "PAYMENT_PUBLIC_URL": "https://prod.barongcycling.com"
   },
   "send_email": [
     {

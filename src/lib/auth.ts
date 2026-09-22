@@ -47,6 +47,7 @@ export const auth = betterAuth({
     'http://localhost:*',
     'https://localhost:*',
     'https://staging.barongcycling.com',
+    'https://prod.barongcycling.com',
     'https://barongcycling.com',
   ],
   plugins: [
