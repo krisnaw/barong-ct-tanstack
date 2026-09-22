@@ -25,6 +25,7 @@ import {
 } from '~/lib/event-register-draft'
 import type { MyEventRegistration } from '~/lib/event.functions'
 import { Button, buttonVariants } from '~/components/ui/button'
+import { HtmlContent } from '~/components/html-content'
 import { cn } from '~/lib/utils'
 
 const statusLabel: Record<EventStatus, string> = {
@@ -138,9 +139,7 @@ export function EventDetail({
           <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
             {event.name}
           </h1>
-          <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            {event.description}
-          </p>
+          <HtmlContent className="mt-3 max-w-2xl" html={event.description} />
 
           <dl className="mt-8 grid gap-4 border-y border-border py-5 sm:grid-cols-2">
             <Fact

@@ -160,7 +160,7 @@ function EventRows({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <p className="border-y border-border py-10 text-sm text-muted-foreground">
+    <p className="border-b border-border py-10 text-sm text-muted-foreground">
       {message}
     </p>
   )

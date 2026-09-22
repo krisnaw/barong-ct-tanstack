@@ -22,6 +22,7 @@ import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 import { formatEventDateLabel } from '~/lib/event-datetime'
+import { stripHtml } from '~/lib/rich-html'
 
 const eventKindSchema = z.enum(['free', 'paid', 'flagship'])
 const eventStatusSchema = z.enum(['draft', 'open', 'closed', 'archived'])
@@ -68,7 +69,7 @@ type EventRow = typeof event.$inferSelect
 type CategoryRow = typeof eventCategory.$inferSelect
 
 function blurbFromDescription(description: string) {
-  const trimmed = description.trim()
+  const trimmed = stripHtml(description)
   if (!trimmed) return ''
   const sentence = trimmed.split(/(?<=[.!?])\s+/)[0] ?? trimmed
   return sentence.length > 140 ? `${sentence.slice(0, 137)}…` : sentence
