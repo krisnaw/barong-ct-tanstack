@@ -10,8 +10,9 @@
  *   DATABASE_URL=postgresql://... node scripts/migrate-from-postgres.mjs
  *
  * Then (when you are ready):
- *   npx wrangler d1 execute barong-ct --local --file=scripts/out/d1-import.sql
- *   npx wrangler d1 execute barong-ct-staging --remote --env staging --file=scripts/out/d1-import.sql
+ *   npx wrangler d1 execute barong-ct-v2 --local --file=scripts/out/d1-import.sql
+ *   npx wrangler d1 execute barong-ct-v2 --remote --file=scripts/out/d1-import.sql
+ *   npx wrangler d1 execute barong-ct-staging-v2 --remote --env staging --file=scripts/out/d1-import.sql
  *
  * Requires: npm install pg  (or: npm i -D pg)
  */
@@ -571,10 +572,13 @@ async function main() {
   console.log('')
   console.log('Next (when ready — not run by this script):')
   console.log(
-    '  npx wrangler d1 execute barong-ct --local --file=scripts/out/d1-import.sql',
+    '  npx wrangler d1 execute barong-ct-v2 --local --file=scripts/out/d1-import.sql',
   )
   console.log(
-    '  npx wrangler d1 execute barong-ct-staging --remote --env staging --file=scripts/out/d1-import.sql',
+    '  npx wrangler d1 execute barong-ct-v2 --remote --file=scripts/out/d1-import.sql',
+  )
+  console.log(
+    '  npx wrangler d1 execute barong-ct-staging-v2 --remote --env staging --file=scripts/out/d1-import.sql',
   )
 }
 

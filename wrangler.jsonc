@@ -31,8 +31,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "barong-ct",
-      "database_id": "e3ba49c7-b98f-4260-b33b-65d89bc007bd",
+      "database_name": "barong-ct-v2",
+      "database_id": "10a4e09c-f607-4f0a-b709-8c7cd986d71c",
       "migrations_dir": "db/migrations"
     }
   ],
@@ -69,8 +69,8 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "barong-ct-staging",
-          "database_id": "909971a1-a2be-44ec-9781-0495273c565a",
+          "database_name": "barong-ct-staging-v2",
+          "database_id": "0d1c291f-861d-4ba5-8166-e0a515f95615",
           "migrations_dir": "db/migrations"
         }
       ]

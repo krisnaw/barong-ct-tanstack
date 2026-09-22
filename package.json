@@ -12,11 +12,11 @@
     "deploy": "npm run build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "db:migrate:local": "wrangler d1 migrations apply barong-ct --local",
-    "db:migrate:remote": "wrangler d1 migrations apply barong-ct --remote",
+    "db:migrate:local": "wrangler d1 migrations apply barong-ct-v2 --local",
+    "db:migrate:remote": "wrangler d1 migrations apply barong-ct-v2 --remote",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "db:migrate:staging": "wrangler d1 migrations apply barong-ct-staging --remote --env staging",
+    "db:migrate:staging": "wrangler d1 migrations apply barong-ct-staging-v2 --remote --env staging",
     "db:etl:pg": "node scripts/migrate-from-postgres.mjs"
   },
   "dependencies": {
