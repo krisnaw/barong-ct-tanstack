@@ -1,14 +1,17 @@
 import * as React from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import {
+  columnFilteringFeature,
   createColumnHelper,
+  createFilteredRowModel,
   createPaginatedRowModel,
+  filterFn_includesString,
+  globalFilteringFeature,
   rowPaginationFeature,
   tableFeatures,
   useTable,
   type PaginationState,
 } from '@tanstack/react-table'
-import { z } from 'zod'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -62,8 +65,14 @@ import {
 } from '~/lib/user.functions'
 
 const features = tableFeatures({
+  columnFilteringFeature,
+  globalFilteringFeature,
   rowPaginationFeature,
+  filteredRowModel: createFilteredRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  filterFns: {
+    includesString: filterFn_includesString,
+  },
 })
 
 const columnHelper = createColumnHelper<typeof features, AdminUserListItem>()
@@ -73,78 +82,55 @@ const columns = columnHelper.columns([
     id: 'user',
     header: 'User',
     cell: ({ row }) => <UserCell account={row.original} />,
+    filterFn: 'includesString',
   }),
   columnHelper.accessor('role', {
     header: 'Role',
     cell: ({ row }) => <RoleCell account={row.original} />,
+    enableGlobalFilter: false,
   }),
   columnHelper.display({
     id: 'member',
     header: 'Member',
     cell: ({ row }) => <MemberCell account={row.original} />,
+    enableGlobalFilter: false,
   }),
 ])
-
-const usersSearchSchema = z.object({
-  q: z.string().trim().optional().catch(undefined),
-})
 
 export const Route = createFileRoute('/dashboard/users/')({
   pendingComponent: DashboardTableSkeleton,
   pendingMs: 150,
-  validateSearch: usersSearchSchema,
-  loaderDeps: ({ search: { q } }) => ({ q }),
-  loader: ({ deps: { q } }) => listUsers({ data: { q } }),
+  loader: () => listUsers(),
   component: DashboardUsersPage,
 })
 
 function DashboardUsersPage() {
   const { users } = Route.useLoaderData()
-  const { q } = Route.useSearch()
-  const navigate = Route.useNavigate()
-  const [draft, setDraft] = React.useState(q ?? '')
+  const [globalFilter, setGlobalFilter] = React.useState('')
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: TABLE_PAGE_SIZE,
   })
 
   React.useEffect(() => {
-    setDraft(q ?? '')
-  }, [q])
-
-  React.useEffect(() => {
-    const handle = window.setTimeout(() => {
-      const next = draft.trim()
-      const current = (q ?? '').trim()
-      if (next === current) return
-      void navigate({
-        replace: true,
-        search: (prev) => ({
-          ...prev,
-          q: next || undefined,
-        }),
-      })
-    }, 300)
-    return () => window.clearTimeout(handle)
-  }, [draft, navigate, q])
-
-  React.useEffect(() => {
     setPagination((prev) =>
       prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 },
     )
-  }, [q])
+  }, [globalFilter])
 
   const table = useTable({
     features,
     data: users,
     columns,
     getRowId: (row) => row.id,
-    state: { pagination },
+    state: { globalFilter, pagination },
+    onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
+    globalFilterFn: 'includesString',
   })
   const rows = table.getRowModel().rows
   const pageCount = table.getPageCount()
-  const hasQuery = Boolean((q ?? '').trim())
+  const hasQuery = Boolean(globalFilter.trim())
 
   return (
     <>
@@ -168,9 +154,9 @@ function DashboardUsersPage() {
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
         <Input
           className="max-w-sm"
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => setGlobalFilter(event.target.value)}
           placeholder="Search by name or email…"
-          value={draft}
+          value={globalFilter}
         />
 
         <div className="border border-border">
