@@ -40,6 +40,15 @@ import {
   type AccountShippingAddress,
 } from '~/lib/account'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { Input } from '~/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import {
@@ -375,31 +384,27 @@ export function AccountProfilePanel() {
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <AccountSelect
+          allowEmpty
           id="gender"
           label="Gender"
           onChange={(value) => setField('gender', value)}
+          options={ACCOUNT_GENDERS.map((option) => ({
+            value: option,
+            label: option,
+          }))}
           value={draft.gender}
-        >
-          <option value="">Select</option>
-          {ACCOUNT_GENDERS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </AccountSelect>
+        />
         <AccountSelect
+          allowEmpty
           id="bloodType"
           label="Blood type"
           onChange={(value) => setField('bloodType', value)}
+          options={ACCOUNT_BLOOD_TYPES.map((option) => ({
+            value: option,
+            label: option,
+          }))}
           value={draft.bloodType}
-        >
-          <option value="">Select</option>
-          {ACCOUNT_BLOOD_TYPES.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </AccountSelect>
+        />
         <AccountDateOfBirthField
           id="dateOfBirth"
           label="Date of birth"
@@ -977,12 +982,12 @@ function AddressFields({
           id={`${idPrefix}-province`}
           label="Province"
           onChange={(next) => onChange('province', next)}
+          options={ACCOUNT_PROVINCES.map((option) => ({
+            value: option,
+            label: option,
+          }))}
           value={value.province}
-        >
-          {ACCOUNT_PROVINCES.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </AccountSelect>
+        />
         <AccountField
           autoComplete="postal-code"
           id={`${idPrefix}-postal`}
@@ -1014,28 +1019,22 @@ function AccountDateOfBirthField({
     selected ?? new Date(today.getFullYear() - 25, today.getMonth(), 1)
 
   return (
-    <div>
-      <label
-        className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase"
-        htmlFor={id}
-      >
-        {label}
-      </label>
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <button
-              className={cn(
-                'mt-1.5 flex h-11 w-full items-center gap-2 border border-border bg-background px-3 text-left text-sm outline-none transition-shadow focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
-                !selected && 'text-muted-foreground',
-              )}
+            <Button
+              className="w-full justify-start gap-2 font-normal data-[empty=true]:text-muted-foreground"
+              data-empty={!selected}
               id={id}
               type="button"
+              variant="outline"
             />
           }
         >
           <CalendarBlankIcon className="size-4 shrink-0" weight="bold" />
-          <span className="min-w-0 flex-1 truncate">
+          <span className="min-w-0 flex-1 truncate text-left">
             {selected ? format(selected, 'd MMMM yyyy') : 'Pick a date'}
           </span>
         </PopoverTrigger>
@@ -1055,7 +1054,7 @@ function AccountDateOfBirthField({
           />
         </PopoverContent>
       </Popover>
-    </div>
+    </Field>
   )
 }
 
@@ -1092,22 +1091,13 @@ function AccountField({
   required?: boolean
 }) {
   return (
-    <div>
-      <label
-        className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase"
-        htmlFor={id}
-      >
-        {label}
-      </label>
-      <input
+    <Field data-invalid={Boolean(error)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Input
         aria-invalid={Boolean(error)}
         autoComplete={autoComplete}
         className={cn(
-          'mt-1.5 h-11 w-full border px-3 text-sm outline-none transition-shadow focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
-          readOnly
-            ? 'cursor-default bg-muted text-muted-foreground'
-            : 'bg-background',
-          error ? 'border-destructive' : 'border-border',
+          readOnly && 'cursor-default bg-muted text-muted-foreground',
         )}
         id={id}
         onChange={
@@ -1120,8 +1110,8 @@ function AccountField({
         type={type}
         value={value}
       />
-      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
-    </div>
+      {error ? <FieldError>{error}</FieldError> : null}
+    </Field>
   )
 }
 
@@ -1130,30 +1120,46 @@ function AccountSelect({
   label,
   value,
   onChange,
-  children,
+  options,
+  allowEmpty = false,
+  placeholder = 'Select',
 }: {
   id: string
   label: string
   value: string
   onChange: (value: string) => void
-  children: React.ReactNode
+  options: readonly { value: string; label: string }[]
+  allowEmpty?: boolean
+  placeholder?: string
 }) {
+  const items = allowEmpty
+    ? [{ value: '', label: placeholder }, ...options]
+    : options
+
   return (
-    <div>
-      <label
-        className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase"
-        htmlFor={id}
-      >
-        {label}
-      </label>
-      <select
-        className="mt-1.5 h-11 w-full appearance-none border border-border bg-background px-3 text-sm outline-none focus:border-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Select
+        items={items}
+        onValueChange={(next) => {
+          if (next != null) onChange(next)
+        }}
         value={value}
       >
-        {children}
-      </select>
-    </div>
+        <SelectTrigger className="w-full" id={id}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((option) => (
+            <SelectItem
+              key={option.value || '__empty__'}
+              value={option.value}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
   )
 }
