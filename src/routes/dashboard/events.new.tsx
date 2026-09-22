@@ -38,6 +38,7 @@ import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { type EventKind, type EventStatus, eventImageSrc, registerCtaCopy } from '~/data/events'
 import { EventFeatureImageField } from '~/components/event-feature-image-field'
+import { HtmlContent } from '~/components/html-content'
 import { createEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
 
@@ -776,17 +777,21 @@ function EventPreview({
           </span>
         </div>
 
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {description.trim() || 'Longer details for the event page.'}
-        </p>
+        <div className="mt-3">
+          {description.trim() ? (
+            <HtmlContent className="text-sm" html={description} />
+          ) : (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Longer details for the event page.
+            </p>
+          )}
+        </div>
         {regulation.trim() ? (
           <div className="mt-4 border-t border-border pt-4">
             <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
               Regulation
             </p>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {regulation.trim()}
-            </p>
+            <HtmlContent className="mt-2 text-sm" html={regulation} />
           </div>
         ) : null}
 
