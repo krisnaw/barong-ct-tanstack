@@ -57,8 +57,7 @@ import {
 } from '~/components/table-pagination'
 import {
   adminUserRoles,
-  listUsers,
-  markUserVerified,
+  listStaffUsers,
   updateUserRole,
   type AdminUserListItem,
   type AdminUserRole,
@@ -89,22 +88,16 @@ const columns = columnHelper.columns([
     cell: ({ row }) => <RoleCell account={row.original} />,
     enableGlobalFilter: false,
   }),
-  columnHelper.display({
-    id: 'member',
-    header: 'Member',
-    cell: ({ row }) => <MemberCell account={row.original} />,
-    enableGlobalFilter: false,
-  }),
 ])
 
-export const Route = createFileRoute('/dashboard/users/')({
+export const Route = createFileRoute('/dashboard/roles/')({
   pendingComponent: DashboardTableSkeleton,
   pendingMs: 150,
-  loader: () => listUsers(),
-  component: DashboardUsersPage,
+  loader: () => listStaffUsers(),
+  component: DashboardRolesPage,
 })
 
-function DashboardUsersPage() {
+function DashboardRolesPage() {
   const { users } = Route.useLoaderData()
   const [globalFilter, setGlobalFilter] = React.useState('')
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -144,7 +137,7 @@ function DashboardUsersPage() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>List</BreadcrumbPage>
+                <BreadcrumbPage>Roles</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -152,6 +145,15 @@ function DashboardUsersPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
+        <div>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Roles
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {users.length} admin and staff accounts
+          </p>
+        </div>
+
         <Input
           className="max-w-sm"
           onChange={(event) => setGlobalFilter(event.target.value)}
@@ -181,7 +183,6 @@ function DashboardUsersPage() {
                     {row.getAllCells().map((cell) => (
                       <TableCell
                         className={
-                          cell.column.id === 'member' ||
                           cell.column.id === 'role'
                             ? 'relative z-10 px-4 py-3'
                             : 'px-4 py-3'
@@ -199,7 +200,9 @@ function DashboardUsersPage() {
                     className="h-24 px-4 text-center text-muted-foreground"
                     colSpan={columns.length}
                   >
-                    {hasQuery ? 'No matching users.' : 'No users yet.'}
+                    {hasQuery
+                      ? 'No matching staff.'
+                      : 'No admin or staff users yet.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -354,7 +357,13 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
               disabled={saving || role === normalizeRole(account.role)}
               onClick={() => void save()}
             >
-              {saving ? (<><Spinner /> Saving…</>) : 'Save role'}
+              {saving ? (
+                <>
+                  <Spinner /> Saving…
+                </>
+              ) : (
+                'Save role'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -367,47 +376,6 @@ function normalizeRole(role: string): AdminUserRole {
   return adminUserRoles.includes(role as AdminUserRole)
     ? (role as AdminUserRole)
     : 'user'
-}
-
-function MemberCell({ account }: { account: AdminUserListItem }) {
-  const router = useRouter()
-  const [saving, setSaving] = React.useState(false)
-
-  async function verify(event: React.MouseEvent) {
-    event.preventDefault()
-    event.stopPropagation()
-    if (saving || account.verifiedAt) return
-    setSaving(true)
-    try {
-      await markUserVerified({ data: { id: account.id } })
-      await router.invalidate()
-      toast.add({ type: 'success', title: 'Marked as verified member' })
-    } catch {
-      toast.add({ type: 'error', title: 'Could not verify member' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (account.verifiedAt) {
-    return (
-      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        Member
-      </span>
-    )
-  }
-
-  return (
-    <Button
-      disabled={saving}
-      onClick={(event) => void verify(event)}
-      size="sm"
-      type="button"
-      variant="outline"
-    >
-      {saving ? (<><Spinner /> Verifying…</>) : 'Verify member'}
-    </Button>
-  )
 }
 
 function userInitials(name: string, email: string) {

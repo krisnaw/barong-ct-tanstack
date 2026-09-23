@@ -3,9 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
   CommandIcon,
-  MapPinIcon,
-  PackageIcon,
-  TShirtIcon,
+  StorefrontIcon,
   UsersIcon,
 } from '@phosphor-icons/react'
 
@@ -35,24 +33,36 @@ const data = {
       icon: <CalendarBlankIcon />,
     },
     {
-      title: 'Catalogue',
-      url: '/dashboard/catalogue',
-      icon: <TShirtIcon />,
-    },
-    {
-      title: 'Orders',
-      url: '/dashboard/orders',
-      icon: <PackageIcon />,
-    },
-    {
-      title: 'Pickup Points',
-      url: '/dashboard/pickup-points',
-      icon: <MapPinIcon />,
+      title: 'Shop',
+      icon: <StorefrontIcon />,
+      items: [
+        {
+          title: 'Catalogue',
+          url: '/dashboard/catalogue',
+        },
+        {
+          title: 'Orders',
+          url: '/dashboard/orders',
+        },
+        {
+          title: 'Pickup Points',
+          url: '/dashboard/pickup-points',
+        },
+      ],
     },
     {
       title: 'Users',
-      url: '/dashboard/users',
       icon: <UsersIcon />,
+      items: [
+        {
+          title: 'List',
+          url: '/dashboard/users',
+        },
+        {
+          title: 'Roles',
+          url: '/dashboard/roles',
+        },
+      ],
     },
   ],
 }
