@@ -149,6 +149,7 @@ export function LoginForm({
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input
+              autoComplete="email"
               autoFocus
               id="email"
               name="email"
@@ -171,6 +172,7 @@ export function LoginForm({
                 </Link>
               </div>
               <Input
+                autoComplete="current-password"
                 id="password"
                 minLength={8}
                 name="password"
