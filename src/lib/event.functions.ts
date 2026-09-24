@@ -55,15 +55,11 @@ const createEventSchema = z.object({
   groupCapacity: z.number().int().positive().nullable().optional(),
   featureImage: z.string().optional(),
   featureImageAlt: z.string().optional(),
-  category: categoryInputSchema,
 })
 
 const updateEventSchema = createEventSchema.extend({
   id: z.string().min(1),
   status: eventStatusSchema,
-  category: categoryInputSchema.extend({
-    id: z.string().min(1).optional(),
-  }),
 })
 
 type EventRow = typeof event.$inferSelect
@@ -275,53 +271,30 @@ export const createEvent = createServerFn({ method: 'POST' })
       throw new Error('An event with this slug already exists')
     }
 
-    if (data.kind !== 'free' && data.category.price <= 0) {
-      throw new Error('Paid and flagship events need a price greater than 0')
-    }
-
     const id = crypto.randomUUID()
-    const categoryId = crypto.randomUUID()
-    const price = data.kind === 'free' ? 0 : data.category.price
-    const serviceFee = data.kind === 'free' ? 0 : data.category.serviceFee
 
-    await db.batch([
-      db.insert(event).values({
-        id,
-        slug,
-        name: data.name.trim(),
-        description: data.description.trim(),
-        regulation: data.regulation?.trim() || null,
-        featureImage: data.featureImage?.trim()
-          ? normalizeStoredImageRef(data.featureImage)
-          : null,
-        featureImageAlt: data.featureImageAlt?.trim() || null,
-        kind: data.kind,
-        status: data.status,
-        eventDate: data.eventDate,
-        eventTime: data.eventTime,
-        timeZone: data.timeZone,
-        locationName: data.locationName.trim(),
-        locationAddress: data.locationAddress?.trim() || null,
-        registrationClosesAt: data.registrationClosesAt || null,
-        hasJersey: data.hasJersey,
-        isGroupRide: data.isGroupRide,
-        groupCapacity: data.isGroupRide
-          ? (data.groupCapacity ?? null)
-          : null,
-      }),
-      db.insert(eventCategory).values({
-        id: categoryId,
-        eventId: id,
-        name: data.category.name.trim(),
-        description: data.category.description?.trim() || null,
-        distance: data.category.distance.trim(),
-        price,
-        serviceFee,
-        currency: 'IDR',
-        maxParticipants: data.category.maxParticipants ?? null,
-        sortOrder: 0,
-      }),
-    ])
+    await db.insert(event).values({
+      id,
+      slug,
+      name: data.name.trim(),
+      description: data.description.trim(),
+      regulation: data.regulation?.trim() || null,
+      featureImage: data.featureImage?.trim()
+        ? normalizeStoredImageRef(data.featureImage)
+        : null,
+      featureImageAlt: data.featureImageAlt?.trim() || null,
+      kind: data.kind,
+      status: data.status,
+      eventDate: data.eventDate,
+      eventTime: data.eventTime,
+      timeZone: data.timeZone,
+      locationName: data.locationName.trim(),
+      locationAddress: data.locationAddress?.trim() || null,
+      registrationClosesAt: data.registrationClosesAt || null,
+      hasJersey: data.hasJersey,
+      isGroupRide: data.isGroupRide,
+      groupCapacity: data.isGroupRide ? (data.groupCapacity ?? null) : null,
+    })
 
     const created = await loadEventBySlug(slug, true)
     if (!created) {
@@ -364,11 +337,6 @@ export const updateEvent = createServerFn({ method: 'POST' })
 
     const existing = await db.query.event.findFirst({
       where: eq(event.id, data.id),
-      with: {
-        categories: {
-          orderBy: [asc(eventCategory.sortOrder)],
-        },
-      },
     })
     if (!existing) {
       throw new Error('Event not found')
@@ -383,18 +351,6 @@ export const updateEvent = createServerFn({ method: 'POST' })
         throw new Error('An event with this slug already exists')
       }
     }
-
-    if (data.kind !== 'free' && data.category.price <= 0) {
-      throw new Error('Paid and flagship events need a price greater than 0')
-    }
-
-    const price = data.kind === 'free' ? 0 : data.category.price
-    const serviceFee = data.kind === 'free' ? 0 : data.category.serviceFee
-    const categoryId =
-      data.category.id ??
-      existing.categories[0]?.id ??
-      crypto.randomUUID()
-    const categoryExists = existing.categories.some((item) => item.id === categoryId)
 
     await db
       .update(event)
@@ -423,35 +379,6 @@ export const updateEvent = createServerFn({ method: 'POST' })
         updatedAt: new Date(),
       })
       .where(eq(event.id, data.id))
-
-    if (categoryExists) {
-      await db
-        .update(eventCategory)
-        .set({
-          name: data.category.name.trim(),
-          description: data.category.description?.trim() || null,
-          distance: data.category.distance.trim(),
-          price,
-          serviceFee,
-          currency: 'IDR',
-          maxParticipants: data.category.maxParticipants ?? null,
-          updatedAt: new Date(),
-        })
-        .where(eq(eventCategory.id, categoryId))
-    } else {
-      await db.insert(eventCategory).values({
-        id: categoryId,
-        eventId: data.id,
-        name: data.category.name.trim(),
-        description: data.category.description?.trim() || null,
-        distance: data.category.distance.trim(),
-        price,
-        serviceFee,
-        currency: 'IDR',
-        maxParticipants: data.category.maxParticipants ?? null,
-        sortOrder: 0,
-      })
-    }
 
     const updated = await loadEventBySlug(nextSlug, true)
     if (!updated) {

@@ -54,13 +54,10 @@ import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import { EventFeatureImageField } from '~/components/event-feature-image-field'
-import { HtmlContent } from '~/components/html-content'
 import { TextEditor } from '~/components/text-editor'
 import {
   type EventKind,
   type EventStatus,
-  eventImageSrc,
-  registerCtaCopy,
 } from '~/data/events'
 import { deleteEvent, getEventBySlug, updateEvent } from '~/lib/event.functions'
 import { seo } from '~/utils/seo'
@@ -141,7 +138,6 @@ export const Route = createFileRoute('/dashboard/events/$slug/edit')({
 function DashboardEditEventPage() {
   const { event } = Route.useLoaderData()
   const navigate = useNavigate()
-  const primaryCourse = event.courses?.[0]
 
   const [name, setName] = React.useState(event.name)
   const [slug, setSlug] = React.useState(event.slug)
@@ -163,18 +159,6 @@ function DashboardEditEventPage() {
   const [locationAddress, setLocationAddress] = React.useState(
     event.locationAddress ?? '',
   )
-  const [categoryName, setCategoryName] = React.useState(
-    event.categoryName || primaryCourse?.name || event.name,
-  )
-  const [categoryNameEdited, setCategoryNameEdited] = React.useState(true)
-  const [distance, setDistance] = React.useState(
-    primaryCourse?.distance || event.distance || '',
-  )
-  const [price, setPrice] = React.useState(String(event.feeAmount ?? 0))
-  const [serviceFee, setServiceFee] = React.useState(
-    String(event.serviceFeeAmount ?? 0),
-  )
-  const [slots, setSlots] = React.useState(event.capacity ?? '')
   const [status, setStatus] = React.useState<EventStatus>(event.status)
   const [kind, setKind] = React.useState<EventKind>(event.kind)
   const [requireJersey, setRequireJersey] = React.useState(
@@ -197,27 +181,6 @@ function DashboardEditEventPage() {
   const [submitting, setSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
-  const isFree = kind === 'free'
-  const priceAmount = Number(price.replace(/\D/g, '') || 0)
-  const serviceFeeAmount = Number(serviceFee.replace(/\D/g, '') || 0)
-  const displayPrice = isFree
-    ? 'Free'
-    : price.trim()
-      ? `Rp ${priceAmount.toLocaleString('id-ID')}`
-      : undefined
-
-  function applyEventType(nextKind: EventKind) {
-    setKind(nextKind)
-    if (nextKind === 'free') {
-      setPrice('0')
-      setServiceFee('0')
-      setCategoryNameEdited(false)
-      setCategoryName(name.trim())
-      return
-    }
-    if (priceAmount === 0) setPrice('')
-  }
-
   async function onSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault()
     if (!event.id) return
@@ -225,15 +188,10 @@ function DashboardEditEventPage() {
       setSubmitError('Pick an event date.')
       return
     }
-    if (!isFree && priceAmount <= 0) {
-      setSubmitError('Paid and flagship events need a price greater than 0.')
-      return
-    }
 
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const slotsValue = slots.replace(/\D/g, '')
       const updated = await updateEvent({
         data: {
           id: event.id,
@@ -258,14 +216,6 @@ function DashboardEditEventPage() {
           groupCapacity: requireGroup
             ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
             : null,
-          category: {
-            id: event.categoryId || primaryCourse?.id,
-            name: (categoryName.trim() || name.trim() || 'Open').trim(),
-            distance: distance.trim(),
-            price: isFree ? 0 : priceAmount,
-            serviceFee: isFree ? 0 : serviceFeeAmount,
-            maxParticipants: slotsValue ? Number(slotsValue) : null,
-          },
         },
       })
       void navigate({
@@ -324,12 +274,11 @@ function DashboardEditEventPage() {
             Edit event
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Update details, category, and publishing status.
+            Update details and publishing status.
           </p>
         </div>
 
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,40rem)_minmax(20rem,1fr)]">
-          <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit}>
             <FormSection
               description="Name, location, event schedule, and when registration ends."
               title="Event Details"
@@ -342,9 +291,6 @@ function DashboardEditEventPage() {
                     const nextName = e.target.value
                     setName(nextName)
                     if (!slugEdited) setSlug(slugify(nextName))
-                    if (isFree && !categoryNameEdited) {
-                      setCategoryName(nextName.trim())
-                    }
                   }}
                   placeholder="Saturday Climax — Jatiluwih"
                   required
@@ -370,7 +316,7 @@ function DashboardEditEventPage() {
                 </FieldDescription>
               </Field>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 lg:grid-cols-3">
                 <Field>
                   <FieldLabel htmlFor="date">Event Date</FieldLabel>
                   <Popover onOpenChange={setDateOpen} open={dateOpen}>
@@ -443,44 +389,43 @@ function DashboardEditEventPage() {
                     </Select>
                   </div>
                 </Field>
-              </div>
-
-              <Field>
-                <FieldLabel htmlFor="registrationClosesAt">
-                  Registration closed at
-                </FieldLabel>
-                <Popover
-                  onOpenChange={setRegistrationClosesOpen}
-                  open={registrationClosesOpen}
-                >
-                  <PopoverTrigger
-                    render={
-                      <Button
-                        className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground sm:max-w-xs"
-                        data-empty={!registrationClosesAt}
-                        id="registrationClosesAt"
-                        variant="outline"
-                      />
-                    }
+                <Field>
+                  <FieldLabel htmlFor="registrationClosesAt">
+                    Registration closed at
+                  </FieldLabel>
+                  <Popover
+                    onOpenChange={setRegistrationClosesOpen}
+                    open={registrationClosesOpen}
                   >
-                    <CalendarBlankIcon weight="bold" />
-                    {registrationClosesAt
-                      ? format(registrationClosesAt, 'd MMMM yyyy')
-                      : 'Pick a date'}
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-auto p-0">
-                    <Calendar
-                      disabled={[...(date ? [{ after: date }] : [])]}
-                      mode="single"
-                      onSelect={(next) => {
-                        setRegistrationClosesAt(next)
-                        if (next) setRegistrationClosesOpen(false)
-                      }}
-                      selected={registrationClosesAt}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </Field>
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground"
+                          data-empty={!registrationClosesAt}
+                          id="registrationClosesAt"
+                          variant="outline"
+                        />
+                      }
+                    >
+                      <CalendarBlankIcon weight="bold" />
+                      {registrationClosesAt
+                        ? format(registrationClosesAt, 'd MMMM yyyy')
+                        : 'Pick a date'}
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-auto p-0">
+                      <Calendar
+                        disabled={[...(date ? [{ after: date }] : [])]}
+                        mode="single"
+                        onSelect={(next) => {
+                          setRegistrationClosesAt(next)
+                          if (next) setRegistrationClosesOpen(false)
+                        }}
+                        selected={registrationClosesAt}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </Field>
+              </div>
 
               <Field>
                 <FieldLabel htmlFor="location">Location name</FieldLabel>
@@ -530,12 +475,8 @@ function DashboardEditEventPage() {
             </FormSection>
 
             <FormSection
-              description={
-                isFree
-                  ? 'Free auto-fills category name and sets price to 0 — edit freely. Leave slots empty for unlimited.'
-                  : 'Update the default category. Extra flagship courses stay as-is for now.'
-              }
-              title="Type & Category"
+              description="Free, paid, or flagship, plus optional registration steps. Categories are managed on the category page."
+              title="Type & options"
             >
               <Field>
                 <FieldLabel>Event Type</FieldLabel>
@@ -549,7 +490,7 @@ function DashboardEditEventPage() {
                           : 'border-border hover:border-foreground/40',
                       )}
                       key={option.value}
-                      onClick={() => applyEventType(option.value)}
+                      onClick={() => setKind(option.value)}
                       type="button"
                     >
                       {option.label}
@@ -557,79 +498,6 @@ function DashboardEditEventPage() {
                   ))}
                 </div>
               </Field>
-              <Field>
-                <FieldLabel htmlFor="categoryName">Category name</FieldLabel>
-                <Input
-                  id="categoryName"
-                  onChange={(e) => {
-                    setCategoryNameEdited(true)
-                    setCategoryName(e.target.value)
-                  }}
-                  placeholder={name.trim() || 'Open'}
-                  required
-                  value={categoryName}
-                />
-              </Field>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="distance">Distance</FieldLabel>
-                  <Input
-                    id="distance"
-                    onChange={(e) => setDistance(e.target.value)}
-                    placeholder="100 km"
-                    required
-                    value={distance}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="slots">Slots / limit</FieldLabel>
-                  <Input
-                    id="slots"
-                    inputMode="numeric"
-                    onChange={(e) => setSlots(e.target.value)}
-                    placeholder="Unlimited"
-                    value={slots}
-                  />
-                </Field>
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="price">Price</FieldLabel>
-                  <Input
-                    aria-invalid={!isFree && priceAmount <= 0}
-                    id="price"
-                    inputMode="numeric"
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder={isFree ? '0' : '150000'}
-                    required
-                    value={price}
-                  />
-                  {!isFree ? (
-                    <FieldDescription>Must be greater than 0.</FieldDescription>
-                  ) : (
-                    <FieldDescription>
-                      Defaults to 0 for free events.
-                    </FieldDescription>
-                  )}
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="serviceFee">Service fee</FieldLabel>
-                  <Input
-                    id="serviceFee"
-                    inputMode="numeric"
-                    onChange={(e) => setServiceFee(e.target.value)}
-                    placeholder="0"
-                    value={serviceFee}
-                  />
-                  <FieldDescription>Optional. Can be 0.</FieldDescription>
-                </Field>
-              </div>
-            </FormSection>
-
-            <FormSection
-              description="Optional registration steps. Turn these on only when the event needs them."
-              title="Options"
-            >
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium">Jersey size</p>
@@ -713,56 +581,29 @@ function DashboardEditEventPage() {
               </Field>
             </FormSection>
 
-            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-8">
-              {submitError ? (
-                <p className="mr-auto text-sm text-destructive">{submitError}</p>
-              ) : null}
-              <Link
-                className={cn(buttonVariants({ variant: 'outline' }))}
-                params={{ slug: event.slug }}
-                to="/dashboard/events/$slug"
-              >
-                Cancel
-              </Link>
-              <Button disabled={submitting} type="submit">
-                {submitting ? (<><Spinner /> Saving…</>) : 'Save changes'}
-              </Button>
+            <div className="grid gap-6 border-t border-border py-8 md:grid-cols-3">
+              <div className="flex flex-wrap items-center justify-end gap-3 md:col-span-2 md:col-start-2">
+                {submitError ? (
+                  <p className="mr-auto text-sm text-destructive">{submitError}</p>
+                ) : null}
+                <Link
+                  className={cn(buttonVariants({ variant: 'outline' }))}
+                  params={{ slug: event.slug }}
+                  to="/dashboard/events/$slug"
+                >
+                  Cancel
+                </Link>
+                <Button disabled={submitting} type="submit">
+                  {submitting ? (<><Spinner /> Saving…</>) : 'Save changes'}
+                </Button>
+              </div>
             </div>
           </form>
 
-          <EventPreview
-            categoryName={categoryName}
-            date={date ? format(date, 'd MMMM yyyy') : ''}
-            description={description}
-            distance={distance}
-            featureImage={featureImage}
-            fee={displayPrice}
-            groupCapacity={requireGroup ? groupCapacity : undefined}
-            kind={kind}
-            location={location}
-            locationAddress={locationAddress}
-            name={name}
-            registrationClosesAt={
-              registrationClosesAt
-                ? format(registrationClosesAt, 'd MMMM yyyy')
-                : ''
-            }
-            regulation={regulation}
-            requireGroup={requireGroup}
-            requireJersey={requireJersey}
-            serviceFee={isFree ? undefined : serviceFee}
-            slug={slug}
-            slots={slots}
-            status={status}
-            time={time}
-            timezone={timezone}
+          <DeleteEventCard
+            eventId={event.id!}
+            eventName={event.name}
           />
-        </div>
-
-        <DeleteEventCard
-          eventId={event.id!}
-          eventName={event.name}
-        />
       </div>
     </>
   )
@@ -798,22 +639,18 @@ function DeleteEventCard({
   }
 
   return (
-    <section className="border border-destructive/25 bg-destructive/5 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="font-heading text-base font-semibold tracking-tight text-destructive">
-            Delete event
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Permanently remove this event, its categories, groups, and
-            participants. This cannot be undone.
-          </p>
-        </div>
+    <section className="grid gap-6 border-t border-border py-8 md:grid-cols-3">
+      <div>
+        <h2 className="text-sm font-semibold text-destructive">Delete event</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Permanently remove this event, its categories, groups, and
+          participants. This cannot be undone.
+        </p>
+      </div>
+      <div className="md:col-span-2">
         <Dialog onOpenChange={setOpen} open={open}>
           <DialogTrigger
-            render={
-              <Button className="shrink-0" type="button" variant="destructive" />
-            }
+            render={<Button type="button" variant="destructive" />}
           >
             Delete event
           </DialogTrigger>
@@ -855,244 +692,12 @@ function FormSection({
   children: React.ReactNode
 }) {
   return (
-    <section className="border-t border-border py-8">
+    <section className="grid gap-6 border-t border-border py-8 md:grid-cols-3">
       <div>
-        <h2 className="font-heading text-base font-semibold tracking-tight">
-          {title}
-        </h2>
+        <h2 className="text-sm font-semibold">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-      <FieldGroup className="mt-6">{children}</FieldGroup>
+      <FieldGroup className="md:col-span-2">{children}</FieldGroup>
     </section>
-  )
-}
-
-const previewStatusLabel: Record<EventStatus, string> = {
-  draft: 'Draft',
-  open: 'Open',
-  closed: 'Closed',
-  archived: 'Archived',
-}
-
-const previewStatusStyles: Record<EventStatus, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-  archived: 'border-amber-200 bg-amber-50 text-amber-900',
-}
-
-const eventTypeLabel: Record<EventKind, string> = {
-  free: 'Free',
-  paid: 'Paid',
-  flagship: 'Flagship',
-}
-
-function EventPreview({
-  categoryName,
-  date,
-  description,
-  distance,
-  featureImage,
-  fee,
-  groupCapacity,
-  kind,
-  location,
-  locationAddress,
-  name,
-  registrationClosesAt,
-  regulation,
-  requireGroup,
-  requireJersey,
-  serviceFee,
-  slug,
-  slots,
-  status,
-  time,
-  timezone,
-}: {
-  categoryName?: string
-  date: string
-  description: string
-  distance?: string
-  featureImage?: string
-  fee?: string
-  groupCapacity?: string
-  kind: EventKind
-  location: string
-  locationAddress?: string
-  name: string
-  registrationClosesAt: string
-  regulation: string
-  requireGroup: boolean
-  requireJersey: boolean
-  serviceFee?: string
-  slug: string
-  slots?: string
-  status: EventStatus
-  time: string
-  timezone: TimezoneOption
-}) {
-  const displayName = name.trim() || 'Event name'
-  const displayFee = fee?.trim() || (kind === 'free' ? 'Free' : 'Price')
-  const displayDistance = distance?.trim() || 'Distance'
-  const displaySlots = slots?.trim() ? `${slots.trim()} spots` : 'Unlimited'
-  const displayCategory = categoryName?.trim() || 'Category'
-  const displayServiceFee = serviceFee?.trim()
-    ? `Rp ${Number(serviceFee.replace(/\D/g, '') || 0).toLocaleString('id-ID')}`
-    : null
-  const canRegister = status === 'open'
-
-  return (
-    <aside className="space-y-4 border-t border-border py-8 lg:sticky lg:top-6">
-      <div>
-        <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          Preview
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {status === 'draft'
-            ? 'Hidden from the public calendar until Open.'
-            : status === 'closed'
-              ? 'Registration is closed.'
-              : status === 'archived'
-                ? 'Hidden from the public calendar.'
-                : 'How this event appears on the ride calendar.'}
-        </p>
-      </div>
-
-      <div className="border border-border p-5">
-        {featureImage?.trim() ? (
-          <img
-            alt=""
-            className="mb-4 aspect-[4/5] w-full object-cover"
-            decoding="async"
-            height={1000}
-            src={eventImageSrc(featureImage.trim(), 800)}
-            width={800}
-          />
-        ) : null}
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-              Event
-            </p>
-            <h3 className="mt-2 font-heading text-xl font-semibold tracking-tight">
-              {displayName}
-            </h3>
-          </div>
-          <span
-            className={cn(
-              'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-              previewStatusStyles[status],
-            )}
-          >
-            {previewStatusLabel[status]}
-          </span>
-        </div>
-
-        <div className="mt-3">
-          {description.trim() ? (
-            <HtmlContent className="text-sm" html={description} />
-          ) : (
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Longer details for the event page.
-            </p>
-          )}
-        </div>
-        {regulation.trim() ? (
-          <div className="mt-4 border-t border-border pt-4">
-            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-              Regulation
-            </p>
-            <HtmlContent className="mt-2 text-sm" html={regulation} />
-          </div>
-        ) : null}
-
-        <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
-          <PreviewRow
-            label="When"
-            value={
-              date.trim()
-                ? `${date}${
-                    time.trim()
-                      ? ` · ${time.trim()} ${timezone}`
-                      : ` · ${timezone}`
-                  }`
-                : '—'
-            }
-          />
-          <PreviewRow label="Location" value={location.trim() || '—'} />
-          {locationAddress?.trim() ? (
-            <PreviewRow label="Address" value={locationAddress.trim()} />
-          ) : null}
-          <PreviewRow
-            label="Reg. closes"
-            value={registrationClosesAt.trim() || '—'}
-          />
-          <PreviewRow label="URL" value={slug ? `/events/${slug}` : '—'} />
-          <PreviewRow
-            label="Jersey"
-            value={requireJersey ? 'Required' : 'Off'}
-          />
-          <PreviewRow
-            label="Group"
-            value={
-              requireGroup
-                ? groupCapacity?.trim()
-                  ? `Required · max ${groupCapacity.trim()}`
-                  : 'Required'
-                : 'Off'
-            }
-          />
-        </dl>
-
-        <span
-          className={cn(
-            buttonVariants(),
-            'mt-6 w-full pointer-events-none',
-            !canRegister && 'opacity-50',
-          )}
-        >
-          {canRegister ? 'Register' : 'Not available yet'}
-        </span>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          {canRegister
-            ? registerCtaCopy(kind)
-            : 'Check back later or browse other open events.'}
-        </p>
-      </div>
-
-      <div className="border border-border p-5">
-        <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          Category
-        </p>
-        <div className="mt-2 flex items-baseline justify-between gap-4">
-          <h4 className="font-heading text-lg font-semibold tracking-tight">
-            {displayCategory}
-          </h4>
-          <p className="shrink-0 text-sm font-medium tabular-nums">
-            {displayFee}
-          </p>
-        </div>
-
-        <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
-          <PreviewRow label="Type" value={eventTypeLabel[kind]} />
-          <PreviewRow label="Distance" value={displayDistance} />
-          <PreviewRow label="Slots" value={displaySlots} />
-          <PreviewRow label="Price" value={displayFee} />
-          {displayServiceFee ? (
-            <PreviewRow label="Service fee" value={displayServiceFee} />
-          ) : null}
-        </dl>
-      </div>
-    </aside>
-  )
-}
-
-function PreviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
-    </div>
   )
 }
