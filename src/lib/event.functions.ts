@@ -296,6 +296,21 @@ export const createEvent = createServerFn({ method: 'POST' })
       groupCapacity: data.isGroupRide ? (data.groupCapacity ?? null) : null,
     })
 
+    if (data.kind === 'free') {
+      await db.insert(eventCategory).values({
+        id: crypto.randomUUID(),
+        eventId: id,
+        name: 'Free Ride',
+        description: null,
+        distance: null,
+        price: 0,
+        serviceFee: 0,
+        currency: 'IDR',
+        maxParticipants: null,
+        sortOrder: 0,
+      })
+    }
+
     const created = await loadEventBySlug(slug, true)
     if (!created) {
       throw new Error('Failed to create event')
