@@ -5,6 +5,7 @@ import {
   CommandIcon,
   StorefrontIcon,
   UsersIcon,
+  WalletIcon,
 } from '@phosphor-icons/react'
 
 import { NavMain } from '~/components/nav-main'
@@ -47,6 +48,20 @@ const data = {
         {
           title: 'Pickup Points',
           url: '/dashboard/pickup-points',
+        },
+      ],
+    },
+    {
+      title: 'Finance',
+      icon: <WalletIcon />,
+      items: [
+        {
+          title: 'Income',
+          url: '/dashboard/finance/income',
+        },
+        {
+          title: 'Expenses',
+          url: '/dashboard/finance/expenses',
         },
       ],
     },

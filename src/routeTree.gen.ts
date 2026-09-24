@@ -24,6 +24,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
+import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
 import { Route as DashboardOrdersRouteImport } from './routes/dashboard/orders'
 import { Route as DashboardPickupPointsRouteImport } from './routes/dashboard/pickup-points'
 import { Route as DashboardRolesRouteImport } from './routes/dashboard/roles'
@@ -46,6 +47,9 @@ import { Route as DashboardCatalogueNewRouteImport } from './routes/dashboard/ca
 import { Route as DashboardEventsIndexRouteImport } from './routes/dashboard/events.index'
 import { Route as DashboardEventsSlugRouteImport } from './routes/dashboard/events.$slug'
 import { Route as DashboardEventsNewRouteImport } from './routes/dashboard/events.new'
+import { Route as DashboardFinanceIndexRouteImport } from './routes/dashboard/finance.index'
+import { Route as DashboardFinanceExpensesRouteImport } from './routes/dashboard/finance.expenses'
+import { Route as DashboardFinanceIncomeRouteImport } from './routes/dashboard/finance.income'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders.index'
 import { Route as DashboardOrdersIdRouteImport } from './routes/dashboard/orders.$id'
 import { Route as DashboardPickupPointsIndexRouteImport } from './routes/dashboard/pickup-points.index'
@@ -143,6 +147,11 @@ const DashboardCatalogueRoute = DashboardCatalogueRouteImport.update({
 const DashboardEventsRoute = DashboardEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardFinanceRoute = DashboardFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardOrdersRoute = DashboardOrdersRouteImport.update({
@@ -255,6 +264,22 @@ const DashboardEventsNewRoute = DashboardEventsNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => DashboardEventsRoute,
+} as any)
+const DashboardFinanceIndexRoute = DashboardFinanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardFinanceRoute,
+} as any)
+const DashboardFinanceExpensesRoute =
+  DashboardFinanceExpensesRouteImport.update({
+    id: '/expenses',
+    path: '/expenses',
+    getParentRoute: () => DashboardFinanceRoute,
+  } as any)
+const DashboardFinanceIncomeRoute = DashboardFinanceIncomeRouteImport.update({
+  id: '/income',
+  path: '/income',
+  getParentRoute: () => DashboardFinanceRoute,
 } as any)
 const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
   id: '/',
@@ -395,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
+  '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
   '/dashboard/roles': typeof DashboardRolesRouteWithChildren
@@ -416,6 +442,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRouteWithChildren
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
+  '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
@@ -428,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
+  '/dashboard/finance/': typeof DashboardFinanceIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/dashboard/pickup-points/': typeof DashboardPickupPointsIndexRoute
   '/dashboard/roles/': typeof DashboardRolesIndexRoute
@@ -464,6 +493,8 @@ export interface FileRoutesByTo {
   '/dashboard/catalogue/$slug': typeof DashboardCatalogueSlugRoute
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
+  '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
@@ -476,6 +507,7 @@ export interface FileRoutesByTo {
   '/account/orders': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue': typeof DashboardCatalogueIndexRoute
   '/dashboard/events': typeof DashboardEventsIndexRoute
+  '/dashboard/finance': typeof DashboardFinanceIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/pickup-points': typeof DashboardPickupPointsIndexRoute
   '/dashboard/roles': typeof DashboardRolesIndexRoute
@@ -506,6 +538,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
+  '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
   '/dashboard/roles': typeof DashboardRolesRouteWithChildren
@@ -527,6 +560,8 @@ export interface FileRoutesById {
   '/dashboard/catalogue/new': typeof DashboardCatalogueNewRoute
   '/dashboard/events/$slug': typeof DashboardEventsSlugRouteWithChildren
   '/dashboard/events/new': typeof DashboardEventsNewRoute
+  '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
+  '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
@@ -539,6 +574,7 @@ export interface FileRoutesById {
   '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
+  '/dashboard/finance/': typeof DashboardFinanceIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/dashboard/pickup-points/': typeof DashboardPickupPointsIndexRoute
   '/dashboard/roles/': typeof DashboardRolesIndexRoute
@@ -570,6 +606,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/finance'
     | '/dashboard/orders'
     | '/dashboard/pickup-points'
     | '/dashboard/roles'
@@ -591,6 +628,8 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
+    | '/dashboard/finance/expenses'
+    | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
@@ -603,6 +642,7 @@ export interface FileRouteTypes {
     | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
+    | '/dashboard/finance/'
     | '/dashboard/orders/'
     | '/dashboard/pickup-points/'
     | '/dashboard/roles/'
@@ -639,6 +679,8 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue/$slug'
     | '/dashboard/catalogue/new'
     | '/dashboard/events/new'
+    | '/dashboard/finance/expenses'
+    | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
@@ -651,6 +693,7 @@ export interface FileRouteTypes {
     | '/account/orders'
     | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/finance'
     | '/dashboard/orders'
     | '/dashboard/pickup-points'
     | '/dashboard/roles'
@@ -680,6 +723,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/catalogue'
     | '/dashboard/events'
+    | '/dashboard/finance'
     | '/dashboard/orders'
     | '/dashboard/pickup-points'
     | '/dashboard/roles'
@@ -701,6 +745,8 @@ export interface FileRouteTypes {
     | '/dashboard/catalogue/new'
     | '/dashboard/events/$slug'
     | '/dashboard/events/new'
+    | '/dashboard/finance/expenses'
+    | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
@@ -713,6 +759,7 @@ export interface FileRouteTypes {
     | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
+    | '/dashboard/finance/'
     | '/dashboard/orders/'
     | '/dashboard/pickup-points/'
     | '/dashboard/roles/'
@@ -851,6 +898,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/dashboard/events'
       preLoaderRoute: typeof DashboardEventsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/finance': {
+      id: '/dashboard/finance'
+      path: '/finance'
+      fullPath: '/dashboard/finance'
+      preLoaderRoute: typeof DashboardFinanceRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/orders': {
@@ -1006,6 +1060,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/events/new'
       preLoaderRoute: typeof DashboardEventsNewRouteImport
       parentRoute: typeof DashboardEventsRoute
+    }
+    '/dashboard/finance/': {
+      id: '/dashboard/finance/'
+      path: '/'
+      fullPath: '/dashboard/finance/'
+      preLoaderRoute: typeof DashboardFinanceIndexRouteImport
+      parentRoute: typeof DashboardFinanceRoute
+    }
+    '/dashboard/finance/expenses': {
+      id: '/dashboard/finance/expenses'
+      path: '/expenses'
+      fullPath: '/dashboard/finance/expenses'
+      preLoaderRoute: typeof DashboardFinanceExpensesRouteImport
+      parentRoute: typeof DashboardFinanceRoute
+    }
+    '/dashboard/finance/income': {
+      id: '/dashboard/finance/income'
+      path: '/income'
+      fullPath: '/dashboard/finance/income'
+      preLoaderRoute: typeof DashboardFinanceIncomeRouteImport
+      parentRoute: typeof DashboardFinanceRoute
     }
     '/dashboard/orders/': {
       id: '/dashboard/orders/'
@@ -1224,6 +1299,21 @@ const DashboardEventsRouteWithChildren = DashboardEventsRoute._addFileChildren(
   DashboardEventsRouteChildren,
 )
 
+interface DashboardFinanceRouteChildren {
+  DashboardFinanceExpensesRoute: typeof DashboardFinanceExpensesRoute
+  DashboardFinanceIncomeRoute: typeof DashboardFinanceIncomeRoute
+  DashboardFinanceIndexRoute: typeof DashboardFinanceIndexRoute
+}
+
+const DashboardFinanceRouteChildren: DashboardFinanceRouteChildren = {
+  DashboardFinanceExpensesRoute: DashboardFinanceExpensesRoute,
+  DashboardFinanceIncomeRoute: DashboardFinanceIncomeRoute,
+  DashboardFinanceIndexRoute: DashboardFinanceIndexRoute,
+}
+
+const DashboardFinanceRouteWithChildren =
+  DashboardFinanceRoute._addFileChildren(DashboardFinanceRouteChildren)
+
 interface DashboardOrdersRouteChildren {
   DashboardOrdersIdRoute: typeof DashboardOrdersIdRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
@@ -1284,6 +1374,7 @@ const DashboardUsersRouteWithChildren = DashboardUsersRoute._addFileChildren(
 interface DashboardRouteRouteChildren {
   DashboardCatalogueRoute: typeof DashboardCatalogueRouteWithChildren
   DashboardEventsRoute: typeof DashboardEventsRouteWithChildren
+  DashboardFinanceRoute: typeof DashboardFinanceRouteWithChildren
   DashboardOrdersRoute: typeof DashboardOrdersRouteWithChildren
   DashboardPickupPointsRoute: typeof DashboardPickupPointsRouteWithChildren
   DashboardRolesRoute: typeof DashboardRolesRouteWithChildren
@@ -1294,6 +1385,7 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCatalogueRoute: DashboardCatalogueRouteWithChildren,
   DashboardEventsRoute: DashboardEventsRouteWithChildren,
+  DashboardFinanceRoute: DashboardFinanceRouteWithChildren,
   DashboardOrdersRoute: DashboardOrdersRouteWithChildren,
   DashboardPickupPointsRoute: DashboardPickupPointsRouteWithChildren,
   DashboardRolesRoute: DashboardRolesRouteWithChildren,
