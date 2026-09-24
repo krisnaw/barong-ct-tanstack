@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { CalendarBlankIcon, WalletIcon } from '@phosphor-icons/react'
+import { format } from 'date-fns'
 import {
-  createIncomeId,
   filterIncomeByPeriod,
   financePeriodOptions,
   formatFinanceDate,
@@ -10,8 +11,7 @@ import {
   incomeSourceFilterOptions,
   incomeSourceLabel,
   incomeSourceOptions,
-  mockFinanceEvents,
-  mockFinanceIncome,
+  todayFinanceDate,
   type FinanceIncomeRow,
   type FinancePeriod,
   type IncomeSource,
@@ -25,6 +25,15 @@ import {
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
 import { Button } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import {
   Dialog,
   DialogClose,
@@ -37,6 +46,11 @@ import {
 import { Field, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -55,6 +69,14 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
+import {
+  createFinanceIncome,
+  deleteFinanceIncome,
+  listFinanceEvents,
+  listFinanceIncome,
+  updateFinanceIncome,
+} from '~/lib/finance.functions'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import { seo } from '~/utils/seo'
 
 const NONE_EVENT = '__none__'
@@ -69,9 +91,15 @@ type IncomeFormState = {
   note: string
 }
 
+function parseFinanceDate(iso: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return undefined
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 function emptyIncomeForm(): IncomeFormState {
   return {
-    date: '2026-09-24',
+    date: todayFinanceDate(),
     amount: '',
     source: 'event',
     eventId: NONE_EVENT,
@@ -90,23 +118,35 @@ function formFromIncome(income: FinanceIncomeRow): IncomeFormState {
 }
 
 export const Route = createFileRoute('/dashboard/finance/income')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
+  loader: async () => {
+    const [income, events] = await Promise.all([
+      listFinanceIncome(),
+      listFinanceEvents(),
+    ])
+    return { income, events }
+  },
   head: () => ({
     meta: seo({
       title: 'Income · Finance · Dashboard | Barong Cycling Team',
-      description: 'Record net income manually (mock data).',
+      description: 'Record net income after payment gateway fees.',
     }),
   }),
   component: DashboardFinanceIncomePage,
 })
 
 function DashboardFinanceIncomePage() {
+  const { income, events } = Route.useLoaderData()
+  const router = useRouter()
   const periodId = React.useId()
   const sourceFilterId = React.useId()
   const [period, setPeriod] = React.useState<FinancePeriod>('this_month')
   const [sourceFilter, setSourceFilter] =
     React.useState<IncomeSourceFilter>('all')
-  const [income, setIncome] = React.useState(mockFinanceIncome)
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [dateOpen, setDateOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<IncomeFormState>(emptyIncomeForm)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
@@ -131,7 +171,7 @@ function DashboardFinanceIncomePage() {
     setDialogOpen(true)
   }
 
-  function saveIncome() {
+  async function saveIncome() {
     const amount = Number(form.amount.replace(/[^\d]/g, ''))
     if (!form.date || !Number.isFinite(amount) || amount <= 0) {
       toast.add({
@@ -142,39 +182,53 @@ function DashboardFinanceIncomePage() {
       return
     }
 
-    const event =
-      form.eventId === NONE_EVENT
-        ? null
-        : (mockFinanceEvents.find((item) => item.id === form.eventId) ?? null)
-
-    const next: FinanceIncomeRow = {
-      id: editingId ?? createIncomeId(),
+    const payload = {
       date: form.date,
       source: form.source,
-      eventId: event?.id ?? null,
-      eventName: event?.name ?? null,
-      note: form.note.trim() || '—',
+      eventId: form.eventId === NONE_EVENT ? null : form.eventId,
+      note: form.note.trim(),
       amount,
     }
 
-    setIncome((current) => {
+    setSaving(true)
+    try {
       if (editingId) {
-        return current.map((row) => (row.id === editingId ? next : row))
+        await updateFinanceIncome({ data: { id: editingId, ...payload } })
+        toast.add({ type: 'success', title: 'Income updated' })
+      } else {
+        await createFinanceIncome({ data: payload })
+        toast.add({ type: 'success', title: 'Income added' })
       }
-      return [next, ...current]
-    })
-    setDialogOpen(false)
-    toast.add({
-      type: 'success',
-      title: editingId ? 'Income updated' : 'Income added',
-    })
+      setDialogOpen(false)
+      await router.invalidate()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: editingId ? 'Could not update income' : 'Could not add income',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteId) return
-    setIncome((current) => current.filter((row) => row.id !== deleteId))
-    setDeleteId(null)
-    toast.add({ type: 'success', title: 'Income deleted' })
+    setSaving(true)
+    try {
+      await deleteFinanceIncome({ data: { id: deleteId } })
+      setDeleteId(null)
+      toast.add({ type: 'success', title: 'Income deleted' })
+      await router.invalidate()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: 'Could not delete income',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -273,12 +327,22 @@ function DashboardFinanceIncomePage() {
         </div>
 
         {incomeRows.length === 0 ? (
-          <div className="border border-border px-4 py-8 text-sm text-muted-foreground">
-            <p>No income recorded for this period.</p>
-            <Button className="mt-3" onClick={openCreate} type="button">
-              Add income
-            </Button>
-          </div>
+          <Empty className="border border-dashed border-border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <WalletIcon />
+              </EmptyMedia>
+              <EmptyTitle>No income yet</EmptyTitle>
+              <EmptyDescription>
+                Record net amounts for this period after payment gateway fees.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={openCreate} type="button">
+                Add income
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="overflow-x-auto border border-border">
             <Table>
@@ -339,7 +403,10 @@ function DashboardFinanceIncomePage() {
       <Dialog
         onOpenChange={(open) => {
           setDialogOpen(open)
-          if (!open) setEditingId(null)
+          if (!open) {
+            setEditingId(null)
+            setDateOpen(false)
+          }
         }}
         open={dialogOpen}
       >
@@ -350,23 +417,44 @@ function DashboardFinanceIncomePage() {
             </DialogTitle>
             <DialogDescription>
               Enter the net amount that landed (after payment gateway fees when
-              applicable). Session-only mock.
+              applicable).
             </DialogDescription>
           </DialogHeader>
           <FieldGroup className="gap-4 py-2">
             <Field>
               <FieldLabel htmlFor="income-date">Date</FieldLabel>
-              <Input
-                id="income-date"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    date: event.target.value,
-                  }))
-                }
-                type="date"
-                value={form.date}
-              />
+              <Popover onOpenChange={setDateOpen} open={dateOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground"
+                      data-empty={!form.date}
+                      id="income-date"
+                      type="button"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <CalendarBlankIcon weight="bold" />
+                  {form.date
+                    ? format(parseFinanceDate(form.date) ?? new Date(), 'd MMMM yyyy')
+                    : 'Pick a date'}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    onSelect={(next) => {
+                      if (!next) return
+                      setForm((current) => ({
+                        ...current,
+                        date: format(next, 'yyyy-MM-dd'),
+                      }))
+                      setDateOpen(false)
+                    }}
+                    selected={parseFinanceDate(form.date)}
+                  />
+                </PopoverContent>
+              </Popover>
             </Field>
             <Field>
               <FieldLabel htmlFor="income-amount">Amount (IDR, net)</FieldLabel>
@@ -413,9 +501,9 @@ function DashboardFinanceIncomePage() {
               <Select
                 items={[
                   { value: NONE_EVENT, label: 'None' },
-                  ...mockFinanceEvents.map((event) => ({
-                    value: event.id,
-                    label: event.name,
+                  ...events.map((item) => ({
+                    value: item.id,
+                    label: item.name,
                   })),
                 ]}
                 onValueChange={(value) => {
@@ -429,9 +517,9 @@ function DashboardFinanceIncomePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE_EVENT}>None</SelectItem>
-                  {mockFinanceEvents.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
-                      {event.name}
+                  {events.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -453,11 +541,14 @@ function DashboardFinanceIncomePage() {
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose
+              disabled={saving}
+              render={<Button type="button" variant="outline" />}
+            >
               Cancel
             </DialogClose>
-            <Button onClick={saveIncome} type="button">
-              Save
+            <Button disabled={saving} onClick={() => void saveIncome()} type="button">
+              {saving ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -474,16 +565,24 @@ function DashboardFinanceIncomePage() {
             <DialogTitle>Delete income?</DialogTitle>
             <DialogDescription>
               {deleteTarget
-                ? `Remove “${deleteTarget.note}” (${formatFinanceMoney(deleteTarget.amount)}).`
-                : 'This income entry will be removed from the list.'}
+                ? `Remove “${deleteTarget.note || 'this entry'}” (${formatFinanceMoney(deleteTarget.amount)}).`
+                : 'This income entry will be removed.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose
+              disabled={saving}
+              render={<Button type="button" variant="outline" />}
+            >
               Cancel
             </DialogClose>
-            <Button onClick={confirmDelete} type="button" variant="destructive">
-              Delete
+            <Button
+              disabled={saving}
+              onClick={() => void confirmDelete()}
+              type="button"
+              variant="destructive"
+            >
+              {saving ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

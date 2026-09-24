@@ -1,5 +1,7 @@
 import { relations } from 'drizzle-orm'
 import { user } from '../auth'
+import { financeExpense } from '../finance/expense'
+import { financeIncome } from '../finance/income'
 import { eventCategory } from './category'
 import { eventCheckpoint } from './checkpoint'
 import { checkpointCategory } from './checkpoint-category'
@@ -15,6 +17,8 @@ export const eventRelations = relations(event, ({ many }) => ({
   participants: many(eventParticipant),
   promos: many(eventPromo),
   checkpoints: many(eventCheckpoint),
+  financeIncome: many(financeIncome),
+  financeExpenses: many(financeExpense),
 }))
 
 export const eventCategoryRelations = relations(eventCategory, ({ one, many }) => ({

@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { CalendarBlankIcon, ReceiptIcon } from '@phosphor-icons/react'
+import { format } from 'date-fns'
 import {
-  createExpenseId,
   expenseCategoryLabel,
   expenseCategoryOptions,
   filterExpensesByPeriod,
@@ -9,8 +10,7 @@ import {
   formatFinanceDate,
   formatFinanceMoney,
   formatPeriodLabel,
-  mockFinanceEvents,
-  mockFinanceExpenses,
+  todayFinanceDate,
   type ExpenseCategory,
   type FinanceExpenseRow,
   type FinancePeriod,
@@ -24,6 +24,15 @@ import {
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
 import { Button } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import {
   Dialog,
   DialogClose,
@@ -36,6 +45,11 @@ import {
 import { Field, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -54,6 +68,14 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { toast } from '~/components/ui/toast'
+import {
+  createFinanceExpense,
+  deleteFinanceExpense,
+  listFinanceEvents,
+  listFinanceExpenses,
+  updateFinanceExpense,
+} from '~/lib/finance.functions'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import { seo } from '~/utils/seo'
 
 const NONE_EVENT = '__none__'
@@ -66,9 +88,15 @@ type ExpenseFormState = {
   note: string
 }
 
+function parseFinanceDate(iso: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return undefined
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 function emptyExpenseForm(): ExpenseFormState {
   return {
-    date: '2026-09-24',
+    date: todayFinanceDate(),
     amount: '',
     category: 'event_ops',
     eventId: NONE_EVENT,
@@ -87,20 +115,32 @@ function formFromExpense(expense: FinanceExpenseRow): ExpenseFormState {
 }
 
 export const Route = createFileRoute('/dashboard/finance/expenses')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
+  loader: async () => {
+    const [expenses, events] = await Promise.all([
+      listFinanceExpenses(),
+      listFinanceEvents(),
+    ])
+    return { expenses, events }
+  },
   head: () => ({
     meta: seo({
       title: 'Expenses · Finance · Dashboard | Barong Cycling Team',
-      description: 'Club expenses (mock data).',
+      description: 'Record club expenses.',
     }),
   }),
   component: DashboardFinanceExpensesPage,
 })
 
 function DashboardFinanceExpensesPage() {
+  const { expenses, events } = Route.useLoaderData()
+  const router = useRouter()
   const periodId = React.useId()
   const [period, setPeriod] = React.useState<FinancePeriod>('this_month')
-  const [expenses, setExpenses] = React.useState(mockFinanceExpenses)
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [dateOpen, setDateOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<ExpenseFormState>(emptyExpenseForm)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
@@ -121,7 +161,7 @@ function DashboardFinanceExpensesPage() {
     setDialogOpen(true)
   }
 
-  function saveExpense() {
+  async function saveExpense() {
     const amount = Number(form.amount.replace(/[^\d]/g, ''))
     if (!form.date || !Number.isFinite(amount) || amount <= 0) {
       toast.add({
@@ -132,39 +172,53 @@ function DashboardFinanceExpensesPage() {
       return
     }
 
-    const event =
-      form.eventId === NONE_EVENT
-        ? null
-        : (mockFinanceEvents.find((item) => item.id === form.eventId) ?? null)
-
-    const next: FinanceExpenseRow = {
-      id: editingId ?? createExpenseId(),
+    const payload = {
       date: form.date,
       category: form.category,
-      eventId: event?.id ?? null,
-      eventName: event?.name ?? null,
-      note: form.note.trim() || '—',
+      eventId: form.eventId === NONE_EVENT ? null : form.eventId,
+      note: form.note.trim(),
       amount,
     }
 
-    setExpenses((current) => {
+    setSaving(true)
+    try {
       if (editingId) {
-        return current.map((row) => (row.id === editingId ? next : row))
+        await updateFinanceExpense({ data: { id: editingId, ...payload } })
+        toast.add({ type: 'success', title: 'Expense updated' })
+      } else {
+        await createFinanceExpense({ data: payload })
+        toast.add({ type: 'success', title: 'Expense added' })
       }
-      return [next, ...current]
-    })
-    setDialogOpen(false)
-    toast.add({
-      type: 'success',
-      title: editingId ? 'Expense updated' : 'Expense added',
-    })
+      setDialogOpen(false)
+      await router.invalidate()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: editingId ? 'Could not update expense' : 'Could not add expense',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteId) return
-    setExpenses((current) => current.filter((row) => row.id !== deleteId))
-    setDeleteId(null)
-    toast.add({ type: 'success', title: 'Expense deleted' })
+    setSaving(true)
+    try {
+      await deleteFinanceExpense({ data: { id: deleteId } })
+      setDeleteId(null)
+      toast.add({ type: 'success', title: 'Expense deleted' })
+      await router.invalidate()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: 'Could not delete expense',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -199,7 +253,7 @@ function DashboardFinanceExpensesPage() {
               Expenses
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {formatPeriodLabel(period)} · mock data
+              {formatPeriodLabel(period)}
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -241,12 +295,22 @@ function DashboardFinanceExpensesPage() {
         </div>
 
         {expenseRows.length === 0 ? (
-          <div className="border border-border px-4 py-8 text-sm text-muted-foreground">
-            <p>No expenses yet for this period.</p>
-            <Button className="mt-3" onClick={openCreate} type="button">
-              Add expense
-            </Button>
-          </div>
+          <Empty className="border border-dashed border-border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ReceiptIcon />
+              </EmptyMedia>
+              <EmptyTitle>No expenses yet</EmptyTitle>
+              <EmptyDescription>
+                Add club costs for this period to keep the books up to date.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={openCreate} type="button">
+                Add expense
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="overflow-x-auto border border-border">
             <Table>
@@ -307,7 +371,10 @@ function DashboardFinanceExpensesPage() {
       <Dialog
         onOpenChange={(open) => {
           setDialogOpen(open)
-          if (!open) setEditingId(null)
+          if (!open) {
+            setEditingId(null)
+            setDateOpen(false)
+          }
         }}
         open={dialogOpen}
       >
@@ -316,24 +383,43 @@ function DashboardFinanceExpensesPage() {
             <DialogTitle>
               {editingId ? 'Edit expense' : 'Add expense'}
             </DialogTitle>
-            <DialogDescription>
-              Record a club cost. Changes stay in this session only (mock).
-            </DialogDescription>
+            <DialogDescription>Record a club cost.</DialogDescription>
           </DialogHeader>
           <FieldGroup className="gap-4 py-2">
             <Field>
               <FieldLabel htmlFor="expense-date">Date</FieldLabel>
-              <Input
-                id="expense-date"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    date: event.target.value,
-                  }))
-                }
-                type="date"
-                value={form.date}
-              />
+              <Popover onOpenChange={setDateOpen} open={dateOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      className="w-full justify-start font-normal data-[empty=true]:text-muted-foreground"
+                      data-empty={!form.date}
+                      id="expense-date"
+                      type="button"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <CalendarBlankIcon weight="bold" />
+                  {form.date
+                    ? format(parseFinanceDate(form.date) ?? new Date(), 'd MMMM yyyy')
+                    : 'Pick a date'}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    onSelect={(next) => {
+                      if (!next) return
+                      setForm((current) => ({
+                        ...current,
+                        date: format(next, 'yyyy-MM-dd'),
+                      }))
+                      setDateOpen(false)
+                    }}
+                    selected={parseFinanceDate(form.date)}
+                  />
+                </PopoverContent>
+              </Popover>
             </Field>
             <Field>
               <FieldLabel htmlFor="expense-amount">Amount (IDR)</FieldLabel>
@@ -380,9 +466,9 @@ function DashboardFinanceExpensesPage() {
               <Select
                 items={[
                   { value: NONE_EVENT, label: 'None' },
-                  ...mockFinanceEvents.map((event) => ({
-                    value: event.id,
-                    label: event.name,
+                  ...events.map((item) => ({
+                    value: item.id,
+                    label: item.name,
                   })),
                 ]}
                 onValueChange={(value) => {
@@ -396,9 +482,9 @@ function DashboardFinanceExpensesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE_EVENT}>None</SelectItem>
-                  {mockFinanceEvents.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
-                      {event.name}
+                  {events.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -420,11 +506,18 @@ function DashboardFinanceExpensesPage() {
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose
+              disabled={saving}
+              render={<Button type="button" variant="outline" />}
+            >
               Cancel
             </DialogClose>
-            <Button onClick={saveExpense} type="button">
-              Save
+            <Button
+              disabled={saving}
+              onClick={() => void saveExpense()}
+              type="button"
+            >
+              {saving ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -441,16 +534,24 @@ function DashboardFinanceExpensesPage() {
             <DialogTitle>Delete expense?</DialogTitle>
             <DialogDescription>
               {deleteTarget
-                ? `Remove “${deleteTarget.note}” (${formatFinanceMoney(deleteTarget.amount)}).`
-                : 'This expense will be removed from the list.'}
+                ? `Remove “${deleteTarget.note || 'this entry'}” (${formatFinanceMoney(deleteTarget.amount)}).`
+                : 'This expense will be removed.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose
+              disabled={saving}
+              render={<Button type="button" variant="outline" />}
+            >
               Cancel
             </DialogClose>
-            <Button onClick={confirmDelete} type="button" variant="destructive">
-              Delete
+            <Button
+              disabled={saving}
+              onClick={() => void confirmDelete()}
+              type="button"
+              variant="destructive"
+            >
+              {saving ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>
