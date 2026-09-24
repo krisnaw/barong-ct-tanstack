@@ -1,6 +1,10 @@
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { MagnifyingGlassIcon, PackageIcon } from '@phosphor-icons/react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import {
+  ArrowLeftIcon,
+  MagnifyingGlassIcon,
+  PackageIcon,
+} from '@phosphor-icons/react'
 import { matchesStaffPickupQuery } from '~/data/staff-pickup'
 import {
   formatCustomMeasurements,
@@ -120,6 +124,13 @@ function StaffPickupPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
+        <Link
+          className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          to="/staff"
+        >
+          <ArrowLeftIcon aria-hidden className="size-3.5" />
+          Staff tools
+        </Link>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           Pickup desk
         </h1>

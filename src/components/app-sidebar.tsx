@@ -50,8 +50,8 @@ const data = {
           url: '/dashboard/pickup-points',
         },
         {
-          title: 'Pickup desk',
-          url: '/staff/pickup',
+          title: 'Staff desk',
+          url: '/staff',
         },
       ],
     },
