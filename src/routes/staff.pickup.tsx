@@ -1,15 +1,19 @@
 import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { MagnifyingGlassIcon, PackageIcon } from '@phosphor-icons/react'
+import { matchesStaffPickupQuery } from '~/data/staff-pickup'
 import {
-  matchesStaffPickupQuery,
-  mockStaffPickupOrders,
-  mockStaffPickupPoints,
-  staffPickupItemCount,
-  staffPickupItemSummary,
-  type StaffPickupOrder,
-} from '~/data/staff-pickup'
-import { formatOrderDate } from '~/data/orders'
+  formatCustomMeasurements,
+  shopImageSrc,
+} from '~/data/shop'
+import {
+  formatOrderDate,
+  orderCustomerName,
+  orderItemCount,
+  orderPickupPointName,
+  type ShopOrder,
+} from '~/data/orders'
+import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
 import {
   Dialog,
@@ -46,19 +50,23 @@ import {
   SheetTitle,
 } from '~/components/ui/sheet'
 import { toast } from '~/components/ui/toast'
+import { listStaffPickupOrders } from '~/lib/order.functions'
+import { listPickupPoints } from '~/lib/pickup-point.functions'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import { seo } from '~/utils/seo'
 
 const ALL_POINTS = '__all__'
 
-const pickupPointFilterItems = [
-  { value: ALL_POINTS, label: 'All points' },
-  ...mockStaffPickupPoints.map((point) => ({
-    value: point.id,
-    label: point.name,
-  })),
-]
-
 export const Route = createFileRoute('/staff/pickup')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
+  loader: async () => {
+    const [orders, points] = await Promise.all([
+      listStaffPickupOrders(),
+      listPickupPoints(),
+    ])
+    return { orders, points }
+  },
   head: () => ({
     meta: seo({
       title: 'Pickup desk · Staff | Barong Cycling Team',
@@ -68,17 +76,30 @@ export const Route = createFileRoute('/staff/pickup')({
   component: StaffPickupPage,
 })
 
+function orderItemSummary(order: ShopOrder) {
+  return order.lines
+    .map((line) => `${line.name} · ${line.color} / ${line.size}`)
+    .join(' · ')
+}
+
 function StaffPickupPage() {
+  const { orders, points } = Route.useLoaderData()
   const searchId = React.useId()
   const pointId = React.useId()
-  const [orders, setOrders] = React.useState(mockStaffPickupOrders)
   const [query, setQuery] = React.useState('')
   const [pointFilter, setPointFilter] = React.useState(ALL_POINTS)
   const [detailId, setDetailId] = React.useState<string | null>(null)
   const [confirmId, setConfirmId] = React.useState<string | null>(null)
 
-  const readyOrders = orders.filter((order) => order.status === 'ready')
-  const visible = readyOrders.filter((order) => {
+  const pickupPointFilterItems = [
+    { value: ALL_POINTS, label: 'All points' },
+    ...points.map((point) => ({
+      value: point.id,
+      label: point.name,
+    })),
+  ]
+
+  const visible = orders.filter((order) => {
     if (pointFilter !== ALL_POINTS && order.pickupPointId !== pointFilter) {
       return false
     }
@@ -87,19 +108,13 @@ function StaffPickupPage() {
   const detailOrder = orders.find((order) => order.id === detailId) ?? null
   const confirmTarget = orders.find((order) => order.id === confirmId) ?? null
 
-  function markCollected(order: StaffPickupOrder) {
-    setOrders((current) =>
-      current.map((row) =>
-        row.id === order.id ? { ...row, status: 'collected' as const } : row,
-      ),
-    )
-    setConfirmId(null)
-    setDetailId(null)
+  function requestMarkCollected() {
     toast.add({
-      type: 'success',
-      title: 'Marked as picked up',
-      description: `${order.orderNumber} · ${order.customerName} (UI mock)`,
+      type: 'info',
+      title: 'Not connected yet',
+      description: 'Marking pickup will be wired in a later step.',
     })
+    setConfirmId(null)
   }
 
   return (
@@ -109,8 +124,7 @@ function StaffPickupPage() {
           Pickup desk
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Open an order to check items, then mark it collected. Mock data for
-          now.
+          Open an order to check items. Marking as picked up comes next.
         </p>
       </div>
 
@@ -157,8 +171,8 @@ function StaffPickupPage() {
 
       <p className="text-sm text-muted-foreground">
         {visible.length} ready to collect
-        {readyOrders.length !== visible.length
-          ? ` · ${readyOrders.length} total waiting`
+        {orders.length !== visible.length
+          ? ` · ${orders.length} total waiting`
           : null}
       </p>
 
@@ -193,29 +207,28 @@ function StaffPickupPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {visible.map((order) => {
-            const count = staffPickupItemCount(order)
+            const count = orderItemCount(order)
+            const pointName = orderPickupPointName(order) ?? 'Pickup'
             return (
               <li className="border border-border px-4 py-4" key={order.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium tracking-tight">
-                        {order.orderNumber}
-                      </p>
-                      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                        Ready
-                      </span>
+                      <p className="font-medium tracking-tight">{order.id}</p>
+                      <OrderStatusBadge status={order.status} />
                     </div>
-                    <p className="text-sm">{order.customerName}</p>
+                    <p className="text-sm">{orderCustomerName(order)}</p>
                     <p className="text-sm text-muted-foreground">
                       {order.phone}
                       <span className="text-border"> · </span>
-                      {order.pickupPointName}
+                      {pointName}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {staffPickupItemSummary(order)}
+                      {orderItemSummary(order)}
                       <span className="text-border"> · </span>
                       {count} item{count === 1 ? '' : 's'}
+                      <span className="text-border"> · </span>
+                      Paid {formatOrderDate(order.payment?.paidAt ?? order.placedAt)}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
@@ -250,10 +263,10 @@ function StaffPickupPage() {
           {detailOrder ? (
             <>
               <SheetHeader className="border-b border-border">
-                <SheetTitle>{detailOrder.orderNumber}</SheetTitle>
+                <SheetTitle>{detailOrder.id}</SheetTitle>
                 <SheetDescription>
                   Check items before handing over at{' '}
-                  {detailOrder.pickupPointName}.
+                  {orderPickupPointName(detailOrder) ?? 'pickup'}.
                 </SheetDescription>
               </SheetHeader>
 
@@ -266,7 +279,7 @@ function StaffPickupPage() {
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">Name</dt>
                       <dd className="text-right font-medium">
-                        {detailOrder.customerName}
+                        {orderCustomerName(detailOrder)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-4">
@@ -285,14 +298,14 @@ function StaffPickupPage() {
                       <dt className="text-muted-foreground">Paid</dt>
                       <dd className="text-right">
                         {formatOrderDate(
-                          `${detailOrder.paidAt}T00:00:00+08:00`,
+                          detailOrder.payment?.paidAt ?? detailOrder.placedAt,
                         )}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">Pickup</dt>
                       <dd className="text-right">
-                        {detailOrder.pickupPointName}
+                        {orderPickupPointName(detailOrder) ?? '—'}
                       </dd>
                     </div>
                   </dl>
@@ -300,15 +313,23 @@ function StaffPickupPage() {
 
                 <section className="space-y-2">
                   <h2 className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                    Items ({staffPickupItemCount(detailOrder)})
+                    Items ({orderItemCount(detailOrder)})
                   </h2>
                   <ul className="divide-y divide-border border border-border">
                     {detailOrder.lines.map((line, index) => (
                       <li
-                        className="flex flex-col gap-1 px-3 py-3"
-                        key={`${detailOrder.id}-${index}`}
+                        className="flex gap-4 px-3 py-3"
+                        key={`${detailOrder.id}-${line.slug}-${line.size}-${index}`}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <img
+                          alt=""
+                          className="size-16 shrink-0 object-cover sm:size-20"
+                          decoding="async"
+                          height={160}
+                          src={shopImageSrc(line.image, 160)}
+                          width={160}
+                        />
+                        <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="font-medium tracking-tight">
                               {line.name}
@@ -317,10 +338,16 @@ function StaffPickupPage() {
                               {line.color}
                               <span className="text-border"> · </span>
                               Size {line.size}
+                              {line.preOrder ? (
+                                <>
+                                  <span className="text-border"> · </span>
+                                  Pre order
+                                </>
+                              ) : null}
                             </p>
-                            {line.customNote ? (
+                            {line.custom ? (
                               <p className="mt-1 text-xs text-muted-foreground">
-                                Custom: {line.customNote}
+                                Custom: {formatCustomMeasurements(line.custom)}
                               </p>
                             ) : null}
                           </div>
@@ -334,17 +361,15 @@ function StaffPickupPage() {
                 </section>
               </div>
 
-              {detailOrder.status === 'ready' ? (
-                <SheetFooter className="border-t border-border">
-                  <Button
-                    className="w-full"
-                    onClick={() => setConfirmId(detailOrder.id)}
-                    type="button"
-                  >
-                    Mark picked up
-                  </Button>
-                </SheetFooter>
-              ) : null}
+              <SheetFooter className="border-t border-border">
+                <Button
+                  className="w-full"
+                  onClick={() => setConfirmId(detailOrder.id)}
+                  type="button"
+                >
+                  Mark picked up
+                </Button>
+              </SheetFooter>
             </>
           ) : null}
         </SheetContent>
@@ -361,20 +386,15 @@ function StaffPickupPage() {
             <DialogTitle>Confirm pickup?</DialogTitle>
             <DialogDescription>
               {confirmTarget
-                ? `Mark ${confirmTarget.orderNumber} for ${confirmTarget.customerName} as collected at ${confirmTarget.pickupPointName}.`
-                : 'Mark this order as collected.'}
+                ? `Mark ${confirmTarget.id} for ${orderCustomerName(confirmTarget)} as collected at ${orderPickupPointName(confirmTarget) ?? 'pickup'}. This action is not saved yet.`
+                : 'Mark this order as collected. This action is not saved yet.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>
               Cancel
             </DialogClose>
-            <Button
-              onClick={() => {
-                if (confirmTarget) markCollected(confirmTarget)
-              }}
-              type="button"
-            >
+            <Button onClick={requestMarkCollected} type="button">
               Confirm
             </Button>
           </DialogFooter>

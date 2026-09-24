@@ -15,6 +15,13 @@
       "when": 1790229742487,
       "tag": "0001_noisy_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790233289544,
+      "tag": "0002_foamy_firebrand",
+      "breakpoints": true
     }
   ]
 }

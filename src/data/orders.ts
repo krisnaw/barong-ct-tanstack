@@ -64,6 +64,7 @@ export type ShopOrder = {
   shippingLabel: string
   courier?: string
   trackingNumber?: string
+  pickedUpAt?: string
   lines: ShopOrderLine[]
   subtotal: number
   shipping: number

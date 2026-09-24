@@ -37,6 +37,7 @@ export const orders = sqliteTable(
     status: text('status').default('pending').notNull(),
     courier: text('courier'),
     trackingNumber: text('tracking_number'),
+    pickedUpAt: integer('picked_up_at', { mode: 'timestamp_ms' }),
     placedAt: integer('placed_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -49,5 +50,6 @@ export const orders = sqliteTable(
     index('orders_userId_idx').on(table.userId),
     index('orders_placed_at_idx').on(table.placedAt),
     index('orders_pickup_point_id_idx').on(table.pickupPointId),
+    index('orders_picked_up_at_idx').on(table.pickedUpAt),
   ],
 )

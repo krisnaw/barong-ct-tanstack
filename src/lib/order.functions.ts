@@ -7,6 +7,7 @@ import {
   courierIds,
   discountAmount,
   formatInvoiceNumber,
+  orderPaymentStatus,
   parseDiscountCode,
   type ShopOrder,
 } from '~/data/orders'
@@ -21,7 +22,7 @@ import { loadShopOrderByDbId, mapOrder } from 'db/query/order-load'
 import { lineItems, orders, payment } from 'db/schemas/order'
 import { pickupPoint, product } from 'db/schemas/shop'
 import { auth } from '~/lib/auth'
-import { hasAdminRole } from '~/lib/auth.functions'
+import { hasAdminRole, hasStaffAccess } from '~/lib/auth.functions'
 import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
 import { sendOrderShippedEmail } from '~/lib/email/order-shipped'
@@ -103,6 +104,14 @@ async function requireSession() {
 async function requireAdmin() {
   const session = await requireSession()
   if (!hasAdminRole(session.user.role)) {
+    throw new Error('Unauthorized')
+  }
+  return session
+}
+
+async function requireStaffAccess() {
+  const session = await requireSession()
+  if (!hasStaffAccess(session.user.role)) {
     throw new Error('Unauthorized')
   }
   return session
@@ -272,6 +281,21 @@ export const listOrders = createServerFn({ method: 'GET' }).handler(async () => 
   await requireAdmin()
   return loadMappedOrders()
 })
+
+/** Paid pickup orders waiting at a pickup point (not yet completed). */
+export const listStaffPickupOrders = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    await requireStaffAccess()
+    const orders = await loadMappedOrders()
+    return orders.filter(
+      (order) =>
+        order.delivery === 'pickup' &&
+        orderPaymentStatus(order) === 'paid' &&
+        order.status === 'paid' &&
+        !order.pickedUpAt,
+    )
+  },
+)
 
 export const listOrdersByUser = createServerFn({ method: 'GET' })
   .validator(z.object({ userId: z.string().min(1) }))

@@ -108,6 +108,7 @@ export function mapOrder(
     shippingLabel: row.shippingLabel,
     courier: row.courier ?? undefined,
     trackingNumber: row.trackingNumber ?? undefined,
+    pickedUpAt: toIso(row.pickedUpAt),
     lines: lines.map(mapLine),
     subtotal: row.subtotal,
     shipping: row.shipping,
