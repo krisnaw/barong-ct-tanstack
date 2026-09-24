@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { desc, eq, inArray } from 'drizzle-orm'
+import { desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from 'db'
 import { user, userProfile } from 'db/schemas/auth'
@@ -16,6 +16,7 @@ export type AdminUserListItem = {
   banned: boolean
   jerseySize: string
   verifiedAt: string | null
+  createdAt: string
 }
 
 export type AdminUserAddress = {
@@ -90,6 +91,7 @@ export const listUsers = createServerFn({ method: 'GET' }).handler(async () => {
       image: user.image,
       role: user.role,
       banned: user.banned,
+      createdAt: user.createdAt,
       firstName: userProfile.firstName,
       lastName: userProfile.lastName,
       jerseySize: userProfile.jerseySize,
@@ -115,6 +117,7 @@ export const listUsers = createServerFn({ method: 'GET' }).handler(async () => {
         banned: Boolean(row.banned),
         jerseySize: row.jerseySize || 'M',
         verifiedAt: toIso(row.verifiedAt),
+        createdAt: toIso(row.createdAt) ?? new Date().toISOString(),
       } satisfies AdminUserListItem
     }),
   }
@@ -133,6 +136,7 @@ export const listStaffUsers = createServerFn({ method: 'GET' }).handler(
         image: user.image,
         role: user.role,
         banned: user.banned,
+        createdAt: user.createdAt,
         firstName: userProfile.firstName,
         lastName: userProfile.lastName,
         jerseySize: userProfile.jerseySize,
@@ -159,11 +163,60 @@ export const listStaffUsers = createServerFn({ method: 'GET' }).handler(
           banned: Boolean(row.banned),
           jerseySize: row.jerseySize || 'M',
           verifiedAt: toIso(row.verifiedAt),
+          createdAt: toIso(row.createdAt) ?? new Date().toISOString(),
         } satisfies AdminUserListItem
       }),
     }
   },
 )
+
+export const findUserByEmail = createServerFn({ method: 'GET' })
+  .validator(z.object({ email: z.string().min(1) }))
+  .handler(async ({ data }): Promise<AdminUserListItem | null> => {
+    await requireAdmin()
+
+    const email = data.email.trim().toLowerCase()
+    if (!email) return null
+
+    const rows = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        role: user.role,
+        banned: user.banned,
+        createdAt: user.createdAt,
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
+        jerseySize: userProfile.jerseySize,
+        verifiedAt: userProfile.verifiedAt,
+      })
+      .from(user)
+      .leftJoin(userProfile, eq(userProfile.userId, user.id))
+      .where(sql`lower(${user.email}) = ${email}`)
+      .limit(1)
+
+    const row = rows[0]
+    if (!row) return null
+
+    const name = displayName(row, {
+      firstName: row.firstName,
+      lastName: row.lastName,
+    })
+
+    return {
+      id: row.id,
+      name,
+      email: row.email,
+      image: row.image ?? null,
+      role: row.role || 'user',
+      banned: Boolean(row.banned),
+      jerseySize: row.jerseySize || 'M',
+      verifiedAt: toIso(row.verifiedAt),
+      createdAt: toIso(row.createdAt) ?? new Date().toISOString(),
+    }
+  })
 
 export const getUserById = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().min(1) }))

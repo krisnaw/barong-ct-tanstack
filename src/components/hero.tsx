@@ -4,8 +4,7 @@ import { buttonVariants } from '~/components/ui/button'
 import { useTranslations } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
 
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop'
+const HERO_IMAGE = '/hero.jpg'
 
 export function Hero() {
   const t = useTranslations()
@@ -21,8 +20,7 @@ export function Hero() {
         fetchPriority="high"
         height={1600}
         sizes="100vw"
-        src={`${HERO_IMAGE}&w=1600&q=75`}
-        srcSet={`${HERO_IMAGE}&w=800&q=70 800w, ${HERO_IMAGE}&w=1600&q=75 1600w, ${HERO_IMAGE}&w=2400&q=80 2400w`}
+        src={HERO_IMAGE}
         width={2400}
       />
 

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ImageIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
+import { ImageIcon, TrashIcon } from '@phosphor-icons/react'
 import { Button } from '~/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 import { toast } from '~/components/ui/toast'
@@ -18,6 +18,10 @@ function newImageField(url = ''): ImageUrlField {
 
 export function collectImageUrls(fields: ImageUrlField[]) {
   return fields.map((field) => field.url.trim()).filter(Boolean)
+}
+
+export function appendBlankImageField(fields: ImageUrlField[]) {
+  return [...fields, newImageField()]
 }
 
 export function initialImageFields(urls: string[], min = 1): ImageUrlField[] {
@@ -105,18 +109,7 @@ export function ProductImageFields({
 
   return (
     <Field>
-      <div className="flex items-center justify-between gap-2">
-        <FieldLabel>Feature images</FieldLabel>
-        <Button
-          aria-label="Add feature image"
-          onClick={() => onChange([...values, newImageField()])}
-          size="icon-sm"
-          type="button"
-          variant="outline"
-        >
-          <PlusIcon weight="bold" />
-        </Button>
-      </div>
+      <FieldLabel>Feature images</FieldLabel>
       <FieldDescription>
         Upload JPG, PNG, or WebP up to 5MB. The first image is the main feature
         image.

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ProductImageFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
+import { ProductImageFields, appendBlankImageField, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import { jerseySizeGuide } from '~/data/shop'
 import {
   Breadcrumb,
@@ -147,11 +147,11 @@ function DashboardCreateProductPage() {
           </p>
         </div>
 
-        <form
-          className="max-w-2xl space-y-6 border border-border p-5 sm:p-6"
-          onSubmit={onSubmit}
-        >
-          <FieldGroup>
+        <form onSubmit={onSubmit}>
+          <FormSection
+            description="Name and price shown on the shop product page."
+            title="Product details"
+          >
             <Field>
               <FieldLabel htmlFor="name">Product name</FieldLabel>
               <Input
@@ -174,24 +174,37 @@ function DashboardCreateProductPage() {
                 value={price}
               />
             </Field>
+          </FormSection>
 
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Switch
-                  aria-label={active ? 'Active' : 'Inactive'}
-                  checked={active}
-                  onCheckedChange={setActive}
-                />
-                <span className="text-sm">{active ? 'Active' : 'Inactive'}</span>
+          <FormSection
+            description="Control visibility, membership access, and size availability."
+            title="Availability & options"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Active</p>
+                <p className="text-sm text-muted-foreground">
+                  Inactive products stay hidden from the public shop.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  aria-label="Member only"
-                  checked={membersOnly}
-                  onCheckedChange={setMembersOnly}
-                />
-                <span className="text-sm">Member only</span>
+              <Switch
+                aria-label={active ? 'Active' : 'Inactive'}
+                checked={active}
+                onCheckedChange={setActive}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Member only</p>
+                <p className="text-sm text-muted-foreground">
+                  Limit purchase to verified members.
+                </p>
               </div>
+              <Switch
+                aria-label="Member only"
+                checked={membersOnly}
+                onCheckedChange={setMembersOnly}
+              />
             </div>
 
             <Field>
@@ -259,7 +272,12 @@ function DashboardCreateProductPage() {
                 </div>
               </Field>
             ) : null}
+          </FormSection>
 
+          <FormSection
+            description="Feature images and alt text for the product gallery."
+            title="Images"
+          >
             <ProductImageFields onChange={setImageUrls} values={imageUrls} />
 
             <Field>
@@ -273,6 +291,20 @@ function DashboardCreateProductPage() {
               />
             </Field>
 
+            <Button
+              className="justify-start px-0"
+              onClick={() => setImageUrls((current) => appendBlankImageField(current))}
+              type="button"
+              variant="link"
+            >
+              Add more image +
+            </Button>
+          </FormSection>
+
+          <FormSection
+            description="Copy shown on the product page. Features are listed one per line."
+            title="Description"
+          >
             <Field>
               <FieldLabel htmlFor="description">Description</FieldLabel>
               <textarea
@@ -295,21 +327,43 @@ function DashboardCreateProductPage() {
                 value={featuresText}
               />
             </Field>
-          </FieldGroup>
+          </FormSection>
 
-          <div className="flex items-center justify-between gap-3">
-            <Link
-              className={cn(buttonVariants({ variant: 'outline' }))}
-              to="/dashboard/catalogue"
-            >
-              Cancel
-            </Link>
-            <Button disabled={saving} type="submit">
-              {saving ? (<><Spinner /> Saving…</>) : 'Add product'}
-            </Button>
+          <div className="grid gap-6 border-t border-border py-8 md:grid-cols-3">
+            <div className="flex flex-wrap items-center justify-end gap-3 md:col-span-2 md:col-start-2">
+              <Link
+                className={cn(buttonVariants({ variant: 'outline' }))}
+                to="/dashboard/catalogue"
+              >
+                Cancel
+              </Link>
+              <Button disabled={saving} type="submit">
+                {saving ? (<><Spinner /> Saving…</>) : 'Add product'}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
     </>
+  )
+}
+
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="grid gap-6 border-t border-border py-8 md:grid-cols-3">
+      <div>
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <FieldGroup className="md:col-span-2">{children}</FieldGroup>
+    </section>
   )
 }

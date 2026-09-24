@@ -57,11 +57,21 @@ import {
 } from '~/components/table-pagination'
 import {
   adminUserRoles,
+  findUserByEmail,
   listStaffUsers,
   updateUserRole,
   type AdminUserListItem,
   type AdminUserRole,
 } from '~/lib/user.functions'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
 
 const features = tableFeatures({
   columnFilteringFeature,
@@ -154,12 +164,15 @@ function DashboardRolesPage() {
           </p>
         </div>
 
-        <Input
-          className="max-w-sm"
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          placeholder="Search by name or email…"
-          value={globalFilter}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Input
+            className="max-w-sm"
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            placeholder="Search by name or email…"
+            value={globalFilter}
+          />
+          <AssignRoleSheet />
+        </div>
 
         <div className="border border-border">
           <Table>
@@ -251,6 +264,205 @@ function UserCell({ account }: { account: AdminUserListItem }) {
         ) : null}
       </span>
     </Link>
+  )
+}
+
+function AssignRoleSheet() {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [email, setEmail] = React.useState('')
+  const [found, setFound] = React.useState<AdminUserListItem | null>(null)
+  const [searched, setSearched] = React.useState(false)
+  const [role, setRole] = React.useState<AdminUserRole>('staff')
+  const [searching, setSearching] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+
+  function reset() {
+    setEmail('')
+    setFound(null)
+    setSearched(false)
+    setRole('staff')
+    setSearching(false)
+    setSaving(false)
+  }
+
+  async function search(event?: React.FormEvent) {
+    event?.preventDefault()
+    const trimmed = email.trim()
+    if (!trimmed) {
+      toast.add({ type: 'error', title: 'Enter an email to search' })
+      return
+    }
+
+    setSearching(true)
+    setSearched(false)
+    setFound(null)
+    try {
+      const user = await findUserByEmail({ data: { email: trimmed } })
+      setFound(user)
+      setSearched(true)
+      if (user) {
+        setRole(normalizeRole(user.role))
+      }
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error ? error.message : 'Could not search user',
+      })
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  async function assign() {
+    if (!found) return
+    if (role === normalizeRole(found.role)) {
+      toast.add({ type: 'error', title: 'That role is already assigned' })
+      return
+    }
+
+    setSaving(true)
+    try {
+      await updateUserRole({ data: { id: found.id, role } })
+      await router.invalidate()
+      toast.add({
+        type: 'success',
+        title: `Role updated to ${roleLabel(role)}`,
+      })
+      setOpen(false)
+      reset()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error ? error.message : 'Could not update role',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Sheet
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) reset()
+      }}
+      open={open}
+    >
+      <SheetTrigger render={<Button type="button" />}>Assign role</SheetTrigger>
+      <SheetContent className="gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border">
+          <SheetTitle>Assign role</SheetTitle>
+          <SheetDescription>
+            Search for a user by email, then set their dashboard role.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+          <form className="grid gap-3" onSubmit={(event) => void search(event)}>
+            <div className="grid gap-1.5">
+              <Label htmlFor="assign-role-email">Email</Label>
+              <Input
+                autoComplete="email"
+                id="assign-role-email"
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  setSearched(false)
+                  setFound(null)
+                }}
+                placeholder="rider@example.com"
+                type="email"
+                value={email}
+              />
+            </div>
+            <Button disabled={searching} type="submit" variant="outline">
+              {searching ? (
+                <>
+                  <Spinner /> Searching…
+                </>
+              ) : (
+                'Search'
+              )}
+            </Button>
+          </form>
+
+          {searched && !found ? (
+            <p className="text-sm text-muted-foreground">
+              No user found with that email.
+            </p>
+          ) : null}
+
+          {found ? (
+            <div className="grid gap-4 border border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-muted font-heading text-xs font-semibold">
+                  {found.image ? (
+                    <img
+                      alt=""
+                      className="size-full object-cover"
+                      decoding="async"
+                      src={found.image}
+                    />
+                  ) : (
+                    userInitials(found.name, found.email)
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{found.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {found.email}
+                  </p>
+                  <p className="mt-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                    Current: {found.role}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="assign-role-select">Role</Label>
+                <Select
+                  items={roleSelectItems}
+                  onValueChange={(value) => {
+                    if (value == null) return
+                    setRole(value as AdminUserRole)
+                  }}
+                  value={role}
+                >
+                  <SelectTrigger className="w-full" id="assign-role-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleSelectItems.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <SheetFooter className="border-t border-border">
+          <Button
+            disabled={!found || saving || role === normalizeRole(found?.role ?? '')}
+            onClick={() => void assign()}
+            type="button"
+          >
+            {saving ? (
+              <>
+                <Spinner /> Saving…
+              </>
+            ) : (
+              'Save role'
+            )}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
 

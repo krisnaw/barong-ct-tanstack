@@ -55,6 +55,7 @@ import {
   TABLE_PAGE_SIZE,
   TablePagination,
 } from '~/components/table-pagination'
+import { formatOrderDate } from '~/data/orders'
 import {
   adminUserRoles,
   listUsers,
@@ -86,13 +87,39 @@ const columns = columnHelper.columns([
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ row }) => <RoleCell account={row.original} />,
+    cell: ({ row }) => (
+      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        {row.original.role}
+      </span>
+    ),
     enableGlobalFilter: false,
   }),
   columnHelper.display({
     id: 'member',
     header: 'Member',
-    cell: ({ row }) => <MemberCell account={row.original} />,
+    cell: ({ row }) =>
+      row.original.verifiedAt ? (
+        <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+          Member
+        </span>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+    enableGlobalFilter: false,
+  }),
+  columnHelper.accessor('createdAt', {
+    header: 'Registered at',
+    cell: ({ getValue }) => (
+      <span className="text-muted-foreground">
+        {formatOrderDate(getValue())}
+      </span>
+    ),
+    enableGlobalFilter: false,
+  }),
+  columnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => <ActionsCell account={row.original} />,
     enableGlobalFilter: false,
   }),
 ])
@@ -104,23 +131,40 @@ export const Route = createFileRoute('/dashboard/users/')({
   component: DashboardUsersPage,
 })
 
+const memberFilterItems = [
+  { value: 'all', label: 'All users' },
+  { value: 'verified', label: 'Verified members' },
+] as const
+
+type MemberFilter = (typeof memberFilterItems)[number]['value']
+
 function DashboardUsersPage() {
   const { users } = Route.useLoaderData()
+  const memberFilterId = React.useId()
   const [globalFilter, setGlobalFilter] = React.useState('')
+  const [memberFilter, setMemberFilter] = React.useState<MemberFilter>('all')
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: TABLE_PAGE_SIZE,
   })
 
+  const filteredUsers = React.useMemo(
+    () =>
+      memberFilter === 'verified'
+        ? users.filter((account) => Boolean(account.verifiedAt))
+        : users,
+    [users, memberFilter],
+  )
+
   React.useEffect(() => {
     setPagination((prev) =>
       prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 },
     )
-  }, [globalFilter])
+  }, [globalFilter, memberFilter])
 
   const table = useTable({
     features,
-    data: users,
+    data: filteredUsers,
     columns,
     getRowId: (row) => row.id,
     state: { globalFilter, pagination },
@@ -131,6 +175,10 @@ function DashboardUsersPage() {
   const rows = table.getRowModel().rows
   const pageCount = table.getPageCount()
   const hasQuery = Boolean(globalFilter.trim())
+  const emptyMessage =
+    hasQuery || memberFilter === 'verified'
+      ? 'No matching users.'
+      : 'No users yet.'
 
   return (
     <>
@@ -152,12 +200,33 @@ function DashboardUsersPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
-        <Input
-          className="max-w-sm"
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          placeholder="Search by name or email…"
-          value={globalFilter}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            className="max-w-sm"
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            placeholder="Search by name or email…"
+            value={globalFilter}
+          />
+          <Select
+            items={[...memberFilterItems]}
+            onValueChange={(value) => {
+              if (value == null) return
+              setMemberFilter(value as MemberFilter)
+            }}
+            value={memberFilter}
+          >
+            <SelectTrigger className="min-w-44" id={memberFilterId}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {memberFilterItems.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="border border-border">
           <Table>
@@ -165,7 +234,14 @@ function DashboardUsersPage() {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow className="hover:bg-transparent" key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead className="px-4" key={header.id}>
+                    <TableHead
+                      className={
+                        header.column.id === 'actions'
+                          ? 'px-4 text-right'
+                          : 'px-4'
+                      }
+                      key={header.id}
+                    >
                       {header.isPlaceholder ? null : (
                         <table.FlexRender header={header} />
                       )}
@@ -181,9 +257,8 @@ function DashboardUsersPage() {
                     {row.getAllCells().map((cell) => (
                       <TableCell
                         className={
-                          cell.column.id === 'member' ||
-                          cell.column.id === 'role'
-                            ? 'relative z-10 px-4 py-3'
+                          cell.column.id === 'actions'
+                            ? 'relative z-10 px-4 py-3 text-right'
                             : 'px-4 py-3'
                         }
                         key={cell.id}
@@ -199,7 +274,7 @@ function DashboardUsersPage() {
                     className="h-24 px-4 text-center text-muted-foreground"
                     colSpan={columns.length}
                   >
-                    {hasQuery ? 'No matching users.' : 'No users yet.'}
+                    {emptyMessage}
                   </TableCell>
                 </TableRow>
               )}
@@ -262,7 +337,7 @@ const roleSelectItems = adminUserRoles.map((option) => ({
   label: roleLabel(option),
 }))
 
-function RoleCell({ account }: { account: AdminUserListItem }) {
+function ActionsCell({ account }: { account: AdminUserListItem }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [role, setRole] = React.useState<AdminUserRole>(
@@ -297,10 +372,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        {account.role}
-      </span>
+    <div className="flex items-center justify-end gap-2">
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogTrigger
           render={
@@ -315,7 +387,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
             />
           }
         >
-          Change
+          Set Status
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
@@ -359,6 +431,9 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {account.verifiedAt ? null : (
+        <VerifyButton account={account} />
+      )}
     </div>
   )
 }
@@ -369,7 +444,7 @@ function normalizeRole(role: string): AdminUserRole {
     : 'user'
 }
 
-function MemberCell({ account }: { account: AdminUserListItem }) {
+function VerifyButton({ account }: { account: AdminUserListItem }) {
   const router = useRouter()
   const [saving, setSaving] = React.useState(false)
 
@@ -389,14 +464,6 @@ function MemberCell({ account }: { account: AdminUserListItem }) {
     }
   }
 
-  if (account.verifiedAt) {
-    return (
-      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        Member
-      </span>
-    )
-  }
-
   return (
     <Button
       disabled={saving}
@@ -405,7 +472,7 @@ function MemberCell({ account }: { account: AdminUserListItem }) {
       type="button"
       variant="outline"
     >
-      {saving ? (<><Spinner /> Verifying…</>) : 'Verify member'}
+      {saving ? (<><Spinner /> Verifying…</>) : 'Verify'}
     </Button>
   )
 }
