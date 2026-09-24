@@ -49,6 +49,10 @@ const data = {
           title: 'Pickup Points',
           url: '/dashboard/pickup-points',
         },
+        {
+          title: 'Pickup desk',
+          url: '/staff/pickup',
+        },
       ],
     },
     {

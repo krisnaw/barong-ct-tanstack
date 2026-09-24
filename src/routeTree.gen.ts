@@ -14,6 +14,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as AccountAddressRouteImport } from './routes/account.address'
 import { Route as AccountOrdersRouteImport } from './routes/account.orders'
@@ -36,6 +37,8 @@ import { Route as ShopIndexRouteImport } from './routes/shop.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as ShopCartRouteImport } from './routes/shop.cart'
 import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
+import { Route as StaffIndexRouteImport } from './routes/staff.index'
+import { Route as StaffPickupRouteImport } from './routes/staff.pickup'
 import { Route as AccountOrdersIndexRouteImport } from './routes/account.orders.index'
 import { Route as AccountOrdersIdRouteImport } from './routes/account.orders.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -97,6 +100,11 @@ const EventsRoute = EventsRouteImport.update({
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountIndexRoute = AccountIndexRouteImport.update({
@@ -208,6 +216,16 @@ const ShopCheckoutRoute = ShopCheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
   getParentRoute: () => ShopRoute,
+} as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffPickupRoute = StaffPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
+  getParentRoute: () => StaffRoute,
 } as any)
 const AccountOrdersIndexRoute = AccountOrdersIndexRouteImport.update({
   id: '/',
@@ -412,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRouteWithChildren
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/account/address': typeof AccountAddressRoute
   '/account/orders': typeof AccountOrdersRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -430,10 +449,12 @@ export interface FileRoutesByFullPath {
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
+  '/staff/pickup': typeof StaffPickupRoute
   '/account/': typeof AccountIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
@@ -482,10 +503,12 @@ export interface FileRoutesByTo {
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
+  '/staff/pickup': typeof StaffPickupRoute
   '/account': typeof AccountIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/events': typeof EventsIndexRoute
   '/shop': typeof ShopIndexRoute
+  '/staff': typeof StaffIndexRoute
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
@@ -530,6 +553,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRouteWithChildren
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/account/address': typeof AccountAddressRoute
   '/account/orders': typeof AccountOrdersRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -548,10 +572,12 @@ export interface FileRoutesById {
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
+  '/staff/pickup': typeof StaffPickupRoute
   '/account/': typeof AccountIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/account/orders/$id': typeof AccountOrdersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/avatars/$userId': typeof ApiAvatarsUserIdRoute
@@ -598,6 +624,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/events'
     | '/shop'
+    | '/staff'
     | '/account/address'
     | '/account/orders'
     | '/auth/forgot-password'
@@ -616,10 +643,12 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/shop/cart'
     | '/shop/checkout'
+    | '/staff/pickup'
     | '/account/'
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/staff/'
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
@@ -668,10 +697,12 @@ export interface FileRouteTypes {
     | '/recaps/$slug'
     | '/shop/$slug'
     | '/shop/cart'
+    | '/staff/pickup'
     | '/account'
     | '/dashboard'
     | '/events'
     | '/shop'
+    | '/staff'
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
@@ -715,6 +746,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/events'
     | '/shop'
+    | '/staff'
     | '/account/address'
     | '/account/orders'
     | '/auth/forgot-password'
@@ -733,10 +765,12 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/shop/cart'
     | '/shop/checkout'
+    | '/staff/pickup'
     | '/account/'
     | '/dashboard/'
     | '/events/'
     | '/shop/'
+    | '/staff/'
     | '/account/orders/$id'
     | '/api/auth/$'
     | '/api/avatars/$userId'
@@ -782,6 +816,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRouteWithChildren
   EventsRoute: typeof EventsRouteWithChildren
   ShopRoute: typeof ShopRouteWithChildren
+  StaffRoute: typeof StaffRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
@@ -828,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account/': {
@@ -983,6 +1025,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/shop/checkout'
       preLoaderRoute: typeof ShopCheckoutRouteImport
       parentRoute: typeof ShopRoute
+    }
+    '/staff/': {
+      id: '/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/pickup': {
+      id: '/staff/pickup'
+      path: '/pickup'
+      fullPath: '/staff/pickup'
+      preLoaderRoute: typeof StaffPickupRouteImport
+      parentRoute: typeof StaffRoute
     }
     '/account/orders/': {
       id: '/account/orders/'
@@ -1500,12 +1556,25 @@ const ShopRouteChildren: ShopRouteChildren = {
 
 const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
 
+interface StaffRouteChildren {
+  StaffPickupRoute: typeof StaffPickupRoute
+  StaffIndexRoute: typeof StaffIndexRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffPickupRoute: StaffPickupRoute,
+  StaffIndexRoute: StaffIndexRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AccountRoute: AccountRouteWithChildren,
   EventsRoute: EventsRouteWithChildren,
   ShopRoute: ShopRouteWithChildren,
+  StaffRoute: StaffRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,

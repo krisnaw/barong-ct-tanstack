@@ -10,6 +10,13 @@ export function hasAdminRole(role: unknown) {
     .includes('admin')
 }
 
+/** Admin or staff — for pickup desk and other ops tools. */
+export function hasStaffAccess(role: unknown) {
+  if (typeof role !== 'string' || !role) return false
+  const roles = role.split(',').map((part) => part.trim())
+  return roles.includes('admin') || roles.includes('staff')
+}
+
 export const getSession = createServerFn({ method: 'GET' }).handler(
   async () => {
     const headers = getRequestHeaders()
