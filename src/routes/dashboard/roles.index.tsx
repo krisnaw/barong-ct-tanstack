@@ -95,7 +95,17 @@ const columns = columnHelper.columns([
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ row }) => <RoleCell account={row.original} />,
+    cell: ({ row }) => (
+      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        {row.original.role}
+      </span>
+    ),
+    enableGlobalFilter: false,
+  }),
+  columnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => <ActionsCell account={row.original} />,
     enableGlobalFilter: false,
   }),
 ])
@@ -180,7 +190,14 @@ function DashboardRolesPage() {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow className="hover:bg-transparent" key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead className="px-4" key={header.id}>
+                    <TableHead
+                      className={
+                        header.column.id === 'actions'
+                          ? 'px-4 text-right'
+                          : 'px-4'
+                      }
+                      key={header.id}
+                    >
                       {header.isPlaceholder ? null : (
                         <table.FlexRender header={header} />
                       )}
@@ -196,8 +213,8 @@ function DashboardRolesPage() {
                     {row.getAllCells().map((cell) => (
                       <TableCell
                         className={
-                          cell.column.id === 'role'
-                            ? 'relative z-10 px-4 py-3'
+                          cell.column.id === 'actions'
+                            ? 'relative z-10 px-4 py-3 text-right'
                             : 'px-4 py-3'
                         }
                         key={cell.id}
@@ -477,7 +494,7 @@ const roleSelectItems = adminUserRoles.map((option) => ({
   label: roleLabel(option),
 }))
 
-function RoleCell({ account }: { account: AdminUserListItem }) {
+function ActionsCell({ account }: { account: AdminUserListItem }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [role, setRole] = React.useState<AdminUserRole>(
@@ -512,10 +529,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        {account.role}
-      </span>
+    <div className="flex items-center justify-end gap-2">
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogTrigger
           render={
@@ -530,7 +544,7 @@ function RoleCell({ account }: { account: AdminUserListItem }) {
             />
           }
         >
-          Change
+          Change Roles
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>

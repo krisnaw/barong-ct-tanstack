@@ -387,7 +387,7 @@ function ActionsCell({ account }: { account: AdminUserListItem }) {
             />
           }
         >
-          Set Status
+          Change Roles
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
