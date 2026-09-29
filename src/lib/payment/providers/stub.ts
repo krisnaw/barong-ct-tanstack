@@ -14,9 +14,9 @@ export const stubProvider: PaymentProvider = {
   displayName: 'Test payment',
   methods: [
     {
-      id: 'qris_va',
-      label: 'QRIS / BNI VA',
-      detail: 'Pay with QRIS or BNI Virtual Account on the test payment page.',
+      id: 'qris',
+      label: 'QR',
+      detail: 'Pay with QRIS on the test payment page.',
     },
     {
       id: 'card',

@@ -15,6 +15,7 @@ import type {
 } from '~/lib/payment/types'
 
 const DOKU_METHOD_TYPES: Record<PaymentMethodId, string[]> = {
+  qris: ['QRIS'],
   qris_va: ['QRIS', 'VIRTUAL_ACCOUNT_BNI'],
   card: ['CREDIT_CARD'],
 }
@@ -164,9 +165,9 @@ export const dokuProvider: PaymentProvider = {
   displayName: 'DOKU',
   methods: [
     {
-      id: 'qris_va',
-      label: 'QRIS / BNI VA',
-      detail: 'Pay with QRIS or BNI Virtual Account on the DOKU payment page.',
+      id: 'qris',
+      label: 'QR',
+      detail: 'Pay with QRIS on the DOKU payment page.',
     },
     {
       id: 'card',

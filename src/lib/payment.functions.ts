@@ -82,7 +82,7 @@ export const startPayment = createServerFn({ method: 'POST' })
   .validator(
     z.object({
       orderNumber: z.string().min(1),
-      methodId: z.enum(PAYMENT_METHOD_IDS).default('qris_va'),
+      methodId: z.enum(PAYMENT_METHOD_IDS).default('qris'),
     }),
   )
   .handler(async ({ data }) => {
@@ -108,14 +108,11 @@ export const startPayment = createServerFn({ method: 'POST' })
     const existing = latestPendingPayment(order.payments, provider.name)
     if (existing) {
       const sameMethod =
-        !existing.method ||
-        existing.method === data.methodId ||
-        // Legacy rows may store channel names from older checkouts
-        (data.methodId === 'qris_va' &&
-          (existing.method === 'qris' ||
-            existing.method === 'va' ||
-            existing.method === 'bni_va')) ||
-        (data.methodId === 'card' && existing.method === 'card')
+        data.methodId === 'qris'
+          ? existing.method === 'qris'
+          : !existing.method ||
+            existing.method === data.methodId ||
+            (data.methodId === 'card' && existing.method === 'card')
       const sameAmount = existing.amount === chargeAmount
       const url =
         sameMethod && sameAmount

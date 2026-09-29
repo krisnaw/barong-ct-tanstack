@@ -1,3 +1,5 @@
+import type { PaymentMethodId } from '~/lib/payment/types'
+
 /** DOKU Visa/MC/JCB credit card fee passed through to the customer. */
 const CARD_PERCENT = 0.028
 const CARD_FIXED = 2_000
@@ -12,7 +14,7 @@ export function dokuCardServiceFee(amount: number) {
 
 export function chargeAmountForMethod(
   goodsTotal: number,
-  methodId: 'qris_va' | 'card',
+  methodId: PaymentMethodId,
 ) {
   if (methodId !== 'card') return goodsTotal
   return goodsTotal + dokuCardServiceFee(goodsTotal)

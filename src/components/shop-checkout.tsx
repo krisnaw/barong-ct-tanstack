@@ -4,7 +4,6 @@ import {
   CaretDownIcon,
   CheckCircleIcon,
   CreditCardIcon,
-  BankIcon,
   LockSimpleIcon,
   QrCodeIcon,
   ShoppingBagIcon,
@@ -99,7 +98,7 @@ export function ShopCheckout({
     pickupPoints[0]?.id ?? '',
   )
   const [methodId, setMethodId] = React.useState<PaymentMethodId>(
-    paymentDisplay.methods[0]?.id ?? 'qris_va',
+    paymentDisplay.methods[0]?.id ?? 'qris',
   )
   const [didSubmit, setDidSubmit] = React.useState(false)
   const [actionError, setActionError] = React.useState<Record<string, string>>(
@@ -151,7 +150,7 @@ export function ShopCheckout({
 
   React.useEffect(() => {
     if (paymentDisplay.methods.some((method) => method.id === methodId)) return
-    setMethodId(paymentDisplay.methods[0]?.id ?? 'qris_va')
+    setMethodId(paymentDisplay.methods[0]?.id ?? 'qris')
   }, [paymentDisplay.methods, methodId])
 
   async function handlePay(event: React.FormEvent) {
@@ -389,7 +388,7 @@ export function ShopCheckout({
               {paymentDisplay.methods.map((method) => {
                 const active = method.id === methodId
                 const Icon =
-                  method.id === 'qris_va'
+                  method.id === 'qris'
                     ? QrCodeIcon
                     : method.id === 'card'
                       ? CreditCardIcon
@@ -420,9 +419,6 @@ export function ShopCheckout({
                           : method.detail}
                       </span>
                     </span>
-                    {method.id === 'qris_va' ? (
-                      <BankIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    ) : null}
                   </label>
                 )
               })}
@@ -572,11 +568,12 @@ export function CheckoutAwaitingPayment({
     setPending(true)
     setError('')
     try {
-      if (order.payment?.checkoutUrl) {
-        window.location.assign(order.payment.checkoutUrl)
-        return
-      }
-      const started = await startPayment({ data: { orderNumber: order.id } })
+      const started = await startPayment({
+        data: {
+          orderNumber: order.id,
+          methodId: order.payment?.method === 'card' ? 'card' : 'qris',
+        },
+      })
       window.location.assign(started.url)
     } catch (caught) {
       setPending(false)

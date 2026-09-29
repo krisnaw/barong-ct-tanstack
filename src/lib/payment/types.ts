@@ -1,7 +1,7 @@
 export type PaymentProviderName = 'stub' | 'doku'
 
 /** Checkout UI / createCheckout method ids */
-export const PAYMENT_METHOD_IDS = ['qris_va', 'card'] as const
+export const PAYMENT_METHOD_IDS = ['qris', 'qris_va', 'card'] as const
 export type PaymentMethodId = (typeof PAYMENT_METHOD_IDS)[number]
 
 export type PaymentMethod = {
