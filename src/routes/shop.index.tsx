@@ -6,9 +6,9 @@ import { Route as ShopRoute } from './shop'
 export const Route = createFileRoute('/shop/')({
   head: () => ({
     meta: seo({
-      title: 'Shop | Barong Cycling Team',
+      title: 'Cycling Jerseys & Club Kit | Barong Cycling Team',
       description:
-        'Club jerseys for the Denpasar peloton — Classic Black, Melali White, and the climb-season kits.',
+        "Official Barong Cycling Team jerseys, including Classic Black, Melali White and the climb-season kits. Ride in the Denpasar peloton's colours.",
     }),
   }),
   component: ShopPage,

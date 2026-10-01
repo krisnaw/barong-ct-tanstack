@@ -16,9 +16,9 @@ export const Route = createFileRoute('/events/')({
   loader: () => listEvents(),
   head: () => ({
     meta: seo({
-      title: 'Events | Barong Cycling Team',
+      title: 'Bali Cycling Events & Ride Calendar | Barong Cycling Team',
       description:
-        'Barong Melali and past club rides — jalan-jalan across Bali, not races.',
+        'Upcoming Barong Melali rides and club events across Bali. Scenic group rides, not races. See the dates and register for open events.',
     }),
   }),
   component: EventsPage,

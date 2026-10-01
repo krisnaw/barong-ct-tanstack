@@ -31,9 +31,9 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       ...seo({
-        title: 'Barong Cycling Team | Ride Bali',
+        title: 'Barong Cycling Team | Group Road & Gravel Rides in Bali',
         description:
-          'Denpasar peloton since 2016. Tuesday Quickie, Thursday Foreplay, Saturday Climax — keep the bunch together.',
+          "Bali's largest road and gravel cycling community, riding from Denpasar since 2016. Join our group rides every Tuesday, Thursday and Saturday at 6:15 AM.",
       }),
     ],
     links: [
