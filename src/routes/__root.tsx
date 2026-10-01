@@ -17,11 +17,43 @@ import { VerifyEmailBanner } from '~/components/verify-email-banner'
 import { AccountProvider } from '~/lib/account'
 import { CartProvider } from '~/lib/cart'
 import { LocaleProvider } from '~/lib/i18n'
+import { getIsStaging } from '~/lib/staging.functions'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
 
+function iconLinks(staging: boolean) {
+  return [
+    {
+      rel: 'apple-touch-icon',
+      sizes: '180x180',
+      href: staging ? '/apple-touch-icon-staging.png' : '/apple-touch-icon.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '32x32',
+      href: staging ? '/favicon-staging-32x32.png' : '/favicon-32x32.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '16x16',
+      href: staging ? '/favicon-staging-16x16.png' : '/favicon-16x16.png',
+    },
+    {
+      rel: 'manifest',
+      href: staging ? '/site-staging.webmanifest' : '/site.webmanifest',
+      color: '#fffff',
+    },
+    { rel: 'icon', href: staging ? '/favicon-staging.ico' : '/favicon.ico' },
+  ]
+}
+
 export const Route = createRootRoute({
-  head: () => ({
+  loader: async () => ({
+    staging: await getIsStaging(),
+  }),
+  head: ({ loaderData }) => ({
     meta: [
       {
         charSet: 'utf-8',
@@ -38,25 +70,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
-      {
-        rel: 'apple-touch-icon',
-        sizes: '180x180',
-        href: '/apple-touch-icon.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        href: '/favicon-32x32.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        href: '/favicon-16x16.png',
-      },
-      { rel: 'manifest', href: '/site.webmanifest', color: '#fffff' },
-      { rel: 'icon', href: '/favicon.ico' },
+      ...iconLinks(loaderData?.staging === true),
     ],
   }),
   errorComponent: DefaultCatchBoundary,
