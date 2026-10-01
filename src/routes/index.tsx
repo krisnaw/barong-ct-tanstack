@@ -18,6 +18,7 @@ function Home() {
   return (
     <main>
       <Hero />
+      
       <WeeklyRides />
     </main>
   )
