@@ -14,8 +14,8 @@
     }
   ],
   "triggers": {
-    // Payment due window is 5 minutes — check often enough to expire unpaid checkouts.
-    "crons": ["*/5 * * * *"]
+    // Sync payment status once a day at 00:00 UTC.
+    "crons": ["0 0 * * *"]
   },
   "vars": {
     "EMAIL_PROVIDER": "resend",
@@ -60,7 +60,7 @@
         "PAYMENT_PUBLIC_URL": "https://staging.barongmelali.com",
       },
       "triggers": {
-        "crons": ["*/5 * * * *"]
+        "crons": ["0 0 * * *"]
       },
       "send_email": [
         {
