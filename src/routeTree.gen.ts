@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as BikeRentalRouteImport } from './routes/bike-rental'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as ShopRouteImport } from './routes/shop'
@@ -22,6 +23,8 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as BikeRentalIndexRouteImport } from './routes/bike-rental.index'
+import { Route as BikeRentalIdRouteImport } from './routes/bike-rental.$id'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
@@ -87,6 +90,11 @@ const AccountRoute = AccountRouteImport.update({
   path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BikeRentalRoute = BikeRentalRouteImport.update({
+  id: '/bike-rental',
+  path: '/bike-rental',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -141,6 +149,16 @@ const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/auth/signup',
   path: '/auth/signup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BikeRentalIndexRoute = BikeRentalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BikeRentalRoute,
+} as any)
+const BikeRentalIdRoute = BikeRentalIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BikeRentalRoute,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
@@ -428,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/account': typeof AccountRouteWithChildren
+  '/bike-rental': typeof BikeRentalRouteWithChildren
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -437,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/bike-rental/$id': typeof BikeRentalIdRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
@@ -451,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/staff/pickup': typeof StaffPickupRoute
   '/account/': typeof AccountIndexRoute
+  '/bike-rental/': typeof BikeRentalIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
@@ -500,11 +521,13 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/bike-rental/$id': typeof BikeRentalIdRoute
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
   '/staff/pickup': typeof StaffPickupRoute
   '/account': typeof AccountIndexRoute
+  '/bike-rental': typeof BikeRentalIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/events': typeof EventsIndexRoute
   '/shop': typeof ShopIndexRoute
@@ -551,6 +574,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/account': typeof AccountRouteWithChildren
+  '/bike-rental': typeof BikeRentalRouteWithChildren
   '/events': typeof EventsRouteWithChildren
   '/shop': typeof ShopRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -560,6 +584,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/bike-rental/$id': typeof BikeRentalIdRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
@@ -574,6 +599,7 @@ export interface FileRoutesById {
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/staff/pickup': typeof StaffPickupRoute
   '/account/': typeof AccountIndexRoute
+  '/bike-rental/': typeof BikeRentalIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/events/': typeof EventsIndexRoute
   '/shop/': typeof ShopIndexRoute
@@ -622,6 +648,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/account'
+    | '/bike-rental'
     | '/events'
     | '/shop'
     | '/staff'
@@ -631,6 +658,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/reset-password'
     | '/auth/signup'
+    | '/bike-rental/$id'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/finance'
@@ -645,6 +673,7 @@ export interface FileRouteTypes {
     | '/shop/checkout'
     | '/staff/pickup'
     | '/account/'
+    | '/bike-rental/'
     | '/dashboard/'
     | '/events/'
     | '/shop/'
@@ -694,11 +723,13 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/reset-password'
     | '/auth/signup'
+    | '/bike-rental/$id'
     | '/recaps/$slug'
     | '/shop/$slug'
     | '/shop/cart'
     | '/staff/pickup'
     | '/account'
+    | '/bike-rental'
     | '/dashboard'
     | '/events'
     | '/shop'
@@ -744,6 +775,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/account'
+    | '/bike-rental'
     | '/events'
     | '/shop'
     | '/staff'
@@ -753,6 +785,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/reset-password'
     | '/auth/signup'
+    | '/bike-rental/$id'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/finance'
@@ -767,6 +800,7 @@ export interface FileRouteTypes {
     | '/shop/checkout'
     | '/staff/pickup'
     | '/account/'
+    | '/bike-rental/'
     | '/dashboard/'
     | '/events/'
     | '/shop/'
@@ -814,6 +848,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AccountRoute: typeof AccountRouteWithChildren
+  BikeRentalRoute: typeof BikeRentalRouteWithChildren
   EventsRoute: typeof EventsRouteWithChildren
   ShopRoute: typeof ShopRouteWithChildren
   StaffRoute: typeof StaffRouteWithChildren
@@ -842,6 +877,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bike-rental': {
+      id: '/bike-rental'
+      path: '/bike-rental'
+      fullPath: '/bike-rental'
+      preLoaderRoute: typeof BikeRentalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -920,6 +962,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/signup'
       preLoaderRoute: typeof AuthSignupRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/bike-rental/': {
+      id: '/bike-rental/'
+      path: '/'
+      fullPath: '/bike-rental/'
+      preLoaderRoute: typeof BikeRentalIndexRouteImport
+      parentRoute: typeof BikeRentalRoute
+    }
+    '/bike-rental/$id': {
+      id: '/bike-rental/$id'
+      path: '/$id'
+      fullPath: '/bike-rental/$id'
+      preLoaderRoute: typeof BikeRentalIdRouteImport
+      parentRoute: typeof BikeRentalRoute
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -1482,6 +1538,20 @@ const AccountRouteChildren: AccountRouteChildren = {
 const AccountRouteWithChildren =
   AccountRoute._addFileChildren(AccountRouteChildren)
 
+interface BikeRentalRouteChildren {
+  BikeRentalIdRoute: typeof BikeRentalIdRoute
+  BikeRentalIndexRoute: typeof BikeRentalIndexRoute
+}
+
+const BikeRentalRouteChildren: BikeRentalRouteChildren = {
+  BikeRentalIdRoute: BikeRentalIdRoute,
+  BikeRentalIndexRoute: BikeRentalIndexRoute,
+}
+
+const BikeRentalRouteWithChildren = BikeRentalRoute._addFileChildren(
+  BikeRentalRouteChildren,
+)
+
 interface EventsSlugPaymentRouteChildren {
   EventsSlugPaymentSimulateRoute: typeof EventsSlugPaymentSimulateRoute
 }
@@ -1572,6 +1642,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AccountRoute: AccountRouteWithChildren,
+  BikeRentalRoute: BikeRentalRouteWithChildren,
   EventsRoute: EventsRouteWithChildren,
   ShopRoute: ShopRouteWithChildren,
   StaffRoute: StaffRouteWithChildren,
