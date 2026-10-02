@@ -61,7 +61,7 @@ function DashboardCataloguePage() {
               Catalogue
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {products.length} products · Club kit on the public shop
+              {products.length} products
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -94,17 +94,14 @@ function DashboardCataloguePage() {
                   <TableHead className="px-4">Stock</TableHead>
                   <TableHead className="px-4">Member Only</TableHead>
                   <TableHead className="px-4">Status</TableHead>
+                  <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow className="relative" key={product.slug}>
+                  <TableRow key={product.slug}>
                     <TableCell className="px-4 py-3">
-                      <Link
-                        className="flex items-center gap-3 after:absolute after:inset-0"
-                        params={{ slug: product.slug }}
-                        to="/dashboard/catalogue/$slug"
-                      >
+                      <div className="flex items-center gap-3">
                         <img
                           alt=""
                           className="size-10 shrink-0 object-cover bg-muted"
@@ -123,7 +120,7 @@ function DashboardCataloguePage() {
                             </span>
                           ) : null}
                         </span>
-                      </Link>
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 tabular-nums">
                       {formatShopPrice(product.price)}
@@ -138,6 +135,30 @@ function DashboardCataloguePage() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
                       {product.active === false ? 'Hidden' : 'Active'}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Link
+                          className={cn(
+                            buttonVariants({ variant: 'outline', size: 'sm' }),
+                          )}
+                          params={{ slug: product.slug }}
+                          rel="noreferrer"
+                          target="_blank"
+                          to="/shop/$slug"
+                        >
+                          View
+                        </Link>
+                        <Link
+                          className={cn(
+                            buttonVariants({ variant: 'outline', size: 'sm' }),
+                          )}
+                          params={{ slug: product.slug }}
+                          to="/dashboard/catalogue/$slug"
+                        >
+                          Edit
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

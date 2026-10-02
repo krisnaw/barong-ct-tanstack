@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { ProductImageFields, appendBlankImageField, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import { jerseySizeGuide } from '~/data/shop'
 import {
@@ -39,6 +39,7 @@ export const Route = createFileRoute('/dashboard/catalogue/new')({
 
 function DashboardCreateProductPage() {
   const navigate = useNavigate()
+  const router = useRouter()
   const [name, setName] = React.useState('')
   const [price, setPrice] = React.useState('850000')
   const [imageUrls, setImageUrls] = React.useState(() => initialImageFields([]))
@@ -74,7 +75,7 @@ function DashboardCreateProductPage() {
         setSaving(false)
         return
       }
-      const product = await createProduct({
+      await createProduct({
         data: {
           name,
           price: parsedPrice,
@@ -96,10 +97,8 @@ function DashboardCreateProductPage() {
         },
       })
       toast.add({ type: 'success', title: 'Product created' })
-      void navigate({
-        to: '/dashboard/catalogue/$slug',
-        params: { slug: product.slug },
-      })
+      await router.invalidate()
+      await navigate({ to: '/dashboard/catalogue' })
     } catch (error) {
       toast.add({
         type: 'error',

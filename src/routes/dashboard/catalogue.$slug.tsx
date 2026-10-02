@@ -126,7 +126,7 @@ function DashboardProductDetailPage() {
         setSaving(false)
         return
       }
-      const updated = await updateProduct({
+      await updateProduct({
         data: {
           id: product.id,
           slug: product.slug,
@@ -150,14 +150,8 @@ function DashboardProductDetailPage() {
         },
       })
       toast.add({ type: 'success', title: 'Product saved' })
-      if (updated.slug !== product.slug) {
-        await router.navigate({
-          to: '/dashboard/catalogue/$slug',
-          params: { slug: updated.slug },
-        })
-      } else {
-        await router.invalidate()
-      }
+      await router.invalidate()
+      await router.navigate({ to: '/dashboard/catalogue' })
     } catch (error) {
       toast.add({
         type: 'error',
