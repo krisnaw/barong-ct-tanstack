@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react'
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -294,35 +295,73 @@ function DashboardUsersPage() {
 
 function UserCell({ account }: { account: AdminUserListItem }) {
   return (
-    <Link
-      className="flex items-center gap-3 after:absolute after:inset-0"
-      params={{ id: account.id }}
-      to="/dashboard/users/$id"
-    >
-      <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-muted font-heading text-xs font-semibold">
-        {account.image ? (
-          <img
-            alt=""
-            className="size-full object-cover"
-            decoding="async"
-            src={account.image}
-          />
-        ) : (
-          userInitials(account.name, account.email)
-        )}
-      </div>
-      <span className="min-w-0">
-        <span className="block truncate font-medium">{account.name}</span>
-        <span className="mt-0.5 block truncate text-muted-foreground">
-          {account.email}
-        </span>
-        {account.banned ? (
-          <span className="mt-0.5 block text-[0.65rem] font-medium tracking-[0.14em] text-destructive uppercase">
-            Banned
+    <div className="flex items-center gap-2">
+      <Link
+        className="flex min-w-0 flex-1 items-center gap-3 after:absolute after:inset-0"
+        params={{ id: account.id }}
+        to="/dashboard/users/$id"
+      >
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-muted font-heading text-xs font-semibold">
+          {account.image ? (
+            <img
+              alt=""
+              className="size-full object-cover"
+              decoding="async"
+              src={account.image}
+            />
+          ) : (
+            userInitials(account.name, account.email)
+          )}
+        </div>
+        <span className="min-w-0">
+          <span className="block truncate font-medium">{account.name}</span>
+          <span className="mt-0.5 block truncate text-muted-foreground">
+            {account.email}
           </span>
-        ) : null}
-      </span>
-    </Link>
+          {account.banned ? (
+            <span className="mt-0.5 block text-[0.65rem] font-medium tracking-[0.14em] text-destructive uppercase">
+              Banned
+            </span>
+          ) : null}
+        </span>
+      </Link>
+      <CopyEmailButton email={account.email} />
+    </div>
+  )
+}
+
+function CopyEmailButton({ email }: { email: string }) {
+  const [copied, setCopied] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!copied) return
+    const timeout = window.setTimeout(() => setCopied(false), 2000)
+    return () => window.clearTimeout(timeout)
+  }, [copied])
+
+  async function copy(event: React.MouseEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(email)
+      setCopied(true)
+      toast.add({ type: 'success', title: 'Email copied' })
+    } catch {
+      toast.add({ type: 'error', title: 'Could not copy email' })
+    }
+  }
+
+  return (
+    <Button
+      aria-label={copied ? 'Email copied' : `Copy ${email}`}
+      className="relative z-10 shrink-0 text-muted-foreground"
+      onClick={(event) => void copy(event)}
+      size="icon-xs"
+      type="button"
+      variant="ghost"
+    >
+      {copied ? <CheckIcon weight="bold" /> : <CopyIcon weight="bold" />}
+    </Button>
   )
 }
 
