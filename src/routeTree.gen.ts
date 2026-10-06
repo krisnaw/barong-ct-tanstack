@@ -71,6 +71,7 @@ import { Route as ShopCheckoutIndexRouteImport } from './routes/shop.checkout.in
 import { Route as ShopCheckoutCancelRouteImport } from './routes/shop.checkout.cancel'
 import { Route as ShopCheckoutReturnRouteImport } from './routes/shop.checkout.return'
 import { Route as ShopCheckoutSimulateRouteImport } from './routes/shop.checkout.simulate'
+import { Route as ApiFinanceIncomeWebhookRouteImport } from './routes/api/finance.income.webhook'
 import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
 import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard/events.$slug.index'
 import { Route as DashboardEventsSlugCategoriesRouteImport } from './routes/dashboard/events.$slug.categories'
@@ -394,6 +395,11 @@ const ShopCheckoutSimulateRoute = ShopCheckoutSimulateRouteImport.update({
   path: '/simulate',
   getParentRoute: () => ShopCheckoutRoute,
 } as any)
+const ApiFinanceIncomeWebhookRoute = ApiFinanceIncomeWebhookRouteImport.update({
+  id: '/api/finance/income/webhook',
+  path: '/api/finance/income/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPaymentsWebhookProviderRoute =
   ApiPaymentsWebhookProviderRouteImport.update({
     id: '/api/payments/webhook/$provider',
@@ -505,6 +511,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/users/': typeof DashboardUsersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
@@ -560,6 +567,7 @@ export interface FileRoutesByTo {
   '/dashboard/users': typeof DashboardUsersIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/shop/checkout': typeof ShopCheckoutIndexRoute
+  '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
@@ -633,6 +641,7 @@ export interface FileRoutesById {
   '/dashboard/users/': typeof DashboardUsersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
@@ -707,6 +716,7 @@ export interface FileRouteTypes {
     | '/dashboard/users/'
     | '/events/$slug/'
     | '/shop/checkout/'
+    | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
@@ -762,6 +772,7 @@ export interface FileRouteTypes {
     | '/dashboard/users'
     | '/events/$slug'
     | '/shop/checkout'
+    | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
@@ -834,6 +845,7 @@ export interface FileRouteTypes {
     | '/dashboard/users/'
     | '/events/$slug/'
     | '/shop/checkout/'
+    | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
@@ -860,6 +872,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAvatarsUserIdRoute: typeof ApiAvatarsUserIdRoute
   ApiCatalogueImagesImageIdRoute: typeof ApiCatalogueImagesImageIdRoute
+  ApiFinanceIncomeWebhookRoute: typeof ApiFinanceIncomeWebhookRoute
   ApiPaymentsWebhookProviderRoute: typeof ApiPaymentsWebhookProviderRoute
 }
 
@@ -1299,6 +1312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCheckoutSimulateRouteImport
       parentRoute: typeof ShopCheckoutRoute
     }
+    '/api/finance/income/webhook': {
+      id: '/api/finance/income/webhook'
+      path: '/api/finance/income/webhook'
+      fullPath: '/api/finance/income/webhook'
+      preLoaderRoute: typeof ApiFinanceIncomeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/payments/webhook/$provider': {
       id: '/api/payments/webhook/$provider'
       path: '/api/payments/webhook/$provider'
@@ -1654,6 +1674,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAvatarsUserIdRoute: ApiAvatarsUserIdRoute,
   ApiCatalogueImagesImageIdRoute: ApiCatalogueImagesImageIdRoute,
+  ApiFinanceIncomeWebhookRoute: ApiFinanceIncomeWebhookRoute,
   ApiPaymentsWebhookProviderRoute: ApiPaymentsWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport

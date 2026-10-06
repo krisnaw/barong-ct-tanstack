@@ -141,7 +141,7 @@ function DashboardFinanceIncomePage() {
   const router = useRouter()
   const periodId = React.useId()
   const sourceFilterId = React.useId()
-  const [period, setPeriod] = React.useState<FinancePeriod>('this_month')
+  const [period, setPeriod] = React.useState<FinancePeriod>('this_year')
   const [sourceFilter, setSourceFilter] =
     React.useState<IncomeSourceFilter>('all')
   const [dialogOpen, setDialogOpen] = React.useState(false)
