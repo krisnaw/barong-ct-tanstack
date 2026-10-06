@@ -33,9 +33,15 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
       <SidebarMenu>
         {items.map((item) => {
           if (item.items?.length) {
-            const childActive = item.items.some((subItem) =>
+            const matched = item.items.filter((subItem) =>
               Boolean(matchRoute({ to: subItem.url, fuzzy: true })),
             )
+            const activeUrl = matched.reduce<string | undefined>(
+              (best, subItem) =>
+                !best || subItem.url.length > best.length ? subItem.url : best,
+              undefined,
+            )
+            const childActive = matched.length > 0
 
             return (
               <Collapsible
@@ -59,9 +65,7 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     {item.items.map((subItem) => {
-                      const isActive = Boolean(
-                        matchRoute({ to: subItem.url, fuzzy: true }),
-                      )
+                      const isActive = subItem.url === activeUrl
                       return (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton

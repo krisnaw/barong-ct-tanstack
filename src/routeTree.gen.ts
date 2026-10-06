@@ -58,6 +58,7 @@ import { Route as DashboardFinanceExpensesRouteImport } from './routes/dashboard
 import { Route as DashboardFinanceIncomeRouteImport } from './routes/dashboard/finance.income'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders.index'
 import { Route as DashboardOrdersIdRouteImport } from './routes/dashboard/orders.$id'
+import { Route as DashboardOrdersSizesRouteImport } from './routes/dashboard/orders.sizes'
 import { Route as DashboardPickupPointsIndexRouteImport } from './routes/dashboard/pickup-points.index'
 import { Route as DashboardPickupPointsIdRouteImport } from './routes/dashboard/pickup-points.$id'
 import { Route as DashboardPickupPointsNewRouteImport } from './routes/dashboard/pickup-points.new'
@@ -328,6 +329,11 @@ const DashboardOrdersIdRoute = DashboardOrdersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => DashboardOrdersRoute,
 } as any)
+const DashboardOrdersSizesRoute = DashboardOrdersSizesRouteImport.update({
+  id: '/sizes',
+  path: '/sizes',
+  getParentRoute: () => DashboardOrdersRoute,
+} as any)
 const DashboardPickupPointsIndexRoute =
   DashboardPickupPointsIndexRouteImport.update({
     id: '/',
@@ -493,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
   '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/orders/sizes': typeof DashboardOrdersSizesRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
@@ -549,6 +556,7 @@ export interface FileRoutesByTo {
   '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
   '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/orders/sizes': typeof DashboardOrdersSizesRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
@@ -623,6 +631,7 @@ export interface FileRoutesById {
   '/dashboard/finance/expenses': typeof DashboardFinanceExpensesRoute
   '/dashboard/finance/income': typeof DashboardFinanceIncomeRoute
   '/dashboard/orders/$id': typeof DashboardOrdersIdRoute
+  '/dashboard/orders/sizes': typeof DashboardOrdersSizesRoute
   '/dashboard/pickup-points/$id': typeof DashboardPickupPointsIdRoute
   '/dashboard/pickup-points/new': typeof DashboardPickupPointsNewRoute
   '/dashboard/users/$id': typeof DashboardUsersIdRoute
@@ -698,6 +707,7 @@ export interface FileRouteTypes {
     | '/dashboard/finance/expenses'
     | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
+    | '/dashboard/orders/sizes'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
@@ -754,6 +764,7 @@ export interface FileRouteTypes {
     | '/dashboard/finance/expenses'
     | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
+    | '/dashboard/orders/sizes'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
@@ -827,6 +838,7 @@ export interface FileRouteTypes {
     | '/dashboard/finance/expenses'
     | '/dashboard/finance/income'
     | '/dashboard/orders/$id'
+    | '/dashboard/orders/sizes'
     | '/dashboard/pickup-points/$id'
     | '/dashboard/pickup-points/new'
     | '/dashboard/users/$id'
@@ -1221,6 +1233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardOrdersIdRouteImport
       parentRoute: typeof DashboardOrdersRoute
     }
+    '/dashboard/orders/sizes': {
+      id: '/dashboard/orders/sizes'
+      path: '/sizes'
+      fullPath: '/dashboard/orders/sizes'
+      preLoaderRoute: typeof DashboardOrdersSizesRouteImport
+      parentRoute: typeof DashboardOrdersRoute
+    }
     '/dashboard/pickup-points/': {
       id: '/dashboard/pickup-points/'
       path: '/'
@@ -1448,11 +1467,13 @@ const DashboardFinanceRouteWithChildren =
 
 interface DashboardOrdersRouteChildren {
   DashboardOrdersIdRoute: typeof DashboardOrdersIdRoute
+  DashboardOrdersSizesRoute: typeof DashboardOrdersSizesRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
 }
 
 const DashboardOrdersRouteChildren: DashboardOrdersRouteChildren = {
   DashboardOrdersIdRoute: DashboardOrdersIdRoute,
+  DashboardOrdersSizesRoute: DashboardOrdersSizesRoute,
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
 }
 

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { desc, eq, inArray } from 'drizzle-orm'
+import { asc, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   adminStatusOptions,
@@ -16,6 +16,7 @@ import {
   CUSTOM_SIZE,
   customMeasurementsComplete,
   isSizePurchasable,
+  jerseySizeGuide,
 } from '~/data/shop'
 import { db } from 'db'
 import { loadShopOrderByDbId, mapOrder } from 'db/query/order-load'
@@ -281,6 +282,112 @@ export const listOrders = createServerFn({ method: 'GET' }).handler(async () => 
   await requireAdmin()
   return loadMappedOrders()
 })
+
+export type OrderedSizeProduct = {
+  id: string
+  slug: string
+  name: string
+  color: string
+  image: string
+  active: boolean
+  listed: boolean
+  quantities: Record<string, number>
+  total: number
+}
+
+export type OrderedSizeSummary = {
+  sizes: string[]
+  products: OrderedSizeProduct[]
+}
+
+function orderCountsTowardSizes(order: ShopOrder) {
+  return (
+    orderPaymentStatus(order) === 'paid' &&
+    order.status !== 'cancelled' &&
+    order.status !== 'refunded'
+  )
+}
+
+/** Paid shop orders, grouped by product and size. */
+export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<OrderedSizeSummary> => {
+    await requireAdmin()
+    const [catalog, shopOrders] = await Promise.all([
+      db.query.product.findMany({
+        orderBy: [asc(product.sortOrder), asc(product.name)],
+      }),
+      loadMappedOrders(),
+    ])
+
+    const quantitiesBySlug = new Map<string, Record<string, number>>()
+    const extraSizes = new Set<string>()
+    const orphans = new Map<
+      string,
+      { name: string; color: string; image: string }
+    >()
+
+    for (const order of shopOrders) {
+      if (!orderCountsTowardSizes(order)) continue
+      for (const line of order.lines) {
+        const quantities = quantitiesBySlug.get(line.slug) ?? {}
+        quantities[line.size] = (quantities[line.size] ?? 0) + line.quantity
+        quantitiesBySlug.set(line.slug, quantities)
+        if (
+          !jerseySizeGuide.sizes.includes(line.size) &&
+          line.size !== CUSTOM_SIZE
+        ) {
+          extraSizes.add(line.size)
+        }
+        if (!orphans.has(line.slug)) {
+          orphans.set(line.slug, {
+            name: line.name,
+            color: line.color,
+            image: line.image,
+          })
+        }
+      }
+    }
+
+    const knownSlugs = new Set(catalog.map((row) => row.slug))
+    const products: OrderedSizeProduct[] = catalog.map((row) => {
+      const quantities = quantitiesBySlug.get(row.slug) ?? {}
+      const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
+      return {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        color: row.color,
+        image: normalizeStoredImageRef(row.image),
+        active: row.active,
+        listed: true,
+        quantities,
+        total,
+      }
+    })
+
+    for (const [slug, quantities] of quantitiesBySlug) {
+      if (knownSlugs.has(slug)) continue
+      const orphan = orphans.get(slug)
+      const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
+      products.push({
+        id: slug,
+        slug,
+        name: orphan?.name ?? slug,
+        color: orphan?.color ?? '',
+        image: orphan?.image ?? '',
+        active: false,
+        listed: false,
+        quantities,
+        total,
+      })
+    }
+
+    return {
+      sizes: [...jerseySizeGuide.sizes, CUSTOM_SIZE, ...[...extraSizes].sort()],
+      products,
+    }
+  },
+)
 
 /** Paid pickup orders waiting at a pickup point (not yet completed). */
 export const listStaffPickupOrders = createServerFn({ method: 'GET' }).handler(

@@ -46,6 +46,10 @@ const data = {
           url: '/dashboard/orders',
         },
         {
+          title: 'Ordered sizes',
+          url: '/dashboard/orders/sizes',
+        },
+        {
           title: 'Pickup Points',
           url: '/dashboard/pickup-points',
         },
