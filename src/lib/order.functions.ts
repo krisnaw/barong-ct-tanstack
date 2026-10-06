@@ -384,7 +384,7 @@ export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
 
     return {
       sizes: [...jerseySizeGuide.sizes, CUSTOM_SIZE, ...[...extraSizes].sort()],
-      products,
+      products: products.filter((product) => product.total > 0),
     }
   },
 )

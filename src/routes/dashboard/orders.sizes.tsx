@@ -85,7 +85,7 @@ function DashboardOrderedSizesPage() {
 
         {products.length === 0 ? (
           <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
-            No products yet.
+            No paid orders yet.
           </p>
         ) : (
           <div className="overflow-x-auto border border-border">
