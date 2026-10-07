@@ -309,6 +309,25 @@ export const markUserVerified = createServerFn({ method: 'POST' })
     return { verifiedAt: toIso(verifiedAt) }
   })
 
+export const unmarkUserVerified = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const account = await db.query.user.findFirst({
+      where: eq(user.id, data.id),
+    })
+    if (!account) {
+      throw new Error('User not found')
+    }
+
+    await db
+      .update(userProfile)
+      .set({ verifiedAt: null, updatedAt: new Date() })
+      .where(eq(userProfile.userId, data.id))
+
+    return { verifiedAt: null }
+  })
+
 export const adminUserRoles = ['user', 'staff', 'admin'] as const
 export type AdminUserRole = (typeof adminUserRoles)[number]
 

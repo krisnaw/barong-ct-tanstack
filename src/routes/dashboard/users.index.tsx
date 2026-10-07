@@ -61,6 +61,7 @@ import {
   adminUserRoles,
   listUsers,
   markUserVerified,
+  unmarkUserVerified,
   updateUserRole,
   type AdminUserListItem,
   type AdminUserRole,
@@ -470,7 +471,9 @@ function ActionsCell({ account }: { account: AdminUserListItem }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {account.verifiedAt ? null : (
+      {account.verifiedAt ? (
+        <UnverifyButton account={account} />
+      ) : (
         <VerifyButton account={account} />
       )}
     </div>
@@ -512,6 +515,39 @@ function VerifyButton({ account }: { account: AdminUserListItem }) {
       variant="outline"
     >
       {saving ? (<><Spinner /> Verifying…</>) : 'Verify'}
+    </Button>
+  )
+}
+
+function UnverifyButton({ account }: { account: AdminUserListItem }) {
+  const router = useRouter()
+  const [saving, setSaving] = React.useState(false)
+
+  async function unverify(event: React.MouseEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (saving || !account.verifiedAt) return
+    setSaving(true)
+    try {
+      await unmarkUserVerified({ data: { id: account.id } })
+      await router.invalidate()
+      toast.add({ type: 'success', title: 'Verified member removed' })
+    } catch {
+      toast.add({ type: 'error', title: 'Could not undo verified member' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Button
+      disabled={saving}
+      onClick={(event) => void unverify(event)}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
+      {saving ? (<><Spinner /> Undoing…</>) : 'Undo verify'}
     </Button>
   )
 }
