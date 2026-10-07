@@ -254,7 +254,6 @@ function StaffPickupPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {visible.map((order) => {
-            const pointName = orderPickupPointName(order) ?? 'Pickup'
             return (
               <li className="border border-border px-4 py-4" key={order.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -264,44 +263,6 @@ function StaffPickupPage() {
                       <OrderStatusBadge status={order.status} />
                     </div>
                     <p className="text-sm">{orderCustomerName(order)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {order.phone}
-                      <span className="text-border"> · </span>
-                      {pointName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Paid {formatOrderDate(order.payment?.paidAt ?? order.placedAt)}
-                    </p>
-                    <Table className="mt-3">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="h-8 px-2 text-xs">Item</TableHead>
-                          <TableHead className="h-8 px-2 text-xs">Color</TableHead>
-                          <TableHead className="h-8 px-2 text-xs">Size</TableHead>
-                          <TableHead className="h-8 px-2 text-right text-xs">
-                            Qty
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.lines.map((line, index) => (
-                          <TableRow
-                            key={`${order.id}-${line.slug}-${line.size}-${index}`}
-                          >
-                            <TableCell className="px-2 py-2 whitespace-normal">
-                              {line.name}
-                            </TableCell>
-                            <TableCell className="px-2 py-2 text-muted-foreground whitespace-normal">
-                              {line.color}
-                            </TableCell>
-                            <TableCell className="px-2 py-2">{line.size}</TableCell>
-                            <TableCell className="px-2 py-2 text-right tabular-nums">
-                              {line.quantity}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Button
@@ -324,6 +285,36 @@ function StaffPickupPage() {
                     </Button>
                   </div>
                 </div>
+                <Table className="mt-3 w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="h-8 w-full px-2 text-xs">Item</TableHead>
+                      <TableHead className="h-8 px-2 text-xs">Color</TableHead>
+                      <TableHead className="h-8 px-2 text-xs">Size</TableHead>
+                      <TableHead className="h-8 px-2 text-right text-xs">
+                        Qty
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {order.lines.map((line, index) => (
+                      <TableRow
+                        key={`${order.id}-${line.slug}-${line.size}-${index}`}
+                      >
+                        <TableCell className="w-full px-2 py-2 whitespace-normal">
+                          {line.name}
+                        </TableCell>
+                        <TableCell className="px-2 py-2 text-muted-foreground whitespace-normal">
+                          {line.color}
+                        </TableCell>
+                        <TableCell className="px-2 py-2">{line.size}</TableCell>
+                        <TableCell className="px-2 py-2 text-right tabular-nums">
+                          {line.quantity}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </li>
             )
           })}
