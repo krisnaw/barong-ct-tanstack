@@ -19,6 +19,7 @@ import {
   type ShopProduct,
 } from '~/data/shop'
 import {
+  discountAmount,
   orderCustomerName,
   orderNeedsPayment,
   orderPickupPointName,
@@ -31,12 +32,19 @@ import {
 import { useAccount } from '~/lib/account'
 import { cartLineKey, useCart, type CartItem } from '~/lib/cart'
 import { placeOrder } from '~/lib/order.functions'
+import { previewShopPromo } from '~/lib/shop.functions'
 import { startPayment } from '~/lib/payment.functions'
 import { dokuCardServiceFee } from '~/lib/payment/doku-card-fee'
 import type { PaymentDisplay, PaymentMethodId } from '~/lib/payment/types'
 import { cn } from '~/lib/utils'
 
 type CartLine = CartItem & { product: ShopProduct }
+
+type AppliedPromo = {
+  code: string
+  type: 'percent' | 'fixed'
+  value: number
+}
 
 type CheckoutDraft = {
   email: string
@@ -89,7 +97,7 @@ export function ShopCheckout({
 }) {
   const navigate = useNavigate()
   const { items, clear, ready, openSheet } = useCart()
-  const { profile } = useAccount()
+  const { profile, ready: accountReady, updateProfile } = useAccount()
   const lines = cartLines(items, products)
   const [pending, setPending] = React.useState(false)
   const [summaryOpen, setSummaryOpen] = React.useState(false)
@@ -105,7 +113,11 @@ export function ShopCheckout({
     {},
   )
   const [promoCode, setPromoCode] = React.useState('')
-  const [appliedPromo, setAppliedPromo] = React.useState('')
+  const [appliedPromo, setAppliedPromo] = React.useState<AppliedPromo | null>(
+    null,
+  )
+  const [promoError, setPromoError] = React.useState('')
+  const [promoPending, setPromoPending] = React.useState(false)
 
   const email = draft.email ?? profile?.email ?? ''
   const firstName = draft.firstName ?? profile?.firstName ?? ''
@@ -126,9 +138,16 @@ export function ShopCheckout({
     (sum, line) => sum + line.product.price * line.quantity,
     0,
   )
+  const discount = discountAmount(
+    subtotal,
+    appliedPromo
+      ? { type: appliedPromo.type, value: appliedPromo.value }
+      : null,
+  )
+  const goodsTotal = Math.max(subtotal - discount, 0)
   const serviceFee =
-    methodId === 'card' ? dokuCardServiceFee(subtotal) : 0
-  const total = subtotal + serviceFee
+    methodId === 'card' ? dokuCardServiceFee(goodsTotal) : 0
+  const total = goodsTotal + serviceFee
   const bagCount = lines.reduce((sum, line) => sum + line.quantity, 0)
   const selectedPickup =
     pickupPoints.find((point) => point.id === pickupPointId) ?? null
@@ -175,6 +194,11 @@ export function ShopCheckout({
 
     setPending(true)
     try {
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+      })
       const placed = await placeOrder({
         data: {
           email,
@@ -182,6 +206,7 @@ export function ShopCheckout({
           lastName,
           phone,
           pickupPointId,
+          discountCode: appliedPromo?.code,
           lines: lines.map((item) => ({
             slug: item.slug,
             size: item.size,
@@ -211,26 +236,51 @@ export function ShopCheckout({
     }
   }
 
-  if (!pending && (!ready || items.length === 0)) {
+  if (!pending && (!ready || !accountReady || items.length === 0)) {
     return <CheckoutSkeleton />
   }
 
-  function applyPromo() {
+  async function applyPromo() {
     const code = promoCode.trim().toUpperCase()
-    if (!code) return
-    setAppliedPromo(code)
-    setPromoCode('')
+    if (!code || promoPending) return
+    setPromoPending(true)
+    setPromoError('')
+    try {
+      const preview = await previewShopPromo({ data: { code, subtotal } })
+      setAppliedPromo({
+        code: preview.code,
+        type: preview.discountType === 'percent' ? 'percent' : 'fixed',
+        value: preview.discountValue,
+      })
+      setPromoCode('')
+    } catch (error) {
+      setAppliedPromo(null)
+      setPromoError(
+        error instanceof Error ? error.message : 'Invalid promo code',
+      )
+    } finally {
+      setPromoPending(false)
+    }
   }
 
   const summary = (
     <OrderSummary
-      appliedPromo={appliedPromo}
+      appliedPromo={appliedPromo?.code ?? ''}
       delivery="pickup"
+      discount={discount}
       lines={lines}
-      onApplyPromo={applyPromo}
-      onPromoChange={setPromoCode}
-      onRemovePromo={() => setAppliedPromo('')}
+      onApplyPromo={() => void applyPromo()}
+      onPromoChange={(value) => {
+        setPromoCode(value)
+        setPromoError('')
+      }}
+      onRemovePromo={() => {
+        setAppliedPromo(null)
+        setPromoError('')
+      }}
       promoCode={promoCode}
+      promoError={promoError}
+      promoPending={promoPending}
       serviceFee={serviceFee}
       subtotal={subtotal}
       total={total}
@@ -649,6 +699,9 @@ function OrderSummary({
   serviceFee = 0,
   promoCode,
   appliedPromo,
+  discount,
+  promoError,
+  promoPending,
   onPromoChange,
   onApplyPromo,
   onRemovePromo,
@@ -660,6 +713,9 @@ function OrderSummary({
   serviceFee?: number
   promoCode: string
   appliedPromo: string
+  discount: number
+  promoError: string
+  promoPending: boolean
   onPromoChange: (value: string) => void
   onApplyPromo: () => void
   onRemovePromo: () => void
@@ -706,9 +762,11 @@ function OrderSummary({
       <PromoCodeField
         appliedCode={appliedPromo}
         code={promoCode}
+        error={promoError}
         onApply={onApplyPromo}
         onChange={onPromoChange}
         onRemove={onRemovePromo}
+        pending={promoPending}
       />
 
       <dl className="mt-6 space-y-2 text-sm">
@@ -716,10 +774,10 @@ function OrderSummary({
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{formatShopPrice(subtotal)}</dd>
         </div>
-        {appliedPromo ? (
+        {discount > 0 ? (
           <div className="flex justify-between text-green-700">
-            <dt>Discount</dt>
-            <dd>{appliedPromo}</dd>
+            <dt>Discount{appliedPromo ? ` · ${appliedPromo}` : ''}</dt>
+            <dd className="tabular-nums">−{formatShopPrice(discount)}</dd>
           </div>
         ) : null}
         <div className="flex justify-between">
@@ -830,12 +888,16 @@ function ConfirmationSummary({ order }: { order: ShopOrder }) {
 function PromoCodeField({
   code,
   appliedCode,
+  error,
+  pending,
   onChange,
   onApply,
   onRemove,
 }: {
   code: string
   appliedCode: string
+  error: string
+  pending: boolean
   onChange: (value: string) => void
   onApply: () => void
   onRemove: () => void
@@ -861,28 +923,35 @@ function PromoCodeField({
   }
 
   return (
-    <div className="mt-6 flex gap-2">
-      <input
-        aria-label="Promo code"
-        className="h-12 min-w-0 flex-1 rounded-md border border-neutral-300 bg-background px-3 text-sm uppercase outline-none placeholder:normal-case placeholder:text-neutral-500 focus:border-foreground focus:ring-1 focus:ring-foreground"
-        onChange={(event) => onChange(event.target.value.toUpperCase())}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter') return
-          event.preventDefault()
-          onApply()
-        }}
-        placeholder="Promo code"
-        value={code}
-      />
-      <Button
-        className="h-12 shrink-0 rounded-md px-4"
-        disabled={!code.trim()}
-        onClick={onApply}
-        type="button"
-        variant="outline"
-      >
-        Apply
-      </Button>
+    <div className="mt-6">
+      <div className="flex gap-2">
+        <input
+          aria-invalid={Boolean(error)}
+          aria-label="Promo code"
+          className={cn(
+            'h-12 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm uppercase outline-none placeholder:normal-case placeholder:text-neutral-500 focus:border-foreground focus:ring-1 focus:ring-foreground',
+            error ? 'border-red-500' : 'border-neutral-300',
+          )}
+          onChange={(event) => onChange(event.target.value.toUpperCase())}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return
+            event.preventDefault()
+            onApply()
+          }}
+          placeholder="Promo code"
+          value={code}
+        />
+        <Button
+          className="h-12 shrink-0 rounded-md px-4"
+          disabled={!code.trim() || pending}
+          onClick={onApply}
+          type="button"
+          variant="outline"
+        >
+          {pending ? 'Applying…' : 'Apply'}
+        </Button>
+      </div>
+      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
     </div>
   )
 }

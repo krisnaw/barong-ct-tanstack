@@ -1,7 +1,8 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from 'db'
 import { loadShopOrderByDbId } from 'db/query/order-load'
 import { eventParticipant, eventPromo } from 'db/schemas/event'
+import { shopPromo } from 'db/schemas/shop'
 import { orders, payment } from 'db/schemas/order'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
 import { sendOrderPaidEmail } from '~/lib/email/order-paid'
@@ -47,6 +48,15 @@ export async function applyPaymentEvent(
             updatedAt: new Date(),
           })
           .where(eq(orders.id, row.orderId))
+      }
+      if (event.status === 'paid' && orderRow?.promoId) {
+        await db
+          .update(shopPromo)
+          .set({
+            usedCount: sql`${shopPromo.usedCount} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(shopPromo.id, orderRow.promoId))
       }
     }
 

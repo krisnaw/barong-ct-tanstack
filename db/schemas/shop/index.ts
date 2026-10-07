@@ -1,4 +1,5 @@
 export * from './pickup-point'
 export * from './product'
 export * from './product-size'
+export * from './promo'
 export * from './relations'

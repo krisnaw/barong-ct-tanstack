@@ -5,10 +5,8 @@ import { z } from 'zod'
 import {
   adminStatusOptions,
   courierIds,
-  discountAmount,
   formatInvoiceNumber,
   orderPaymentStatus,
-  parseDiscountCode,
   type ShopOrder,
 } from '~/data/orders'
 import { formatPickupLabel } from '~/data/pickup-points'
@@ -21,6 +19,7 @@ import { db } from 'db'
 import { loadShopOrderByDbId, mapOrder } from 'db/query/order-load'
 import { lineItems, orders, payment } from 'db/schemas/order'
 import { pickupPoint, product } from 'db/schemas/shop'
+import { resolveShopDiscount } from '~/lib/shop-promo'
 import { auth } from '~/lib/auth'
 import { hasAdminRole, hasStaffAccess } from '~/lib/auth.functions'
 import { normalizeStoredImageRef } from '~/lib/catalogue-image'
@@ -200,10 +199,8 @@ export const placeOrder = createServerFn({ method: 'POST' })
       (sum, line) => sum + line.price * line.quantity,
       0,
     )
-    const discount = data.discountCode
-      ? parseDiscountCode(data.discountCode)
-      : null
-    const savings = discountAmount(subtotal, discount)
+    const discount = await resolveShopDiscount(data.discountCode, subtotal)
+    const savings = discount?.amount ?? 0
     const shipping = 0
     const total = Math.max(subtotal - savings + shipping, 0)
 
@@ -240,6 +237,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         discount: savings,
         total,
         discountCode: discount?.code ?? null,
+        promoId: discount?.promoId ?? null,
         status: 'pending',
       }),
       ...resolvedLines.map((line) =>

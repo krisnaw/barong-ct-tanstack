@@ -168,17 +168,6 @@ export const SHIPPING_RATES: Record<
   },
 }
 
-export function parseDiscountCode(code: string) {
-  const normalized = code.trim().toUpperCase()
-  if (normalized === 'BARONG10') {
-    return { code: normalized, type: 'percent' as const, value: 10 }
-  }
-  if (normalized === 'MELALI') {
-    return { code: normalized, type: 'fixed' as const, value: 50_000 }
-  }
-  return null
-}
-
 export function discountAmount(
   subtotal: number,
   discount: { type: 'percent' | 'fixed'; value: number } | null,

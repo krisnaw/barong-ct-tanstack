@@ -3,6 +3,7 @@ import { user, userShippingAddress } from '../auth'
 import { eventParticipant } from '../event/participant'
 import { pickupPoint } from '../shop/pickup-point'
 import { product } from '../shop/product'
+import { shopPromo } from '../shop/promo'
 import { lineItems } from './line-items'
 import { orders } from './orders'
 import { payment } from './payment'
@@ -22,6 +23,10 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   }),
   lines: many(lineItems),
   payments: many(payment),
+  promo: one(shopPromo, {
+    fields: [orders.promoId],
+    references: [shopPromo.id],
+  }),
 }))
 
 export const lineItemsRelations = relations(lineItems, ({ one }) => ({

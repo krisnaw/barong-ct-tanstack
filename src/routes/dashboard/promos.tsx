@@ -1,6 +1,14 @@
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { formatShopPrice } from '~/data/shop'
+import {
+  createShopPromo,
+  listShopPromos,
+  updateShopPromo,
+  type ShopPromoRow,
+} from '~/lib/shop.functions'
+import { DashboardTableSkeleton } from '~/components/page-skeletons'
+import { Spinner } from '~/components/ui/spinner'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -53,16 +61,10 @@ const discountTypeItems = [
 
 type DiscountType = (typeof discountTypeItems)[number]['value']
 
-type ShopPromo = {
-  id: string
-  code: string
-  discountType: DiscountType
-  discountValue: number
-  usageLimit: number | null
-  isActive: boolean
-}
-
 export const Route = createFileRoute('/dashboard/promos')({
+  pendingComponent: DashboardTableSkeleton,
+  pendingMs: 150,
+  loader: () => listShopPromos(),
   head: () => ({
     meta: seo({
       title: 'Promo codes · Dashboard | Barong Cycling Team',
@@ -73,32 +75,7 @@ export const Route = createFileRoute('/dashboard/promos')({
 })
 
 function DashboardPromosPage() {
-  const [promos, setPromos] = React.useState<ShopPromo[]>([])
-
-  function savePromo(next: ShopPromo) {
-    let saved = false
-    let updated = false
-    setPromos((current) => {
-      const duplicate = current.some(
-        (promo) => promo.id !== next.id && promo.code === next.code,
-      )
-      if (duplicate) return current
-      saved = true
-      updated = current.some((promo) => promo.id === next.id)
-      return updated
-        ? current.map((promo) => (promo.id === next.id ? next : promo))
-        : [next, ...current]
-    })
-    if (!saved) {
-      toast.add({ type: 'error', title: 'That promo code already exists' })
-      return false
-    }
-    toast.add({
-      type: 'success',
-      title: updated ? 'Promo updated' : 'Promo added',
-    })
-    return true
-  }
+  const promos = Route.useLoaderData()
 
   return (
     <>
@@ -126,11 +103,10 @@ function DashboardPromosPage() {
               Promo codes
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {promos.length} {promos.length === 1 ? 'code' : 'codes'} · not
-              connected to checkout yet
+              {promos.length} {promos.length === 1 ? 'code' : 'codes'}
             </p>
           </div>
-          <PromoFormDialog onSave={savePromo} />
+          <PromoFormDialog />
         </div>
 
         {promos.length === 0 ? (
@@ -144,7 +120,7 @@ function DashboardPromosPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="px-4">Code</TableHead>
                   <TableHead className="px-4">Discount</TableHead>
-                  <TableHead className="px-4">Usage limit</TableHead>
+                  <TableHead className="px-4">Usage</TableHead>
                   <TableHead className="px-4">Status</TableHead>
                   <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
@@ -159,13 +135,14 @@ function DashboardPromosPage() {
                       {formatPromoDiscount(promo)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground">
-                      {promo.usageLimit ?? 'Unlimited'}
+                      {promo.usedCount}
+                      {promo.usageLimit != null ? ` / ${promo.usageLimit}` : ''}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
                       {promo.isActive ? 'Active' : 'Off'}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <PromoFormDialog onSave={savePromo} promo={promo} />
+                      <PromoFormDialog promo={promo} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -178,13 +155,8 @@ function DashboardPromosPage() {
   )
 }
 
-function PromoFormDialog({
-  promo,
-  onSave,
-}: {
-  promo?: ShopPromo
-  onSave: (promo: ShopPromo) => boolean
-}) {
+function PromoFormDialog({ promo }: { promo?: ShopPromoRow }) {
+  const router = useRouter()
   const mode = promo ? 'edit' : 'create'
   const [open, setOpen] = React.useState(false)
   const [code, setCode] = React.useState('')
@@ -192,6 +164,7 @@ function PromoFormDialog({
   const [discountValue, setDiscountValue] = React.useState('')
   const [usageLimit, setUsageLimit] = React.useState('')
   const [isActive, setIsActive] = React.useState(true)
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (!open) return
@@ -210,7 +183,7 @@ function PromoFormDialog({
     setIsActive(true)
   }, [open, promo])
 
-  function save() {
+  async function save() {
     const trimmedCode = code.trim().toUpperCase()
     if (!trimmedCode) {
       toast.add({ type: 'error', title: 'Promo code is required' })
@@ -228,15 +201,33 @@ function PromoFormDialog({
     }
 
     const limitRaw = usageLimit.replace(/\D/g, '')
-    const saved = onSave({
-      id: promo?.id ?? crypto.randomUUID(),
+    const payload = {
       code: trimmedCode,
       discountType,
       discountValue: amount,
       usageLimit: limitRaw ? Number(limitRaw) : null,
       isActive,
-    })
-    if (saved) setOpen(false)
+    }
+
+    setSaving(true)
+    try {
+      if (promo) {
+        await updateShopPromo({ data: { ...payload, id: promo.id } })
+        toast.add({ type: 'success', title: 'Promo updated' })
+      } else {
+        await createShopPromo({ data: payload })
+        toast.add({ type: 'success', title: 'Promo added' })
+      }
+      await router.invalidate()
+      setOpen(false)
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: error instanceof Error ? error.message : 'Could not save promo',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -353,8 +344,16 @@ function PromoFormDialog({
 
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-          <Button onClick={save} type="button">
-            {mode === 'create' ? 'Add promo' : 'Save'}
+          <Button disabled={saving} onClick={() => void save()} type="button">
+            {saving ? (
+              <>
+                <Spinner /> Saving…
+              </>
+            ) : mode === 'create' ? (
+              'Add promo'
+            ) : (
+              'Save'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -362,7 +361,7 @@ function PromoFormDialog({
   )
 }
 
-function formatPromoDiscount(promo: ShopPromo) {
+function formatPromoDiscount(promo: ShopPromoRow) {
   if (promo.discountType === 'percent') return `${promo.discountValue}%`
   return formatShopPrice(promo.discountValue)
 }

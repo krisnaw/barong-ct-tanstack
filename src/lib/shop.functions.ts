@@ -3,8 +3,9 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from 'db'
-import { product, productSize } from 'db/schemas/shop'
+import { product, productSize, shopPromo } from 'db/schemas/shop'
 import type { ShopProduct } from '~/data/shop'
+import { resolveShopDiscount } from '~/lib/shop-promo'
 import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { normalizeStoredImageRef } from '~/lib/catalogue-image'
@@ -290,4 +291,134 @@ export const updateProduct = createServerFn({ method: 'POST' })
       throw new Error('Failed to update product')
     }
     return mapProduct(updated, updated.sizes)
+  })
+
+export type ShopPromoRow = {
+  id: string
+  code: string
+  discountType: 'percent' | 'fixed'
+  discountValue: number
+  usageLimit: number | null
+  usedCount: number
+  isActive: boolean
+}
+
+const shopPromoInputSchema = z.object({
+  code: z.string().min(1),
+  discountType: z.enum(['fixed', 'percent']),
+  discountValue: z.number().int().positive(),
+  usageLimit: z.number().int().positive().nullable(),
+  isActive: z.boolean(),
+})
+
+export const previewShopPromo = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      code: z.string().min(1),
+      subtotal: z.number().int().nonnegative(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    if (!session) throw new Error('Unauthorized')
+
+    const resolved = await resolveShopDiscount(data.code, data.subtotal)
+    if (!resolved) throw new Error('Invalid promo code')
+    return {
+      code: resolved.code,
+      discountType: resolved.type,
+      discountValue: resolved.value,
+      amount: resolved.amount,
+    }
+  })
+
+function mapShopPromo(row: typeof shopPromo.$inferSelect): ShopPromoRow {
+  return {
+    id: row.id,
+    code: row.code,
+    discountType: row.discountType === 'percent' ? 'percent' : 'fixed',
+    discountValue: row.discountValue,
+    usageLimit: row.usageLimit,
+    usedCount: row.usedCount,
+    isActive: row.isActive,
+  }
+}
+
+function assertShopPromoInput(data: z.infer<typeof shopPromoInputSchema>) {
+  if (data.discountType === 'percent' && data.discountValue > 100) {
+    throw new Error('Percent discount cannot exceed 100')
+  }
+}
+
+export const listShopPromos = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    await requireAdmin()
+    const rows = await db.query.shopPromo.findMany({
+      orderBy: [asc(shopPromo.code)],
+    })
+    return rows.map(mapShopPromo)
+  },
+)
+
+export const createShopPromo = createServerFn({ method: 'POST' })
+  .validator(shopPromoInputSchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const code = data.code.trim().toUpperCase()
+    if (!code) throw new Error('Promo code is required')
+    assertShopPromoInput(data)
+
+    const duplicate = await db.query.shopPromo.findFirst({
+      where: eq(shopPromo.code, code),
+    })
+    if (duplicate) throw new Error('That promo code already exists')
+
+    await db.insert(shopPromo).values({
+      id: crypto.randomUUID(),
+      code,
+      discountType: data.discountType,
+      discountValue: data.discountValue,
+      currency: 'IDR',
+      usageLimit: data.usageLimit,
+      usedCount: 0,
+      isActive: data.isActive,
+    })
+
+    return { ok: true as const }
+  })
+
+export const updateShopPromo = createServerFn({ method: 'POST' })
+  .validator(shopPromoInputSchema.extend({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const existing = await db.query.shopPromo.findFirst({
+      where: eq(shopPromo.id, data.id),
+    })
+    if (!existing) throw new Error('Promo not found')
+
+    const code = data.code.trim().toUpperCase()
+    if (!code) throw new Error('Promo code is required')
+    assertShopPromoInput(data)
+
+    const duplicate = await db.query.shopPromo.findFirst({
+      where: eq(shopPromo.code, code),
+    })
+    if (duplicate && duplicate.id !== data.id) {
+      throw new Error('That promo code already exists')
+    }
+
+    await db
+      .update(shopPromo)
+      .set({
+        code,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        usageLimit: data.usageLimit,
+        isActive: data.isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(shopPromo.id, data.id))
+
+    return { ok: true as const }
   })

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { user, userShippingAddress } from '../auth'
 import { pickupPoint } from '../shop/pickup-point'
+import { shopPromo } from '../shop/promo'
 
 export const orders = sqliteTable(
   'orders',
@@ -34,6 +35,9 @@ export const orders = sqliteTable(
     discount: integer('discount').default(0).notNull(),
     total: integer('total').notNull(),
     discountCode: text('discount_code'),
+    promoId: text('promo_id').references(() => shopPromo.id, {
+      onDelete: 'set null',
+    }),
     status: text('status').default('pending').notNull(),
     courier: text('courier'),
     trackingNumber: text('tracking_number'),
@@ -51,5 +55,6 @@ export const orders = sqliteTable(
     index('orders_placed_at_idx').on(table.placedAt),
     index('orders_pickup_point_id_idx').on(table.pickupPointId),
     index('orders_picked_up_at_idx').on(table.pickedUpAt),
+    index('orders_promo_id_idx').on(table.promoId),
   ],
 )
