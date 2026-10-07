@@ -3,7 +3,9 @@ import { shopImageSrc } from '~/data/shop'
 import {
   listOrderedSizes,
   type OrderedSizeProduct,
+  type OrderedSizeSummary,
 } from '~/lib/order.functions'
+import { Button } from '~/components/ui/button'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -44,8 +46,44 @@ function productNote(product: OrderedSizeProduct) {
   return [color, status].filter(Boolean).join(' · ')
 }
 
+function csvCell(value: string) {
+  if (/[",\n]/.test(value)) return `"${value.replaceAll('"', '""')}"`
+  return value
+}
+
+function orderedSizesCsv(summary: OrderedSizeSummary) {
+  const { sizes, products } = summary
+  const columnTotals = sizes.map((size) =>
+    products.reduce((sum, product) => sum + (product.quantities[size] ?? 0), 0),
+  )
+  const grandTotal = products.reduce((sum, product) => sum + product.total, 0)
+  const rows = [
+    ['Product', ...sizes, 'Total'],
+    ...products.map((product) => [
+      product.name,
+      ...sizes.map((size) => String(product.quantities[size] ?? 0)),
+      String(product.total),
+    ]),
+    ['Total', ...columnTotals.map(String), String(grandTotal)],
+  ]
+  return rows.map((row) => row.map(csvCell).join(',')).join('\n')
+}
+
+function downloadOrderedSizesCsv(summary: OrderedSizeSummary) {
+  const blob = new Blob([`\uFEFF${orderedSizesCsv(summary)}`], {
+    type: 'text/csv;charset=utf-8',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'ordered-sizes.csv'
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 function DashboardOrderedSizesPage() {
-  const { sizes, products } = Route.useLoaderData()
+  const summary = Route.useLoaderData()
+  const { sizes, products } = summary
   const columnTotals = Object.fromEntries(
     sizes.map((size) => [
       size,
@@ -74,13 +112,23 @@ function DashboardOrderedSizesPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 px-4 pb-6">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Ordered sizes
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Quantity of each size from paid shop orders.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+              Ordered sizes
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Quantity of each size from paid shop orders.
+            </p>
+          </div>
+          <Button
+            disabled={products.length === 0}
+            onClick={() => downloadOrderedSizesCsv(summary)}
+            size="sm"
+            variant="outline"
+          >
+            Download CSV
+          </Button>
         </div>
 
         {products.length === 0 ? (
