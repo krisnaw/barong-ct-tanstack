@@ -15,7 +15,6 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPickupPointName,
-  type ShopOrder,
 } from '~/data/orders'
 import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
@@ -39,6 +38,14 @@ import {
 } from '~/components/ui/empty'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -84,12 +91,6 @@ export const Route = createFileRoute('/staff/pickup')({
   }),
   component: StaffPickupPage,
 })
-
-function orderItemSummary(order: ShopOrder) {
-  return order.lines
-    .map((line) => `${line.name} · ${line.color} / ${line.size}`)
-    .join(' · ')
-}
 
 function StaffPickupPage() {
   const { orders, points } = Route.useLoaderData()
@@ -253,7 +254,6 @@ function StaffPickupPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {visible.map((order) => {
-            const count = orderItemCount(order)
             const pointName = orderPickupPointName(order) ?? 'Pickup'
             return (
               <li className="border border-border px-4 py-4" key={order.id}>
@@ -270,12 +270,38 @@ function StaffPickupPage() {
                       {pointName}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {orderItemSummary(order)}
-                      <span className="text-border"> · </span>
-                      {count} item{count === 1 ? '' : 's'}
-                      <span className="text-border"> · </span>
                       Paid {formatOrderDate(order.payment?.paidAt ?? order.placedAt)}
                     </p>
+                    <Table className="mt-3">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="h-8 px-2 text-xs">Item</TableHead>
+                          <TableHead className="h-8 px-2 text-xs">Color</TableHead>
+                          <TableHead className="h-8 px-2 text-xs">Size</TableHead>
+                          <TableHead className="h-8 px-2 text-right text-xs">
+                            Qty
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.lines.map((line, index) => (
+                          <TableRow
+                            key={`${order.id}-${line.slug}-${line.size}-${index}`}
+                          >
+                            <TableCell className="px-2 py-2 whitespace-normal">
+                              {line.name}
+                            </TableCell>
+                            <TableCell className="px-2 py-2 text-muted-foreground whitespace-normal">
+                              {line.color}
+                            </TableCell>
+                            <TableCell className="px-2 py-2">{line.size}</TableCell>
+                            <TableCell className="px-2 py-2 text-right tabular-nums">
+                              {line.quantity}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Button
