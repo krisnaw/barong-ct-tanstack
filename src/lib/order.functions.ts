@@ -16,7 +16,6 @@ import {
   CUSTOM_SIZE,
   customMeasurementsComplete,
   isSizePurchasable,
-  jerseySizeGuide,
 } from '~/data/shop'
 import { db } from 'db'
 import { loadShopOrderByDbId, mapOrder } from 'db/query/order-load'
@@ -295,6 +294,29 @@ export type OrderedSizeProduct = {
   total: number
 }
 
+export type OrderedSizeLine = {
+  slug: string
+  name: string
+  color: string
+  image: string
+  size: string
+  quantity: number
+  placedAt: string
+}
+
+export type OrderedSizeSource = {
+  products: Array<{
+    id: string
+    slug: string
+    name: string
+    color: string
+    image: string
+    active: boolean
+    listed: boolean
+  }>
+  lines: OrderedSizeLine[]
+}
+
 export type OrderedSizeSummary = {
   sizes: string[]
   products: OrderedSizeProduct[]
@@ -308,9 +330,9 @@ function orderCountsTowardSizes(order: ShopOrder) {
   )
 }
 
-/** Paid shop orders, grouped by product and size. */
+/** Paid shop order lines, so the sizes page can filter by order date. */
 export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<OrderedSizeSummary> => {
+  async (): Promise<OrderedSizeSource> => {
     await requireAdmin()
     const [catalog, shopOrders] = await Promise.all([
       db.query.product.findMany({
@@ -319,40 +341,24 @@ export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
       loadMappedOrders(),
     ])
 
-    const quantitiesBySlug = new Map<string, Record<string, number>>()
-    const extraSizes = new Set<string>()
-    const orphans = new Map<
-      string,
-      { name: string; color: string; image: string }
-    >()
-
+    const lines: OrderedSizeLine[] = []
     for (const order of shopOrders) {
       if (!orderCountsTowardSizes(order)) continue
       for (const line of order.lines) {
-        const quantities = quantitiesBySlug.get(line.slug) ?? {}
-        quantities[line.size] = (quantities[line.size] ?? 0) + line.quantity
-        quantitiesBySlug.set(line.slug, quantities)
-        if (
-          !jerseySizeGuide.sizes.includes(line.size) &&
-          line.size !== CUSTOM_SIZE
-        ) {
-          extraSizes.add(line.size)
-        }
-        if (!orphans.has(line.slug)) {
-          orphans.set(line.slug, {
-            name: line.name,
-            color: line.color,
-            image: line.image,
-          })
-        }
+        lines.push({
+          slug: line.slug,
+          name: line.name,
+          color: line.color,
+          image: line.image,
+          size: line.size,
+          quantity: line.quantity,
+          placedAt: order.placedAt,
+        })
       }
     }
 
-    const knownSlugs = new Set(catalog.map((row) => row.slug))
-    const products: OrderedSizeProduct[] = catalog.map((row) => {
-      const quantities = quantitiesBySlug.get(row.slug) ?? {}
-      const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
-      return {
+    return {
+      products: catalog.map((row) => ({
         id: row.id,
         slug: row.slug,
         name: row.name,
@@ -360,31 +366,8 @@ export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
         image: normalizeStoredImageRef(row.image),
         active: row.active,
         listed: true,
-        quantities,
-        total,
-      }
-    })
-
-    for (const [slug, quantities] of quantitiesBySlug) {
-      if (knownSlugs.has(slug)) continue
-      const orphan = orphans.get(slug)
-      const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
-      products.push({
-        id: slug,
-        slug,
-        name: orphan?.name ?? slug,
-        color: orphan?.color ?? '',
-        image: orphan?.image ?? '',
-        active: false,
-        listed: false,
-        quantities,
-        total,
-      })
-    }
-
-    return {
-      sizes: [...jerseySizeGuide.sizes, CUSTOM_SIZE, ...[...extraSizes].sort()],
-      products: products.filter((product) => product.total > 0),
+      })),
+      lines,
     }
   },
 )

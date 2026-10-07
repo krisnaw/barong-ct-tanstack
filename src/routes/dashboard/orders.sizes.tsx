@@ -1,11 +1,23 @@
+import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { shopImageSrc } from '~/data/shop'
+import { CalendarBlankIcon } from '@phosphor-icons/react'
+import { endOfDay, format, startOfDay } from 'date-fns'
+import { type DateRange } from 'react-day-picker'
+import { CUSTOM_SIZE, jerseySizeGuide, shopImageSrc } from '~/data/shop'
 import {
   listOrderedSizes,
+  type OrderedSizeLine,
   type OrderedSizeProduct,
+  type OrderedSizeSource,
   type OrderedSizeSummary,
 } from '~/lib/order.functions'
 import { Button } from '~/components/ui/button'
+import { Calendar } from '~/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -46,6 +58,93 @@ function productNote(product: OrderedSizeProduct) {
   return [color, status].filter(Boolean).join(' · ')
 }
 
+function lineInRange(line: OrderedSizeLine, range: DateRange | undefined) {
+  if (!range?.from) return true
+  const end = range.to ?? range.from
+  const time = new Date(line.placedAt).getTime()
+  return (
+    time >= startOfDay(range.from).getTime() && time <= endOfDay(end).getTime()
+  )
+}
+
+function summarizeOrderedSizes(
+  source: OrderedSizeSource,
+  range: DateRange | undefined,
+): OrderedSizeSummary {
+  const quantitiesBySlug = new Map<string, Record<string, number>>()
+  const extraSizes = new Set<string>()
+  const orphans = new Map<
+    string,
+    { name: string; color: string; image: string }
+  >()
+
+  for (const line of source.lines) {
+    if (!lineInRange(line, range)) continue
+    const quantities = quantitiesBySlug.get(line.slug) ?? {}
+    quantities[line.size] = (quantities[line.size] ?? 0) + line.quantity
+    quantitiesBySlug.set(line.slug, quantities)
+    if (
+      !jerseySizeGuide.sizes.includes(line.size) &&
+      line.size !== CUSTOM_SIZE
+    ) {
+      extraSizes.add(line.size)
+    }
+    if (!orphans.has(line.slug)) {
+      orphans.set(line.slug, {
+        name: line.name,
+        color: line.color,
+        image: line.image,
+      })
+    }
+  }
+
+  const knownSlugs = new Set(source.products.map((product) => product.slug))
+  const products: OrderedSizeProduct[] = source.products.map((product) => {
+    const quantities = quantitiesBySlug.get(product.slug) ?? {}
+    const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
+    return { ...product, quantities, total }
+  })
+
+  for (const [slug, quantities] of quantitiesBySlug) {
+    if (knownSlugs.has(slug)) continue
+    const orphan = orphans.get(slug)
+    const total = Object.values(quantities).reduce((sum, count) => sum + count, 0)
+    products.push({
+      id: slug,
+      slug,
+      name: orphan?.name ?? slug,
+      color: orphan?.color ?? '',
+      image: orphan?.image ?? '',
+      active: false,
+      listed: false,
+      quantities,
+      total,
+    })
+  }
+
+  return {
+    sizes: [...jerseySizeGuide.sizes, CUSTOM_SIZE, ...[...extraSizes].sort()],
+    products: products.filter((product) => product.total > 0),
+  }
+}
+
+function rangeLabel(range: DateRange | undefined) {
+  if (!range?.from) return 'All dates'
+  if (!range.to || range.from.getTime() === range.to.getTime()) {
+    return format(range.from, 'd MMM yyyy')
+  }
+  return `${format(range.from, 'd MMM yyyy')} – ${format(range.to, 'd MMM yyyy')}`
+}
+
+function csvFilename(range: DateRange | undefined) {
+  if (!range?.from) return 'ordered-sizes.csv'
+  const from = format(range.from, 'yyyy-MM-dd')
+  const to = format(range.to ?? range.from, 'yyyy-MM-dd')
+  return from === to
+    ? `ordered-sizes-${from}.csv`
+    : `ordered-sizes-${from}-${to}.csv`
+}
+
 function csvCell(value: string) {
   if (/[",\n]/.test(value)) return `"${value.replaceAll('"', '""')}"`
   return value
@@ -69,21 +168,31 @@ function orderedSizesCsv(summary: OrderedSizeSummary) {
   return rows.map((row) => row.map(csvCell).join(',')).join('\n')
 }
 
-function downloadOrderedSizesCsv(summary: OrderedSizeSummary) {
+function downloadOrderedSizesCsv(
+  summary: OrderedSizeSummary,
+  range: DateRange | undefined,
+) {
   const blob = new Blob([`\uFEFF${orderedSizesCsv(summary)}`], {
     type: 'text/csv;charset=utf-8',
   })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = 'ordered-sizes.csv'
+  link.download = csvFilename(range)
   link.click()
   URL.revokeObjectURL(url)
 }
 
 function DashboardOrderedSizesPage() {
-  const summary = Route.useLoaderData()
+  const source = Route.useLoaderData()
+  const [range, setRange] = React.useState<DateRange | undefined>()
+  const [rangeOpen, setRangeOpen] = React.useState(false)
+  const summary = React.useMemo(
+    () => summarizeOrderedSizes(source, range),
+    [source, range],
+  )
   const { sizes, products } = summary
+  const hasOrders = source.lines.length > 0
   const columnTotals = Object.fromEntries(
     sizes.map((size) => [
       size,
@@ -121,19 +230,59 @@ function DashboardOrderedSizesPage() {
               Quantity of each size from paid shop orders.
             </p>
           </div>
-          <Button
-            disabled={products.length === 0}
-            onClick={() => downloadOrderedSizesCsv(summary)}
-            size="sm"
-            variant="outline"
-          >
-            Download CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Popover onOpenChange={setRangeOpen} open={rangeOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    className="justify-start font-normal data-[empty=true]:text-muted-foreground"
+                    data-empty={!range?.from}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  />
+                }
+              >
+                <CalendarBlankIcon weight="bold" />
+                {rangeLabel(range)}
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-0">
+                <Calendar
+                  defaultMonth={range?.from}
+                  mode="range"
+                  numberOfMonths={2}
+                  onSelect={setRange}
+                  selected={range}
+                />
+                <div className="flex justify-end border-t border-border p-2">
+                  <Button
+                    disabled={!range?.from}
+                    onClick={() => setRange(undefined)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+              disabled={products.length === 0}
+              onClick={() => downloadOrderedSizesCsv(summary, range)}
+              size="sm"
+              variant="outline"
+            >
+              Download CSV
+            </Button>
+          </div>
         </div>
 
         {products.length === 0 ? (
           <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
-            No paid orders yet.
+            {hasOrders
+              ? 'No paid orders in this date range.'
+              : 'No paid orders yet.'}
           </p>
         ) : (
           <div className="overflow-x-auto border border-border">
