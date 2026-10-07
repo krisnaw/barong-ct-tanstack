@@ -8,6 +8,7 @@ import {
 import { matchesStaffPickupQuery } from '~/data/staff-pickup'
 import {
   formatCustomMeasurements,
+  formatShopPrice,
   shopImageSrc,
 } from '~/data/shop'
 import {
@@ -16,7 +17,6 @@ import {
   orderItemCount,
   orderPickupPointName,
 } from '~/data/orders'
-import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
 import { Spinner } from '~/components/ui/spinner'
 import {
@@ -255,15 +255,26 @@ function StaffPickupPage() {
         <ul className="flex flex-col gap-3">
           {visible.map((order) => {
             return (
-              <li className="border border-border px-4 py-4" key={order.id}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium tracking-tight">{order.id}</p>
-                      <OrderStatusBadge status={order.status} />
+              <li className="overflow-hidden rounded-lg border border-border" key={order.id}>
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-4 py-4">
+                  <dl className="flex min-w-0 flex-wrap gap-x-10 gap-y-3">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Order number</dt>
+                      <dd className="mt-1 text-sm">{order.id}</dd>
                     </div>
-                    <p className="text-sm">{orderCustomerName(order)}</p>
-                  </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Date placed</dt>
+                      <dd className="mt-1 text-sm">
+                        {formatOrderDate(order.placedAt)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Total amount</dt>
+                      <dd className="mt-1 text-sm tabular-nums">
+                        {formatShopPrice(order.total)}
+                      </dd>
+                    </div>
+                  </dl>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Button
                       onClick={() => setDetailId(order.id)}
@@ -280,17 +291,18 @@ function StaffPickupPage() {
                         })
                       }
                       type="button"
+                      variant="outline"
                     >
                       {order.status === 'ready' ? 'Mark picked up' : 'Mark ready'}
                     </Button>
                   </div>
                 </div>
-                <Table className="mt-3 w-full">
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="h-8 w-full px-2 text-xs">Item</TableHead>
-                      <TableHead className="h-8 px-2 text-xs">Size</TableHead>
-                      <TableHead className="h-8 px-2 text-right text-xs">
+                      <TableHead className="h-8 w-full px-4 text-xs">Item</TableHead>
+                      <TableHead className="h-8 px-4 text-xs">Size</TableHead>
+                      <TableHead className="h-8 px-4 text-right text-xs">
                         Qty
                       </TableHead>
                     </TableRow>
@@ -300,11 +312,11 @@ function StaffPickupPage() {
                       <TableRow
                         key={`${order.id}-${line.slug}-${line.size}-${index}`}
                       >
-                        <TableCell className="w-full px-2 py-2 whitespace-normal">
+                        <TableCell className="w-full px-4 py-2 whitespace-normal">
                           {line.name}
                         </TableCell>
-                        <TableCell className="px-2 py-2">{line.size}</TableCell>
-                        <TableCell className="px-2 py-2 text-right tabular-nums">
+                        <TableCell className="px-4 py-2">{line.size}</TableCell>
+                        <TableCell className="px-4 py-2 text-right tabular-nums">
                           {line.quantity}
                         </TableCell>
                       </TableRow>
