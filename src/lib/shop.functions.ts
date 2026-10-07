@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from 'db'
 import { product, productSize, shopPromo } from 'db/schemas/shop'
@@ -419,6 +419,29 @@ export const updateShopPromo = createServerFn({ method: 'POST' })
         updatedAt: new Date(),
       })
       .where(eq(shopPromo.id, data.id))
+
+    return { ok: true as const }
+  })
+
+export const deleteShopPromo = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const existing = await db.query.shopPromo.findFirst({
+      where: eq(shopPromo.id, data.id),
+    })
+    if (!existing) throw new Error('Promo not found')
+    if (existing.usedCount > 0) {
+      throw new Error('Promo codes that have been used cannot be deleted')
+    }
+
+    const removed = await db
+      .delete(shopPromo)
+      .where(and(eq(shopPromo.id, data.id), eq(shopPromo.usedCount, 0)))
+      .returning({ id: shopPromo.id })
+    if (removed.length === 0) {
+      throw new Error('Promo codes that have been used cannot be deleted')
+    }
 
     return { ok: true as const }
   })

@@ -4,6 +4,7 @@ import { CheckIcon, CopyIcon } from '@phosphor-icons/react'
 import { formatShopPrice } from '~/data/shop'
 import {
   createShopPromo,
+  deleteShopPromo,
   listShopPromos,
   updateShopPromo,
   type ShopPromoRow,
@@ -146,7 +147,12 @@ function DashboardPromosPage() {
                       {promo.isActive ? 'Active' : 'Off'}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <PromoFormDialog promo={promo} />
+                      <div className="flex items-center justify-end gap-2">
+                        <PromoFormDialog promo={promo} />
+                        {promo.usedCount === 0 ? (
+                          <DeletePromoButton promo={promo} />
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -357,6 +363,69 @@ function PromoFormDialog({ promo }: { promo?: ShopPromoRow }) {
               'Add promo'
             ) : (
               'Save'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DeletePromoButton({ promo }: { promo: ShopPromoRow }) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+
+  async function remove() {
+    if (saving) return
+    setSaving(true)
+    try {
+      await deleteShopPromo({ data: { id: promo.id } })
+      toast.add({ type: 'success', title: 'Promo deleted' })
+      setOpen(false)
+      await router.invalidate()
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: error instanceof Error ? error.message : 'Could not delete promo',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog
+      onOpenChange={(next) => {
+        if (!saving) setOpen(next)
+      }}
+      open={open}
+    >
+      <DialogTrigger
+        render={<Button size="sm" type="button" variant="outline" />}
+      >
+        Delete
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete {promo.code}?</DialogTitle>
+          <DialogDescription>
+            This code has not been used. Deleting it removes it from checkout.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose
+            render={<Button disabled={saving} type="button" variant="outline" />}
+          >
+            Cancel
+          </DialogClose>
+          <Button disabled={saving} onClick={() => void remove()} type="button">
+            {saving ? (
+              <>
+                <Spinner /> Deleting…
+              </>
+            ) : (
+              'Delete'
             )}
           </Button>
         </DialogFooter>
