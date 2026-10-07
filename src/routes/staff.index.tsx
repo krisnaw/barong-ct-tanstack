@@ -26,7 +26,7 @@ function StaffIndexPage() {
           <div className="min-w-0 flex-1 space-y-0.5">
             <p className="font-medium tracking-tight">Manage order</p>
             <p className="text-sm text-muted-foreground">
-              Hand out paid kit at the pickup point.
+              Email the customer when the kit is ready, then mark it collected.
             </p>
           </div>
           <CaretRightIcon

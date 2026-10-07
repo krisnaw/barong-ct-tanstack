@@ -372,7 +372,7 @@ export const listOrderedSizes = createServerFn({ method: 'GET' }).handler(
   },
 )
 
-/** Paid pickup orders waiting at a pickup point (not yet completed). */
+/** Paid pickup orders not yet collected. Includes orders already marked ready. */
 export const listStaffPickupOrders = createServerFn({ method: 'GET' }).handler(
   async () => {
     await requireStaffAccess()
@@ -381,11 +381,82 @@ export const listStaffPickupOrders = createServerFn({ method: 'GET' }).handler(
       (order) =>
         order.delivery === 'pickup' &&
         orderPaymentStatus(order) === 'paid' &&
-        order.status === 'paid' &&
+        (order.status === 'paid' || order.status === 'ready') &&
         !order.pickedUpAt,
     )
   },
 )
+
+async function loadOrderForStaff(id: string) {
+  await requireStaffAccess()
+  const existing = await db.query.orders.findFirst({
+    where: eq(orders.number, id),
+    with: { lines: true, payments: true },
+  })
+  if (!existing) {
+    throw new Error('Order not found')
+  }
+  const mapped = mapOrder(existing, existing.lines, existing.payments)
+  if (mapped.delivery !== 'pickup') {
+    throw new Error('Not a pickup order')
+  }
+  if (orderPaymentStatus(mapped) !== 'paid') {
+    throw new Error('Order is not paid')
+  }
+  if (existing.pickedUpAt) {
+    throw new Error('Order already picked up')
+  }
+  return { existing, mapped }
+}
+
+/** Email the customer that a paid pickup order is ready to collect. */
+export const markPickupReady = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const { existing, mapped } = await loadOrderForStaff(data.id)
+    if (mapped.status !== 'paid') {
+      throw new Error('Order is not waiting to be marked ready')
+    }
+    await db
+      .update(orders)
+      .set({ status: 'ready', updatedAt: new Date() })
+      .where(eq(orders.id, existing.id))
+    const next = mapOrder(
+      { ...existing, status: 'ready' },
+      existing.lines,
+      existing.payments,
+    )
+    try {
+      await sendOrderShippedEmail(next)
+    } catch (error) {
+      console.error('Failed to send pickup email', error)
+    }
+    return next
+  })
+
+/** Record that the customer collected a ready pickup order. */
+export const markPickupCollected = createServerFn({ method: 'POST' })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const { existing } = await loadOrderForStaff(data.id)
+    if (existing.status !== 'ready') {
+      throw new Error('Mark the order ready before pickup')
+    }
+    const pickedUpAt = new Date()
+    await db
+      .update(orders)
+      .set({
+        status: 'completed',
+        pickedUpAt,
+        updatedAt: pickedUpAt,
+      })
+      .where(eq(orders.id, existing.id))
+    return mapOrder(
+      { ...existing, status: 'completed', pickedUpAt },
+      existing.lines,
+      existing.payments,
+    )
+  })
 
 export const listOrdersByUser = createServerFn({ method: 'GET' })
   .validator(z.object({ userId: z.string().min(1) }))
@@ -447,8 +518,8 @@ export const updateOrderStatus = createServerFn({ method: 'POST' })
       existing.payments,
     )
     if (
-      existing.status !== 'completed' &&
-      data.status === 'completed' &&
+      existing.status !== 'ready' &&
+      data.status === 'ready' &&
       next.delivery === 'pickup'
     ) {
       try {

@@ -412,15 +412,16 @@ const courierSelectItems = couriers.map((option) => ({
   label: option.label,
 }))
 
-const orderStatusSelectItems = adminStatusOptions.map((status) => ({
-  value: status,
-  label: orderStatusLabel(status),
-}))
-
 function ChangeStatusSelect({ order }: { order: ShopOrder }) {
   const router = useRouter()
   const [saving, setSaving] = React.useState(false)
   const current = asAdminStatus(order.status)
+  const orderStatusSelectItems = adminStatusOptions
+    .filter((status) => order.delivery === 'pickup' || status !== 'ready')
+    .map((status) => ({
+      value: status,
+      label: orderStatusLabel(status),
+    }))
 
   async function save(status: AdminOrderStatus) {
     if (status === order.status || saving) return

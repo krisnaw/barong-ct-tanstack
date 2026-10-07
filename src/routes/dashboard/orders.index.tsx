@@ -63,6 +63,7 @@ function DashboardOrdersPage() {
     (order) =>
       order.status === 'pending' ||
       order.status === 'paid' ||
+      order.status === 'ready' ||
       order.status === 'processing' ||
       order.status === 'shipped' ||
       order.status === 'delivered',

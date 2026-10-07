@@ -1,6 +1,7 @@
 export const orderStatuses = [
   'pending',
   'paid',
+  'ready',
   'processing',
   'shipped',
   'delivered',
@@ -12,7 +13,12 @@ export const orderStatuses = [
 
 export type OrderStatus = (typeof orderStatuses)[number]
 
-export const adminStatusOptions = ['pending', 'paid', 'completed'] as const
+export const adminStatusOptions = [
+  'pending',
+  'paid',
+  'ready',
+  'completed',
+] as const
 export type AdminOrderStatus = (typeof adminStatusOptions)[number]
 
 export type OrderPayment = 'unpaid' | 'paid'
@@ -77,6 +83,7 @@ export type ShopOrder = {
 export const orderStatusLabels: Record<OrderStatus, string> = {
   pending: 'Pending',
   paid: 'Paid',
+  ready: 'Ready to collect',
   processing: 'Processing',
   shipped: 'Shipped',
   delivered: 'Delivered',
@@ -89,6 +96,7 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
 export const orderStatusStyles: Record<OrderStatus, string> = {
   pending: 'border-amber-200 bg-amber-50 text-amber-800',
   paid: 'border-teal-200 bg-teal-50 text-teal-800',
+  ready: 'border-indigo-200 bg-indigo-50 text-indigo-800',
   processing: 'border-sky-200 bg-sky-50 text-sky-800',
   shipped: 'border-indigo-200 bg-indigo-50 text-indigo-800',
   delivered: 'border-violet-200 bg-violet-50 text-violet-800',

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -19,6 +19,7 @@ import {
 } from '~/data/orders'
 import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
+import { Spinner } from '~/components/ui/spinner'
 import {
   Dialog,
   DialogClose,
@@ -54,7 +55,11 @@ import {
   SheetTitle,
 } from '~/components/ui/sheet'
 import { toast } from '~/components/ui/toast'
-import { listStaffPickupOrders } from '~/lib/order.functions'
+import {
+  listStaffPickupOrders,
+  markPickupCollected,
+  markPickupReady,
+} from '~/lib/order.functions'
 import { listPickupPoints } from '~/lib/pickup-point.functions'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import { seo } from '~/utils/seo'
@@ -74,7 +79,7 @@ export const Route = createFileRoute('/staff/pickup')({
   head: () => ({
     meta: seo({
       title: 'Pickup desk · Staff | Barong Cycling Team',
-      description: 'Mark shop orders collected at pickup points.',
+      description: 'Tell customers when a pickup order is ready, then mark it collected.',
     }),
   }),
   component: StaffPickupPage,
@@ -88,12 +93,17 @@ function orderItemSummary(order: ShopOrder) {
 
 function StaffPickupPage() {
   const { orders, points } = Route.useLoaderData()
+  const router = useRouter()
   const searchId = React.useId()
   const pointId = React.useId()
   const [query, setQuery] = React.useState('')
   const [pointFilter, setPointFilter] = React.useState(ALL_POINTS)
   const [detailId, setDetailId] = React.useState<string | null>(null)
-  const [confirmId, setConfirmId] = React.useState<string | null>(null)
+  const [confirm, setConfirm] = React.useState<{
+    id: string
+    action: 'ready' | 'collected'
+  } | null>(null)
+  const [saving, setSaving] = React.useState(false)
 
   const pickupPointFilterItems = [
     { value: ALL_POINTS, label: 'All points' },
@@ -110,15 +120,38 @@ function StaffPickupPage() {
     return matchesStaffPickupQuery(order, query)
   })
   const detailOrder = orders.find((order) => order.id === detailId) ?? null
-  const confirmTarget = orders.find((order) => order.id === confirmId) ?? null
+  const confirmTarget = orders.find((order) => order.id === confirm?.id) ?? null
+  const readyCount = visible.filter((order) => order.status === 'ready').length
 
-  function requestMarkCollected() {
-    toast.add({
-      type: 'info',
-      title: 'Not connected yet',
-      description: 'Marking pickup will be wired in a later step.',
-    })
-    setConfirmId(null)
+  async function confirmAction() {
+    if (!confirm || saving) return
+    setSaving(true)
+    try {
+      if (confirm.action === 'ready') {
+        await markPickupReady({ data: { id: confirm.id } })
+        toast.add({
+          type: 'success',
+          title: 'Customer notified',
+          description: 'The order is ready to collect.',
+        })
+      } else {
+        await markPickupCollected({ data: { id: confirm.id } })
+        toast.add({ type: 'success', title: 'Marked as picked up' })
+        if (detailId === confirm.id) setDetailId(null)
+      }
+      setConfirm(null)
+      await router.invalidate()
+    } catch {
+      toast.add({
+        type: 'error',
+        title:
+          confirm.action === 'ready'
+            ? 'Could not mark ready'
+            : 'Could not mark picked up',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -135,7 +168,8 @@ function StaffPickupPage() {
           Pickup desk
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Open an order to check items. Marking as picked up comes next.
+          Mark an order ready to email the customer. Mark it picked up after
+          they collect it.
         </p>
       </div>
 
@@ -181,9 +215,10 @@ function StaffPickupPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {visible.length} ready to collect
+        {visible.length} waiting
+        {readyCount > 0 ? ` · ${readyCount} ready to collect` : null}
         {orders.length !== visible.length
-          ? ` · ${orders.length} total waiting`
+          ? ` · ${orders.length} total`
           : null}
       </p>
 
@@ -251,10 +286,15 @@ function StaffPickupPage() {
                       View details
                     </Button>
                     <Button
-                      onClick={() => setConfirmId(order.id)}
+                      onClick={() =>
+                        setConfirm({
+                          id: order.id,
+                          action: order.status === 'ready' ? 'collected' : 'ready',
+                        })
+                      }
                       type="button"
                     >
-                      Mark picked up
+                      {order.status === 'ready' ? 'Mark picked up' : 'Mark ready'}
                     </Button>
                   </div>
                 </div>
@@ -375,10 +415,18 @@ function StaffPickupPage() {
               <SheetFooter className="border-t border-border">
                 <Button
                   className="w-full"
-                  onClick={() => setConfirmId(detailOrder.id)}
+                  onClick={() =>
+                    setConfirm({
+                      id: detailOrder.id,
+                      action:
+                        detailOrder.status === 'ready' ? 'collected' : 'ready',
+                    })
+                  }
                   type="button"
                 >
-                  Mark picked up
+                  {detailOrder.status === 'ready'
+                    ? 'Mark picked up'
+                    : 'Mark ready'}
                 </Button>
               </SheetFooter>
             </>
@@ -388,25 +436,45 @@ function StaffPickupPage() {
 
       <Dialog
         onOpenChange={(open) => {
-          if (!open) setConfirmId(null)
+          if (!open && !saving) setConfirm(null)
         }}
-        open={confirmId != null}
+        open={confirm != null}
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Confirm pickup?</DialogTitle>
+            <DialogTitle>
+              {confirm?.action === 'collected'
+                ? 'Confirm pickup?'
+                : 'Mark ready to collect?'}
+            </DialogTitle>
             <DialogDescription>
-              {confirmTarget
-                ? `Mark ${confirmTarget.id} for ${orderCustomerName(confirmTarget)} as collected at ${orderPickupPointName(confirmTarget) ?? 'pickup'}. This action is not saved yet.`
-                : 'Mark this order as collected. This action is not saved yet.'}
+              {confirm?.action === 'collected'
+                ? confirmTarget
+                  ? `Mark ${confirmTarget.id} for ${orderCustomerName(confirmTarget)} as collected at ${orderPickupPointName(confirmTarget) ?? 'pickup'}.`
+                  : 'Mark this order as collected.'
+                : confirmTarget
+                  ? `Email ${orderCustomerName(confirmTarget)} that ${confirmTarget.id} is ready to collect at ${orderPickupPointName(confirmTarget) ?? 'pickup'}.`
+                  : 'Email the customer that this order is ready to collect.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose
+              render={
+                <Button disabled={saving} type="button" variant="outline" />
+              }
+            >
               Cancel
             </DialogClose>
-            <Button onClick={requestMarkCollected} type="button">
-              Confirm
+            <Button disabled={saving} onClick={() => void confirmAction()} type="button">
+              {saving ? (
+                <>
+                  <Spinner /> Saving…
+                </>
+              ) : confirm?.action === 'collected' ? (
+                'Mark picked up'
+              ) : (
+                'Mark ready'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
