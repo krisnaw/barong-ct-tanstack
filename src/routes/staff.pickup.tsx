@@ -289,7 +289,6 @@ function StaffPickupPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="h-8 w-full px-2 text-xs">Item</TableHead>
-                      <TableHead className="h-8 px-2 text-xs">Color</TableHead>
                       <TableHead className="h-8 px-2 text-xs">Size</TableHead>
                       <TableHead className="h-8 px-2 text-right text-xs">
                         Qty
@@ -303,9 +302,6 @@ function StaffPickupPage() {
                       >
                         <TableCell className="w-full px-2 py-2 whitespace-normal">
                           {line.name}
-                        </TableCell>
-                        <TableCell className="px-2 py-2 text-muted-foreground whitespace-normal">
-                          {line.color}
                         </TableCell>
                         <TableCell className="px-2 py-2">{line.size}</TableCell>
                         <TableCell className="px-2 py-2 text-right tabular-nums">
