@@ -296,37 +296,37 @@ function DashboardUsersPage() {
 
 function UserCell({ account }: { account: AdminUserListItem }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="relative flex items-center gap-3">
       <Link
-        className="flex min-w-0 flex-1 items-center gap-3 after:absolute after:inset-0"
+        aria-label={account.name}
+        className="absolute inset-0"
         params={{ id: account.id }}
         to="/dashboard/users/$id"
-      >
-        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-muted font-heading text-xs font-semibold">
-          {account.image ? (
-            <img
-              alt=""
-              className="size-full object-cover"
-              decoding="async"
-              src={account.image}
-            />
-          ) : (
-            userInitials(account.name, account.email)
-          )}
-        </div>
-        <span className="min-w-0">
-          <span className="block truncate font-medium">{account.name}</span>
-          <span className="mt-0.5 block truncate text-muted-foreground">
-            {account.email}
-          </span>
-          {account.banned ? (
-            <span className="mt-0.5 block text-[0.65rem] font-medium tracking-[0.14em] text-destructive uppercase">
-              Banned
-            </span>
-          ) : null}
+      />
+      <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-muted font-heading text-xs font-semibold">
+        {account.image ? (
+          <img
+            alt=""
+            className="size-full object-cover"
+            decoding="async"
+            src={account.image}
+          />
+        ) : (
+          userInitials(account.name, account.email)
+        )}
+      </div>
+      <span className="min-w-0">
+        <span className="block truncate font-medium">{account.name}</span>
+        <span className="mt-0.5 flex min-w-0 items-center gap-1 text-muted-foreground">
+          <span className="truncate">{account.email}</span>
+          <CopyEmailButton email={account.email} />
         </span>
-      </Link>
-      <CopyEmailButton email={account.email} />
+        {account.banned ? (
+          <span className="mt-0.5 block text-[0.65rem] font-medium tracking-[0.14em] text-destructive uppercase">
+            Banned
+          </span>
+        ) : null}
+      </span>
     </div>
   )
 }
@@ -512,7 +512,7 @@ function VerifyButton({ account }: { account: AdminUserListItem }) {
       onClick={(event) => void verify(event)}
       size="sm"
       type="button"
-      variant="outline"
+      variant="default"
     >
       {saving ? (<><Spinner /> Verifying…</>) : 'Verify'}
     </Button>

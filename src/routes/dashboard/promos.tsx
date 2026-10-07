@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react'
 import { formatShopPrice } from '~/data/shop'
 import {
   createShopPromo,
@@ -129,7 +130,10 @@ function DashboardPromosPage() {
                 {promos.map((promo) => (
                   <TableRow key={promo.id}>
                     <TableCell className="px-4 py-3 font-medium">
-                      {promo.code}
+                      <span className="inline-flex min-w-0 items-center gap-1">
+                        {promo.code}
+                        <CopyPromoButton code={promo.code} />
+                      </span>
                     </TableCell>
                     <TableCell className="px-4 py-3 tabular-nums">
                       {formatPromoDiscount(promo)}
@@ -358,6 +362,39 @@ function PromoFormDialog({ promo }: { promo?: ShopPromoRow }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function CopyPromoButton({ code }: { code: string }) {
+  const [copied, setCopied] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!copied) return
+    const timeout = window.setTimeout(() => setCopied(false), 2000)
+    return () => window.clearTimeout(timeout)
+  }, [copied])
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      toast.add({ type: 'success', title: 'Promo code copied' })
+    } catch {
+      toast.add({ type: 'error', title: 'Could not copy promo code' })
+    }
+  }
+
+  return (
+    <Button
+      aria-label={copied ? 'Promo code copied' : `Copy ${code}`}
+      className="shrink-0 text-muted-foreground"
+      onClick={() => void copy()}
+      size="icon-xs"
+      type="button"
+      variant="ghost"
+    >
+      {copied ? <CheckIcon weight="bold" /> : <CopyIcon weight="bold" />}
+    </Button>
   )
 }
 
