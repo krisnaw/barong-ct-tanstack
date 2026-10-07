@@ -42,6 +42,10 @@ const data = {
           url: '/dashboard/catalogue',
         },
         {
+          title: 'Promo codes',
+          url: '/dashboard/promos',
+        },
+        {
           title: 'Orders',
           url: '/dashboard/orders',
         },

@@ -31,6 +31,7 @@ import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
 import { Route as DashboardOrdersRouteImport } from './routes/dashboard/orders'
 import { Route as DashboardPickupPointsRouteImport } from './routes/dashboard/pickup-points'
+import { Route as DashboardPromosRouteImport } from './routes/dashboard/promos'
 import { Route as DashboardRolesRouteImport } from './routes/dashboard/roles'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
@@ -190,6 +191,11 @@ const DashboardOrdersRoute = DashboardOrdersRouteImport.update({
 const DashboardPickupPointsRoute = DashboardPickupPointsRouteImport.update({
   id: '/pickup-points',
   path: '/pickup-points',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardPromosRoute = DashboardPromosRouteImport.update({
+  id: '/promos',
+  path: '/promos',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardRolesRoute = DashboardRolesRouteImport.update({
@@ -474,6 +480,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
+  '/dashboard/promos': typeof DashboardPromosRoute
   '/dashboard/roles': typeof DashboardRolesRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRouteWithChildren
   '/events/$slug': typeof EventsSlugRouteWithChildren
@@ -536,6 +543,7 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/bike-rental/$id': typeof BikeRentalIdRoute
+  '/dashboard/promos': typeof DashboardPromosRoute
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/shop/cart': typeof ShopCartRoute
@@ -606,6 +614,7 @@ export interface FileRoutesById {
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
   '/dashboard/orders': typeof DashboardOrdersRouteWithChildren
   '/dashboard/pickup-points': typeof DashboardPickupPointsRouteWithChildren
+  '/dashboard/promos': typeof DashboardPromosRoute
   '/dashboard/roles': typeof DashboardRolesRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRouteWithChildren
   '/events/$slug': typeof EventsSlugRouteWithChildren
@@ -682,6 +691,7 @@ export interface FileRouteTypes {
     | '/dashboard/finance'
     | '/dashboard/orders'
     | '/dashboard/pickup-points'
+    | '/dashboard/promos'
     | '/dashboard/roles'
     | '/dashboard/users'
     | '/events/$slug'
@@ -744,6 +754,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/bike-rental/$id'
+    | '/dashboard/promos'
     | '/recaps/$slug'
     | '/shop/$slug'
     | '/shop/cart'
@@ -813,6 +824,7 @@ export interface FileRouteTypes {
     | '/dashboard/finance'
     | '/dashboard/orders'
     | '/dashboard/pickup-points'
+    | '/dashboard/promos'
     | '/dashboard/roles'
     | '/dashboard/users'
     | '/events/$slug'
@@ -1042,6 +1054,13 @@ declare module '@tanstack/react-router' {
       path: '/pickup-points'
       fullPath: '/dashboard/pickup-points'
       preLoaderRoute: typeof DashboardPickupPointsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/promos': {
+      id: '/dashboard/promos'
+      path: '/promos'
+      fullPath: '/dashboard/promos'
+      preLoaderRoute: typeof DashboardPromosRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/roles': {
@@ -1530,6 +1549,7 @@ interface DashboardRouteRouteChildren {
   DashboardFinanceRoute: typeof DashboardFinanceRouteWithChildren
   DashboardOrdersRoute: typeof DashboardOrdersRouteWithChildren
   DashboardPickupPointsRoute: typeof DashboardPickupPointsRouteWithChildren
+  DashboardPromosRoute: typeof DashboardPromosRoute
   DashboardRolesRoute: typeof DashboardRolesRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -1541,6 +1561,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardFinanceRoute: DashboardFinanceRouteWithChildren,
   DashboardOrdersRoute: DashboardOrdersRouteWithChildren,
   DashboardPickupPointsRoute: DashboardPickupPointsRouteWithChildren,
+  DashboardPromosRoute: DashboardPromosRoute,
   DashboardRolesRoute: DashboardRolesRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

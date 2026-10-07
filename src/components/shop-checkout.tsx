@@ -104,6 +104,8 @@ export function ShopCheckout({
   const [actionError, setActionError] = React.useState<Record<string, string>>(
     {},
   )
+  const [promoCode, setPromoCode] = React.useState('')
+  const [appliedPromo, setAppliedPromo] = React.useState('')
 
   const email = draft.email ?? profile?.email ?? ''
   const firstName = draft.firstName ?? profile?.firstName ?? ''
@@ -213,10 +215,22 @@ export function ShopCheckout({
     return <CheckoutSkeleton />
   }
 
+  function applyPromo() {
+    const code = promoCode.trim().toUpperCase()
+    if (!code) return
+    setAppliedPromo(code)
+    setPromoCode('')
+  }
+
   const summary = (
     <OrderSummary
+      appliedPromo={appliedPromo}
       delivery="pickup"
       lines={lines}
+      onApplyPromo={applyPromo}
+      onPromoChange={setPromoCode}
+      onRemovePromo={() => setAppliedPromo('')}
+      promoCode={promoCode}
       serviceFee={serviceFee}
       subtotal={subtotal}
       total={total}
@@ -633,12 +647,22 @@ function OrderSummary({
   total,
   delivery,
   serviceFee = 0,
+  promoCode,
+  appliedPromo,
+  onPromoChange,
+  onApplyPromo,
+  onRemovePromo,
 }: {
   lines: CartLine[]
   subtotal: number
   total: number
   delivery: 'pickup' | 'ship'
   serviceFee?: number
+  promoCode: string
+  appliedPromo: string
+  onPromoChange: (value: string) => void
+  onApplyPromo: () => void
+  onRemovePromo: () => void
 }) {
   return (
     <div>
@@ -679,11 +703,25 @@ function OrderSummary({
         ))}
       </ul>
 
+      <PromoCodeField
+        appliedCode={appliedPromo}
+        code={promoCode}
+        onApply={onApplyPromo}
+        onChange={onPromoChange}
+        onRemove={onRemovePromo}
+      />
+
       <dl className="mt-6 space-y-2 text-sm">
         <div className="flex justify-between">
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{formatShopPrice(subtotal)}</dd>
         </div>
+        {appliedPromo ? (
+          <div className="flex justify-between text-green-700">
+            <dt>Discount</dt>
+            <dd>{appliedPromo}</dd>
+          </div>
+        ) : null}
         <div className="flex justify-between">
           <dt>{delivery === 'pickup' ? 'Pickup point' : 'Shipping'}</dt>
           <dd className="tabular-nums">Free</dd>
@@ -785,6 +823,66 @@ function ConfirmationSummary({ order }: { order: ShopOrder }) {
           {formatShopPrice(order.total)}
         </span>
       </div>
+    </div>
+  )
+}
+
+function PromoCodeField({
+  code,
+  appliedCode,
+  onChange,
+  onApply,
+  onRemove,
+}: {
+  code: string
+  appliedCode: string
+  onChange: (value: string) => void
+  onApply: () => void
+  onRemove: () => void
+}) {
+  if (appliedCode) {
+    return (
+      <div className="mt-6 flex items-center justify-between gap-3 rounded-md border border-neutral-300 bg-background px-3 py-2.5 text-sm">
+        <span>
+          <span className="font-medium">{appliedCode}</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            Promo applied
+          </span>
+        </span>
+        <button
+          className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          onClick={onRemove}
+          type="button"
+        >
+          Remove
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6 flex gap-2">
+      <input
+        aria-label="Promo code"
+        className="h-12 min-w-0 flex-1 rounded-md border border-neutral-300 bg-background px-3 text-sm uppercase outline-none placeholder:normal-case placeholder:text-neutral-500 focus:border-foreground focus:ring-1 focus:ring-foreground"
+        onChange={(event) => onChange(event.target.value.toUpperCase())}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter') return
+          event.preventDefault()
+          onApply()
+        }}
+        placeholder="Promo code"
+        value={code}
+      />
+      <Button
+        className="h-12 shrink-0 rounded-md px-4"
+        disabled={!code.trim()}
+        onClick={onApply}
+        type="button"
+        variant="outline"
+      >
+        Apply
+      </Button>
     </div>
   )
 }

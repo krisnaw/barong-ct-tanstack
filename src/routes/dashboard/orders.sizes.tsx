@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
-import { endOfDay, format, startOfDay } from 'date-fns'
+import { endOfDay, endOfWeek, format, startOfDay, startOfWeek } from 'date-fns'
 import { type DateRange } from 'react-day-picker'
 import { CUSTOM_SIZE, jerseySizeGuide, shopImageSrc } from '~/data/shop'
 import {
@@ -128,6 +128,16 @@ function summarizeOrderedSizes(
   }
 }
 
+const WEEK_STARTS_ON = 1
+
+function thisWeekRange(): DateRange {
+  const today = new Date()
+  return {
+    from: startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }),
+    to: startOfDay(endOfWeek(today, { weekStartsOn: WEEK_STARTS_ON })),
+  }
+}
+
 function rangeLabel(range: DateRange | undefined) {
   if (!range?.from) return 'All dates'
   if (!range.to || range.from.getTime() === range.to.getTime()) {
@@ -150,13 +160,18 @@ function csvCell(value: string) {
   return value
 }
 
-function orderedSizesCsv(summary: OrderedSizeSummary) {
+function orderedSizesCsv(
+  summary: OrderedSizeSummary,
+  range: DateRange | undefined,
+) {
   const { sizes, products } = summary
   const columnTotals = sizes.map((size) =>
     products.reduce((sum, product) => sum + (product.quantities[size] ?? 0), 0),
   )
   const grandTotal = products.reduce((sum, product) => sum + product.total, 0)
   const rows = [
+    ['Date range', rangeLabel(range)],
+    [],
     ['Product', ...sizes, 'Total'],
     ...products.map((product) => [
       product.name,
@@ -172,7 +187,7 @@ function downloadOrderedSizesCsv(
   summary: OrderedSizeSummary,
   range: DateRange | undefined,
 ) {
-  const blob = new Blob([`\uFEFF${orderedSizesCsv(summary)}`], {
+  const blob = new Blob([`\uFEFF${orderedSizesCsv(summary, range)}`], {
     type: 'text/csv;charset=utf-8',
   })
   const url = URL.createObjectURL(blob)
@@ -185,7 +200,7 @@ function downloadOrderedSizesCsv(
 
 function DashboardOrderedSizesPage() {
   const source = Route.useLoaderData()
-  const [range, setRange] = React.useState<DateRange | undefined>()
+  const [range, setRange] = React.useState<DateRange | undefined>(thisWeekRange)
   const [rangeOpen, setRangeOpen] = React.useState(false)
   const summary = React.useMemo(
     () => summarizeOrderedSizes(source, range),
@@ -253,6 +268,7 @@ function DashboardOrderedSizesPage() {
                   numberOfMonths={2}
                   onSelect={setRange}
                   selected={range}
+                  weekStartsOn={WEEK_STARTS_ON}
                 />
                 <div className="flex justify-end border-t border-border p-2">
                   <Button
