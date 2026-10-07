@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
   CommandIcon,
+  SquaresFourIcon,
   StorefrontIcon,
   UsersIcon,
   WalletIcon,
@@ -28,6 +29,12 @@ type SidebarUser = {
 
 const data = {
   navMain: [
+    {
+      title: 'Dashboard',
+      url: '/dashboard',
+      icon: <SquaresFourIcon />,
+      exact: true,
+    },
     {
       title: 'Events',
       url: '/dashboard/events',
@@ -103,7 +110,7 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/dashboard/events" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <CommandIcon className="size-4" />
               </div>

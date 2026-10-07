@@ -19,6 +19,7 @@ export type NavMainItem = {
   title: string
   url?: string
   icon?: React.ReactNode
+  exact?: boolean
   items?: {
     title: string
     url: string
@@ -85,7 +86,9 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
 
           if (!item.url) return null
 
-          const isActive = Boolean(matchRoute({ to: item.url, fuzzy: true }))
+          const isActive = Boolean(
+            matchRoute({ to: item.url, fuzzy: !item.exact }),
+          )
 
           return (
             <SidebarMenuItem key={item.title}>
