@@ -15,8 +15,8 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPickupPointName,
-  orderStatusLabel,
 } from '~/data/orders'
+import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
 import { Spinner } from '~/components/ui/spinner'
 import {
@@ -270,7 +270,9 @@ function StaffPickupPage() {
                     </div>
                     <div>
                       <dt className="text-sm text-muted-foreground">Order status</dt>
-                      <dd className="mt-1 text-sm">{orderStatusLabel(order.status)}</dd>
+                      <dd className="mt-1">
+                        <OrderStatusBadge status={order.status} />
+                      </dd>
                     </div>
                   </dl>
                   <div className="flex shrink-0 flex-wrap gap-2">
