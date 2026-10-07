@@ -8,7 +8,6 @@ import {
 import { matchesStaffPickupQuery } from '~/data/staff-pickup'
 import {
   formatCustomMeasurements,
-  formatShopPrice,
   shopImageSrc,
 } from '~/data/shop'
 import {
@@ -16,6 +15,7 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPickupPointName,
+  orderStatusLabel,
 } from '~/data/orders'
 import { Button } from '~/components/ui/button'
 import { Spinner } from '~/components/ui/spinner'
@@ -269,10 +269,8 @@ function StaffPickupPage() {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-sm text-muted-foreground">Total amount</dt>
-                      <dd className="mt-1 text-sm tabular-nums">
-                        {formatShopPrice(order.total)}
-                      </dd>
+                      <dt className="text-sm text-muted-foreground">Order status</dt>
+                      <dd className="mt-1 text-sm">{orderStatusLabel(order.status)}</dd>
                     </div>
                   </dl>
                   <div className="flex shrink-0 flex-wrap gap-2">
