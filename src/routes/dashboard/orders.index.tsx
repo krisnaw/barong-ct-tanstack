@@ -38,13 +38,20 @@ import {
 } from '~/components/ui/table'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
 
-const orderStatusFilterItems = [
-  { value: 'all' as const, label: 'All' },
-  ...adminStatusOptions.map((status) => ({
-    value: status,
-    label: orderStatusLabel(status),
-  })),
-]
+type OrderListFilter = AdminOrderStatus | 'expire_payment' | 'all'
+
+const orderStatusFilterItems: Array<{ value: OrderListFilter; label: string }> =
+  [
+    { value: 'all', label: 'All' },
+    { value: 'pending', label: orderStatusLabel('pending') },
+    { value: 'expire_payment', label: orderStatusLabel('expire_payment') },
+    ...adminStatusOptions
+      .filter((status) => status !== 'pending')
+      .map((status) => ({
+        value: status,
+        label: orderStatusLabel(status),
+      })),
+  ]
 
 export const Route = createFileRoute('/dashboard/orders/')({
   pendingComponent: DashboardTableSkeleton,
@@ -56,7 +63,7 @@ export const Route = createFileRoute('/dashboard/orders/')({
 function DashboardOrdersPage() {
   const orders = Route.useLoaderData()
   const statusFilterId = React.useId()
-  const [filter, setFilter] = React.useState<AdminOrderStatus | 'all'>('all')
+  const [filter, setFilter] = React.useState<OrderListFilter>('all')
   const visible =
     filter === 'all' ? orders : orders.filter((order) => order.status === filter)
   const openCount = orders.filter(
@@ -104,7 +111,7 @@ function DashboardOrdersPage() {
               items={orderStatusFilterItems}
               onValueChange={(value) => {
                 if (value == null) return
-                setFilter(value as AdminOrderStatus | 'all')
+                setFilter(value as OrderListFilter)
               }}
               value={filter}
             >
