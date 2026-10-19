@@ -230,7 +230,7 @@ function DashboardUsersPage() {
           </Select>
         </div>
 
-        <div className="border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <Table>
             <TableHeader className="bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (

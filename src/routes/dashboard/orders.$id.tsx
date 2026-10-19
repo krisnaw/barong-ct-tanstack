@@ -340,7 +340,7 @@ function AddTrackingDialog({ order }: { order: ShopOrder }) {
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+      <DialogTrigger render={<Button variant="outline" />}>
         {hasTracking ? 'Update tracking' : 'Add tracking'}
       </DialogTrigger>
       <DialogContent>

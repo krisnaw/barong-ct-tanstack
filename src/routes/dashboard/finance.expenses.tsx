@@ -312,7 +312,7 @@ function DashboardFinanceExpensesPage() {
             </EmptyContent>
           </Empty>
         ) : (
-          <div className="overflow-x-auto border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">

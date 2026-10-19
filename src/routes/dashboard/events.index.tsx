@@ -113,13 +113,13 @@ function DashboardEventsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               to="/events"
             >
               View public
             </Link>
             <Link
-              className={cn(buttonVariants({ size: 'sm' }))}
+              className={cn(buttonVariants())}
               to="/dashboard/events/new"
             >
               Create event
@@ -128,11 +128,11 @@ function DashboardEventsPage() {
         </div>
 
         {events.length === 0 ? (
-          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-8 text-sm text-muted-foreground">
             No events yet. Create one to publish it on the ride calendar.
           </p>
         ) : (
-          <div className="border border-border">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">

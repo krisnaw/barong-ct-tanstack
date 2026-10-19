@@ -291,7 +291,6 @@ function DashboardOrderedSizesPage() {
                   <Button
                     className="justify-start font-normal data-[empty=true]:text-muted-foreground"
                     data-empty={!range?.from}
-                    size="sm"
                     type="button"
                     variant="outline"
                   />
@@ -351,7 +350,6 @@ function DashboardOrderedSizesPage() {
             <Button
               disabled={products.length === 0}
               onClick={() => downloadOrderedSizesCsv(summary, range)}
-              size="sm"
               variant="outline"
             >
               Download CSV
@@ -360,13 +358,13 @@ function DashboardOrderedSizesPage() {
         </div>
 
         {products.length === 0 ? (
-          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-8 text-sm text-muted-foreground">
             {hasOrders
               ? 'No paid orders in this date range.'
               : 'No paid orders yet.'}
           </p>
         ) : (
-          <div className="overflow-x-auto border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">

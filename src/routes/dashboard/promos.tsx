@@ -112,11 +112,11 @@ function DashboardPromosPage() {
         </div>
 
         {promos.length === 0 ? (
-          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-8 text-sm text-muted-foreground">
             No promo codes yet.
           </p>
         ) : (
-          <div className="border border-border">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">
@@ -245,7 +245,7 @@ function PromoFormDialog({ promo }: { promo?: ShopPromoRow }) {
       <DialogTrigger
         render={
           <Button
-            size="sm"
+            size={mode === 'create' ? 'default' : 'sm'}
             type="button"
             variant={mode === 'create' ? 'default' : 'outline'}
           />

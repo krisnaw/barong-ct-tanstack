@@ -31,7 +31,7 @@ export function DashboardTableSkeleton({
           </div>
           <Skeleton className="h-8 w-28" />
         </div>
-        <div className="border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <div className="flex gap-4 border-b border-border bg-muted/40 px-4 py-3">
             {Array.from({ length: columns }, (_, i) => (
               <Skeleton className="h-4 flex-1" key={i} />
@@ -85,7 +85,7 @@ export function DashboardDetailSkeleton() {
             </div>
           ))}
         </div>
-        <div className="border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           {Array.from({ length: 5 }, (_, i) => (
             <div
               className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 last:border-b-0"

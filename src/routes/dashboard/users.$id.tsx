@@ -269,7 +269,7 @@ function UserBlock({
   children: React.ReactNode
 }) {
   return (
-    <section className="border border-border">
+    <section className="overflow-hidden rounded-lg border border-border">
       <h2 className="border-b border-border px-4 py-3 font-heading text-sm font-semibold tracking-tight">
         {title}
       </h2>

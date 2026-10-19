@@ -142,7 +142,7 @@ function DashboardEventPromosPage() {
           <div className="flex flex-wrap gap-2">
             <PromoFormDialog eventSlug={event.slug} mode="create" />
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
               to="/dashboard/events/$slug"
             >
@@ -152,11 +152,11 @@ function DashboardEventPromosPage() {
         </div>
 
         {promos.length === 0 ? (
-          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-8 text-sm text-muted-foreground">
             No promo codes yet for this event.
           </p>
         ) : (
-          <div className="border border-border">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">
@@ -294,7 +294,7 @@ function PromoFormDialog({
       <DialogTrigger
         render={
           <Button
-            size="sm"
+            size={mode === 'create' ? 'default' : 'sm'}
             type="button"
             variant={mode === 'create' ? 'default' : 'outline'}
           />

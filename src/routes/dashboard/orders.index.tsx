@@ -130,11 +130,11 @@ function DashboardOrdersPage() {
         </div>
 
         {visible.length === 0 ? (
-          <p className="border border-border px-4 py-8 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-8 text-sm text-muted-foreground">
             No orders in this status.
           </p>
         ) : (
-          <div className="border border-border">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">

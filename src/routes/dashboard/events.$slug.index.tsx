@@ -119,28 +119,28 @@ function DashboardEventDetailPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
               to="/dashboard/events/$slug/edit"
             >
               Edit
             </Link>
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
               to="/dashboard/events/$slug/categories"
             >
               Manage category
             </Link>
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
               to="/dashboard/events/$slug/promos"
             >
               Manage promo
             </Link>
             <Link
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
               to="/dashboard/events/$slug/groups"
             >
@@ -187,7 +187,7 @@ function DashboardEventDetailPage() {
             </p>
           ) : (
             <div className="mt-3 flex flex-col gap-4">
-              <div className="overflow-x-auto border border-border">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full min-w-[40rem] text-left text-sm">
                   <thead className="border-b border-border bg-muted/40">
                     <tr>

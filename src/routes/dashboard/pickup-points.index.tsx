@@ -54,7 +54,7 @@ function DashboardPickupPointsPage() {
             </p>
           </div>
           <Link
-            className={cn(buttonVariants({ size: 'sm' }))}
+            className={cn(buttonVariants())}
             to="/dashboard/pickup-points/new"
           >
             Add pickup point
@@ -62,11 +62,11 @@ function DashboardPickupPointsPage() {
         </div>
 
         {points.length === 0 ? (
-          <p className="border border-border px-4 py-10 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border px-4 py-10 text-sm text-muted-foreground">
             No pickup points yet. Add a location customers can collect kit from.
           </p>
         ) : (
-          <ul className="divide-y divide-border border border-border">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
             {points.map((point) => (
               <li key={point.id}>
                 <Link
