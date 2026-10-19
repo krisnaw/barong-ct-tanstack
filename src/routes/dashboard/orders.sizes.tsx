@@ -159,7 +159,11 @@ function thisWeekRange(): DateRange {
 }
 
 function thisMonthRange(): DateRange {
-  return monthRange(new Date())
+  const today = new Date()
+  return {
+    from: startOfMonth(today),
+    to: startOfDay(today),
+  }
 }
 
 const RANGE_PRESETS = [
@@ -188,8 +192,6 @@ function matchingPreset(range: DateRange | undefined) {
 }
 
 function rangeLabel(range: DateRange | undefined) {
-  const preset = matchingPreset(range)
-  if (preset) return preset.label
   if (!range?.from) return 'All dates'
   if (!range.to || range.from.getTime() === range.to.getTime()) {
     return format(range.from, 'd MMM yyyy')
