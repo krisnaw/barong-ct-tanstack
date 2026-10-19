@@ -1,7 +1,17 @@
 import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
-import { endOfDay, endOfWeek, format, startOfDay, startOfWeek } from 'date-fns'
+import {
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+  subWeeks,
+} from 'date-fns'
 import { type DateRange } from 'react-day-picker'
 import { CUSTOM_SIZE, jerseySizeGuide, shopImageSrc } from '~/data/shop'
 import {
@@ -130,15 +140,56 @@ function summarizeOrderedSizes(
 
 const WEEK_STARTS_ON = 1
 
-function thisWeekRange(): DateRange {
-  const today = new Date()
+function weekRange(date: Date): DateRange {
   return {
-    from: startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }),
-    to: startOfDay(endOfWeek(today, { weekStartsOn: WEEK_STARTS_ON })),
+    from: startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON }),
+    to: startOfDay(endOfWeek(date, { weekStartsOn: WEEK_STARTS_ON })),
   }
 }
 
+function monthRange(date: Date): DateRange {
+  return {
+    from: startOfMonth(date),
+    to: startOfDay(endOfMonth(date)),
+  }
+}
+
+function thisWeekRange(): DateRange {
+  return weekRange(new Date())
+}
+
+function thisMonthRange(): DateRange {
+  return monthRange(new Date())
+}
+
+const RANGE_PRESETS = [
+  { label: 'This week', range: thisWeekRange },
+  { label: 'Last week', range: () => weekRange(subWeeks(new Date(), 1)) },
+  { label: 'This month', range: thisMonthRange },
+  { label: 'Last month', range: () => monthRange(subMonths(new Date(), 1)) },
+] as const
+
+function sameDay(a: Date, b: Date) {
+  return startOfDay(a).getTime() === startOfDay(b).getTime()
+}
+
+function matchingPreset(range: DateRange | undefined) {
+  if (!range?.from) return undefined
+  const end = range.to ?? range.from
+  return RANGE_PRESETS.find((preset) => {
+    const next = preset.range()
+    return (
+      next.from &&
+      next.to &&
+      sameDay(range.from!, next.from) &&
+      sameDay(end, next.to)
+    )
+  })
+}
+
 function rangeLabel(range: DateRange | undefined) {
+  const preset = matchingPreset(range)
+  if (preset) return preset.label
   if (!range?.from) return 'All dates'
   if (!range.to || range.from.getTime() === range.to.getTime()) {
     return format(range.from, 'd MMM yyyy')
@@ -190,8 +241,10 @@ function downloadOrderedSizesCsv(
 
 function DashboardOrderedSizesPage() {
   const source = Route.useLoaderData()
-  const [range, setRange] = React.useState<DateRange | undefined>(thisWeekRange)
+  const [range, setRange] = React.useState<DateRange | undefined>(thisMonthRange)
+  const [month, setMonth] = React.useState(() => thisMonthRange().from)
   const [rangeOpen, setRangeOpen] = React.useState(false)
+  const activePreset = matchingPreset(range)
   const summary = React.useMemo(
     () => summarizeOrderedSizes(source, range),
     [source, range],
@@ -252,14 +305,40 @@ function DashboardOrderedSizesPage() {
                 {rangeLabel(range)}
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
-                <Calendar
-                  defaultMonth={range?.from}
-                  mode="range"
-                  numberOfMonths={2}
-                  onSelect={setRange}
-                  selected={range}
-                  weekStartsOn={WEEK_STARTS_ON}
-                />
+                <div className="flex flex-col sm:flex-row">
+                  <div className="flex gap-1 overflow-x-auto border-b border-border p-2 sm:w-36 sm:flex-col sm:border-r sm:border-b-0">
+                    {RANGE_PRESETS.map((preset) => (
+                      <Button
+                        className="justify-start"
+                        key={preset.label}
+                        onClick={() => {
+                          const next = preset.range()
+                          setRange(next)
+                          if (next.from) setMonth(next.from)
+                          setRangeOpen(false)
+                        }}
+                        size="sm"
+                        type="button"
+                        variant={
+                          activePreset?.label === preset.label
+                            ? 'secondary'
+                            : 'ghost'
+                        }
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Calendar
+                    mode="range"
+                    month={month}
+                    numberOfMonths={2}
+                    onMonthChange={setMonth}
+                    onSelect={setRange}
+                    selected={range}
+                    weekStartsOn={WEEK_STARTS_ON}
+                  />
+                </div>
                 <div className="flex justify-end border-t border-border p-2">
                   <Button
                     disabled={!range?.from}
