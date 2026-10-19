@@ -4,7 +4,6 @@ import {
   formatOrderDate,
   orderCustomerName,
   orderItemCount,
-  orderPaymentStatus,
   orderStatusLabel,
   adminStatusOptions,
   type AdminOrderStatus,
@@ -143,7 +142,6 @@ function DashboardOrdersPage() {
                   <TableHead className="px-4">Date</TableHead>
                   <TableHead className="px-4 text-right">Items</TableHead>
                   <TableHead className="px-4 text-right">Total</TableHead>
-                  <TableHead className="px-4">Payment</TableHead>
                   <TableHead className="px-4">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -172,9 +170,6 @@ function DashboardOrdersPage() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right tabular-nums">
                         {formatShopPrice(order.total)}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-[0.65rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                        {orderPaymentStatus(order)}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <OrderStatusBadge status={order.status} />

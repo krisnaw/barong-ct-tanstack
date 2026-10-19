@@ -94,16 +94,16 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
 }
 
 export const orderStatusStyles: Record<OrderStatus, string> = {
-  pending: 'text-amber-800',
-  paid: 'text-teal-800',
-  ready: 'text-indigo-800',
-  processing: 'text-sky-800',
-  shipped: 'text-indigo-800',
-  delivered: 'text-violet-800',
-  completed: 'text-emerald-800',
-  cancelled: 'text-zinc-600',
-  refunded: 'text-rose-800',
-  expire_payment: 'text-zinc-600',
+  pending: 'bg-amber-50 text-amber-800',
+  paid: 'bg-teal-50 text-teal-800',
+  ready: 'bg-indigo-50 text-indigo-800',
+  processing: 'bg-sky-50 text-sky-800',
+  shipped: 'bg-indigo-50 text-indigo-800',
+  delivered: 'bg-violet-50 text-violet-800',
+  completed: 'bg-emerald-50 text-emerald-800',
+  cancelled: 'bg-zinc-100 text-zinc-600',
+  refunded: 'bg-rose-50 text-rose-800',
+  expire_payment: 'bg-zinc-100 text-zinc-600',
 }
 
 export function normalizeOrderStatus(status: string): OrderStatus {

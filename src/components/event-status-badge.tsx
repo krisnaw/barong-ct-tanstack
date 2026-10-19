@@ -9,10 +9,10 @@ const eventStatusLabel: Record<EventStatus, string> = {
 }
 
 const eventStatusTone: Record<EventStatus, string> = {
-  draft: 'text-sky-800',
-  open: 'text-emerald-800',
-  closed: 'text-zinc-600',
-  archived: 'text-amber-900',
+  draft: 'bg-sky-50 text-sky-800',
+  open: 'bg-emerald-50 text-emerald-800',
+  closed: 'bg-zinc-100 text-zinc-600',
+  archived: 'bg-amber-50 text-amber-900',
 }
 
 export function eventStatusText(status: EventStatus) {
