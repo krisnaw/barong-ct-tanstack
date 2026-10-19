@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
-import { ProductImageFields, appendBlankImageField, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
+import { ProductImageFields, collectImageUrls, initialImageFields } from '~/components/product-image-fields'
 import {
   jerseySizeGuide,
 } from '~/data/shop'
@@ -261,7 +261,7 @@ function DashboardProductDetailPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   className={cn(
-                    'border px-3 py-2 text-sm font-medium transition-colors',
+                    'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
                     preOrder
                       ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:border-foreground/40',
@@ -273,7 +273,7 @@ function DashboardProductDetailPage() {
                 </button>
                 <button
                   className={cn(
-                    'border px-3 py-2 text-sm font-medium transition-colors',
+                    'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
                     !preOrder
                       ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:border-foreground/40',
@@ -324,10 +324,14 @@ function DashboardProductDetailPage() {
           </FormSection>
 
           <FormSection
-            description="Feature images and alt text for the product gallery."
-            title="Images"
+            description="The image on the left is the product cover."
+            title="Product images"
           >
-            <ProductImageFields onChange={setImageUrls} values={imageUrls} />
+            <ProductImageFields
+              onChange={setImageUrls}
+              productName={name}
+              values={imageUrls}
+            />
 
             <Field>
               <FieldLabel htmlFor="imageAlt">Image alt text</FieldLabel>
@@ -339,14 +343,6 @@ function DashboardProductDetailPage() {
               />
             </Field>
 
-            <Button
-              className="justify-start px-0"
-              onClick={() => setImageUrls((current) => appendBlankImageField(current))}
-              type="button"
-              variant="link"
-            >
-              Add more image +
-            </Button>
           </FormSection>
 
           <FormSection

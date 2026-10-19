@@ -1,16 +1,19 @@
 import * as React from 'react'
-import { ImageIcon, TrashIcon } from '@phosphor-icons/react'
-import { Button } from '~/components/ui/button'
-import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
+import { ImageIcon, XIcon } from '@phosphor-icons/react'
+import { Field } from '~/components/ui/field'
 import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import { shopImageSrc } from '~/data/shop'
 import { uploadCatalogueImage } from '~/lib/catalogue-image.functions'
+import { cn } from '~/lib/utils'
 
 export type ImageUrlField = {
   id: string
   url: string
 }
+
+const MAX_IMAGES = 4
+const tileClass = 'aspect-[4/5] w-40'
 
 function newImageField(url = ''): ImageUrlField {
   return { id: crypto.randomUUID(), url }
@@ -18,10 +21,6 @@ function newImageField(url = ''): ImageUrlField {
 
 export function collectImageUrls(fields: ImageUrlField[]) {
   return fields.map((field) => field.url.trim()).filter(Boolean)
-}
-
-export function appendBlankImageField(fields: ImageUrlField[]) {
-  return [...fields, newImageField()]
 }
 
 export function initialImageFields(urls: string[], min = 1): ImageUrlField[] {
@@ -49,31 +48,53 @@ function readFileAsBase64(file: File) {
 export function ProductImageFields({
   values,
   onChange,
+  productName = '',
 }: {
   values: ImageUrlField[]
   onChange: (next: ImageUrlField[]) => void
+  productName?: string
 }) {
-  const id = React.useId()
+  const inputId = React.useId()
   const [uploadingId, setUploadingId] = React.useState<string | null>(null)
-  const inputRefs = React.useRef<Record<string, HTMLInputElement | null>>({})
+  const [dragId, setDragId] = React.useState<string | null>(null)
+  const [overId, setOverId] = React.useState<string | null>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const replaceId = React.useRef<string | null>(null)
+  const filled = values.filter((field) => field.url.trim())
+  const alt = productName.trim() || 'Product photo'
+  const canAdd = filled.length < MAX_IMAGES
 
-  function setAt(fieldId: string, url: string) {
-    onChange(
-      values.map((field) => (field.id === fieldId ? { ...field, url } : field)),
-    )
+  function openPicker(fieldId: string | null) {
+    replaceId.current = fieldId
+    inputRef.current?.click()
   }
 
   function removeAt(fieldId: string) {
-    const next = values.filter((field) => field.id !== fieldId)
+    const next = values.filter((field) => field.id !== fieldId && field.url.trim())
     onChange(next.length > 0 ? next : [newImageField()])
   }
 
-  async function onFileChange(
-    fieldId: string,
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  function moveTo(fieldId: string, toIndex: number) {
+    const from = filled.findIndex((field) => field.id === fieldId)
+    if (from < 0 || toIndex < 0 || toIndex >= filled.length || from === toIndex) return
+    const next = [...filled]
+    const [item] = next.splice(from, 1)
+    next.splice(toIndex, 0, item)
+    onChange(next)
+  }
+
+  function dropOn(fieldId: string) {
+    if (!dragId) return
+    moveTo(dragId, filled.findIndex((field) => field.id === fieldId))
+    setDragId(null)
+    setOverId(null)
+  }
+
+  async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
+    const targetId = replaceId.current
+    replaceId.current = null
     if (!file) return
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -85,7 +106,11 @@ export function ProductImageFields({
       return
     }
 
-    setUploadingId(fieldId)
+    const empty = values.find((field) => !field.url.trim())
+    const slotId = targetId ?? empty?.id ?? 'new'
+    if (slotId === 'new' && !canAdd) return
+
+    setUploadingId(slotId)
     try {
       const data = await readFileAsBase64(file)
       const uploaded = await uploadCatalogueImage({
@@ -94,7 +119,15 @@ export function ProductImageFields({
           data,
         },
       })
-      setAt(fieldId, uploaded.url)
+      if (slotId === 'new') {
+        onChange([...filled, newImageField(uploaded.url)])
+      } else {
+        onChange(
+          values.map((field) =>
+            field.id === slotId ? { ...field, url: uploaded.url } : field,
+          ),
+        )
+      }
       toast.add({ type: 'success', title: 'Image uploaded' })
     } catch (error) {
       toast.add({
@@ -109,87 +142,118 @@ export function ProductImageFields({
 
   return (
     <Field>
-      <FieldLabel>Feature images</FieldLabel>
-      <FieldDescription>
-        Upload JPG, PNG, or WebP up to 5MB. The first image is the main feature
-        image.
-      </FieldDescription>
-      <div className="mt-2 flex flex-col gap-3">
-        {values.map((field, index) => {
+      <div className="flex flex-wrap items-start gap-3">
+        {filled.map((field, index) => {
           const pending = uploadingId === field.id
           return (
             <div
-              className="flex items-center gap-3 rounded-lg border border-border p-3"
+              className={cn(
+                'relative cursor-move rounded-md',
+                tileClass,
+                overId === field.id && dragId !== field.id && 'ring-2 ring-foreground',
+                dragId === field.id && 'opacity-50',
+              )}
+              draggable={!pending}
               key={field.id}
+              onDragEnd={() => {
+                setDragId(null)
+                setOverId(null)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                setOverId(field.id)
+              }}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', field.id)
+                setDragId(field.id)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                dropOn(field.id)
+              }}
             >
-              <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
-                {field.url ? (
+                <button
+                  aria-label={
+                    index === 0
+                      ? 'Replace cover photo'
+                      : `Replace photo ${index + 1}`
+                  }
+                  className="size-full cursor-move overflow-hidden rounded-md bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  disabled={pending}
+                  onClick={() => openPicker(field.id)}
+                  type="button"
+                >
                   <img
-                    alt=""
-                    className="size-full object-cover"
+                    alt={alt}
+                    className="pointer-events-none size-full object-cover"
                     decoding="async"
-                    height={64}
-                    src={shopImageSrc(field.url, 128)}
-                    width={64}
+                    draggable={false}
+                    height={400}
+                    src={shopImageSrc(field.url, 400)}
+                    width={320}
                   />
+                </button>
+                {index === 0 ? (
+                  <span className="pointer-events-none absolute bottom-1 left-1 bg-foreground px-1 py-0.5 text-[0.6rem] font-medium tracking-wide text-background uppercase">
+                    Cover
+                  </span>
+                ) : null}
+                {pending ? (
+                  <span className="absolute inset-0 grid place-items-center rounded-md bg-background/70">
+                    <Spinner />
+                  </span>
                 ) : (
-                  <ImageIcon className="size-5 text-muted-foreground" />
+                  <button
+                    aria-label={`Remove photo ${index + 1}`}
+                    className="absolute top-1 right-1 grid size-5 cursor-pointer place-items-center rounded-full bg-background/90 text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    onClick={() => removeAt(field.id)}
+                    type="button"
+                  >
+                    <XIcon aria-hidden className="size-3" weight="bold" />
+                  </button>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">
-                  {index === 0 ? 'Main image' : `Image ${index + 1}`}
-                  {index === 0 ? (
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">
-                      required
-                    </span>
-                  ) : null}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <input
-                    accept="image/jpeg,image/png,image/webp"
-                    className="sr-only"
-                    id={`${id}-${field.id}`}
-                    onChange={(event) => void onFileChange(field.id, event)}
-                    ref={(node) => {
-                      inputRefs.current[field.id] = node
-                    }}
-                    type="file"
-                  />
-                  <Button
-                    disabled={pending}
-                    onClick={() => inputRefs.current[field.id]?.click()}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {pending
-                      ? (<><Spinner /> Uploading…</>)
-                      : field.url
-                        ? 'Replace'
-                        : 'Upload'}
-                  </Button>
-                  <Button
-                    aria-label={`Remove image ${index + 1}`}
-                    disabled={pending || (values.length <= 1 && !field.url)}
-                    onClick={() =>
-                      field.url && values.length === 1
-                        ? setAt(field.id, '')
-                        : removeAt(field.id)
-                    }
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <TrashIcon aria-hidden className="size-3.5" weight="bold" />
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            </div>
           )
         })}
+
+        {canAdd ? (
+          <button
+            aria-label={`Add photo, ${filled.length} of ${MAX_IMAGES}`}
+            className={cn(
+              'grid place-items-center rounded-md border border-dashed border-muted-foreground/40 text-destructive outline-none hover:border-destructive/60 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60',
+              tileClass,
+            )}
+            disabled={uploadingId === 'new'}
+            onClick={() => openPicker(null)}
+            type="button"
+          >
+            {uploadingId === 'new' ? (
+              <Spinner />
+            ) : (
+              <span className="flex flex-col items-center gap-1">
+                <ImageIcon aria-hidden className="size-5" weight="duotone" />
+                <span className="text-xs tabular-nums">
+                  ({filled.length}/{MAX_IMAGES})
+                </span>
+              </span>
+            )}
+          </button>
+        ) : null}
       </div>
+
+      <input
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        id={inputId}
+        onChange={(event) => void onFileChange(event)}
+        ref={inputRef}
+        type="file"
+      />
+
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        JPG, PNG, or WebP, up to 5MB. Drag a photo to change the order.
+      </p>
     </Field>
   )
 }
