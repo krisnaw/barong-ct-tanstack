@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { type ClubEvent, type EventStatus } from '~/data/events'
 import { listEvents, updateEventStatus } from '~/lib/event.functions'
+import { EventStatusBadge, eventStatusText } from '~/components/event-status-badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -43,20 +44,6 @@ import { formatEventWhenParts } from '~/lib/event-datetime'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
-
-const eventStatusStyles: Record<EventStatus, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-  archived: 'border-amber-200 bg-amber-50 text-amber-900',
-}
-
-const eventStatusLabel: Record<EventStatus, string> = {
-  draft: 'Draft',
-  open: 'Open',
-  closed: 'Closed',
-  archived: 'Archived',
-}
 
 const statusSelectItems = [
   { value: 'draft', label: 'Draft' },
@@ -152,14 +139,7 @@ function DashboardEventsPage() {
                       <EventWhenCell event={event} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <span
-                        className={cn(
-                          'inline-flex border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                          eventStatusStyles[event.status],
-                        )}
-                      >
-                        {eventStatusLabel[event.status]}
-                      </span>
+                      <EventStatusBadge status={event.status} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <EventActions event={event} />
@@ -236,7 +216,7 @@ function ChangeStatusDialog({ event }: { event: ClubEvent }) {
       await router.invalidate()
       toast.add({
         type: 'success',
-        title: `Status updated to ${eventStatusLabel[status]}`,
+        title: `Status updated to ${eventStatusText(status)}`,
       })
       setOpen(false)
     } catch (error) {

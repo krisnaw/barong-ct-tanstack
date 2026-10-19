@@ -1,22 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { type ClubEvent, type EventStatus, eventImageSrc } from '~/data/events'
+import { type ClubEvent, eventImageSrc } from '~/data/events'
+import { EventStatusBadge } from '~/components/event-status-badge'
 import { cn } from '~/lib/utils'
 
 export type EventsTab = 'active' | 'past'
-
-const statusLabel: Record<EventStatus, string> = {
-  draft: 'Draft',
-  open: 'Open',
-  closed: 'Closed',
-  archived: 'Archived',
-}
-
-const statusStyles: Record<EventStatus, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-  archived: 'border-amber-200 bg-amber-50 text-amber-900',
-}
 
 function byEventDateDesc(a: ClubEvent, b: ClubEvent) {
   return (b.eventDate ?? '').localeCompare(a.eventDate ?? '')
@@ -140,14 +127,7 @@ function EventRows({
                 <h2 className="font-heading text-base font-semibold tracking-tight sm:truncate sm:text-lg">
                   {event.name}
                 </h2>
-                <span
-                  className={cn(
-                    'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-                    statusStyles[event.status],
-                  )}
-                >
-                  {statusLabel[event.status]}
-                </span>
+                <EventStatusBadge status={event.status} />
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
             </div>

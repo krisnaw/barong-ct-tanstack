@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
-import { type EventStatus } from '~/data/events'
 import {
   getEventBySlug,
   listEventParticipants,
@@ -20,17 +19,11 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
+import { EventStatusBadge } from '~/components/event-status-badge'
 import {
   TABLE_PAGE_SIZE,
   TablePagination,
 } from '~/components/table-pagination'
-
-const eventStatusStyles: Record<EventStatus, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  open: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  closed: 'border-zinc-200 bg-zinc-100 text-zinc-600',
-  archived: 'border-amber-200 bg-amber-50 text-amber-900',
-}
 
 const participantStatusStyles: Record<string, string> = {
   draft: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -300,19 +293,6 @@ function ParticipantStatusBadge({ status }: { status: string }) {
     >
       {participantStatusLabel[status] ??
         status.replaceAll('_', ' ')}
-    </span>
-  )
-}
-
-function EventStatusBadge({ status }: { status: EventStatus }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-        eventStatusStyles[status],
-      )}
-    >
-      {status}
     </span>
   )
 }
