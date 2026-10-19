@@ -160,25 +160,15 @@ function csvCell(value: string) {
   return value
 }
 
-function orderedSizesCsv(
-  summary: OrderedSizeSummary,
-  range: DateRange | undefined,
-) {
+function orderedSizesCsv(summary: OrderedSizeSummary) {
   const { sizes, products } = summary
-  const columnTotals = sizes.map((size) =>
-    products.reduce((sum, product) => sum + (product.quantities[size] ?? 0), 0),
-  )
-  const grandTotal = products.reduce((sum, product) => sum + product.total, 0)
   const rows = [
-    ['Date range', rangeLabel(range)],
-    [],
     ['Product', ...sizes, 'Total'],
     ...products.map((product) => [
       product.name,
       ...sizes.map((size) => String(product.quantities[size] ?? 0)),
       String(product.total),
     ]),
-    ['Total', ...columnTotals.map(String), String(grandTotal)],
   ]
   return rows.map((row) => row.map(csvCell).join(',')).join('\n')
 }
@@ -187,7 +177,7 @@ function downloadOrderedSizesCsv(
   summary: OrderedSizeSummary,
   range: DateRange | undefined,
 ) {
-  const blob = new Blob([`\uFEFF${orderedSizesCsv(summary, range)}`], {
+  const blob = new Blob([`\uFEFF${orderedSizesCsv(summary)}`], {
     type: 'text/csv;charset=utf-8',
   })
   const url = URL.createObjectURL(blob)
