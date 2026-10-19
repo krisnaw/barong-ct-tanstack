@@ -253,12 +253,6 @@ function DashboardOrderedSizesPage() {
   )
   const { sizes, products } = summary
   const hasOrders = source.lines.length > 0
-  const columnTotals = Object.fromEntries(
-    sizes.map((size) => [
-      size,
-      products.reduce((sum, product) => sum + (product.quantities[size] ?? 0), 0),
-    ]),
-  )
   const grandTotal = products.reduce((sum, product) => sum + product.total, 0)
 
   return (
@@ -442,12 +436,7 @@ function DashboardOrderedSizesPage() {
                 <TableRow>
                   <TableCell className="px-4 py-3 font-medium">Total</TableCell>
                   {sizes.map((size) => (
-                    <TableCell
-                      className="px-4 py-3 text-right font-medium tabular-nums"
-                      key={size}
-                    >
-                      {columnTotals[size]}
-                    </TableCell>
+                    <TableCell className="px-4 py-3" key={size} />
                   ))}
                   <TableCell className="px-4 py-3 text-right font-medium tabular-nums">
                     {grandTotal}
