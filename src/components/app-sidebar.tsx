@@ -2,7 +2,6 @@ import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
-  CommandIcon,
   SquaresFourIcon,
   StorefrontIcon,
   UsersIcon,
@@ -111,9 +110,13 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <CommandIcon className="size-4" />
-              </div>
+              <img
+                alt="Barong CT"
+                className="size-8 rounded-lg object-contain"
+                height={32}
+                src="/barong_logo.png"
+                width={32}
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">Barong CT</span>
                 <span className="truncate text-xs">Dashboard</span>
