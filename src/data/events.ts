@@ -89,18 +89,22 @@ export function formatIdr(amount: number) {
     .replace(/Rp\s+/, 'Rp')
 }
 
-export function stepsForKind(kind: EventKind): RegisterStep[] {
-  if (kind === 'flagship') {
+export function stepsForEvent(event: Pick<ClubEvent, 'kind' | 'hasJersey'>): RegisterStep[] {
+  if (event.kind === 'flagship') {
     return ['group', 'course', 'jersey', 'profile', 'payment']
   }
-  if (kind === 'paid') {
-    return ['profile', 'payment']
+  if (event.kind === 'paid') {
+    return event.hasJersey
+      ? ['jersey', 'profile', 'payment']
+      : ['profile', 'payment']
   }
   return ['profile']
 }
 
-export function firstStepForKind(kind: EventKind): RegisterStep {
-  return stepsForKind(kind)[0] ?? 'profile'
+export function firstStepForEvent(
+  event: Pick<ClubEvent, 'kind' | 'hasJersey'>,
+): RegisterStep {
+  return stepsForEvent(event)[0] ?? 'profile'
 }
 
 export function eventEntryAmount(event: ClubEvent, courseId?: string) {
@@ -111,12 +115,14 @@ export function eventEntryAmount(event: ClubEvent, courseId?: string) {
   return event.feeAmount ?? 0
 }
 
-export function registerCtaCopy(kind: EventKind) {
-  if (kind === 'flagship') {
+export function registerCtaCopy(event: Pick<ClubEvent, 'kind' | 'hasJersey'>) {
+  if (event.kind === 'flagship') {
     return 'Next: group, course, jersey size, profile, then payment.'
   }
-  if (kind === 'paid') {
-    return 'Complete your profile, then pay to confirm.'
+  if (event.kind === 'paid') {
+    return event.hasJersey
+      ? 'Pick a jersey size, complete your profile, then pay to confirm.'
+      : 'Complete your profile, then pay to confirm.'
   }
   return 'Confirm your details to join the ride.'
 }

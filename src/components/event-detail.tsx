@@ -9,7 +9,7 @@ import { Link } from '@tanstack/react-router'
 import {
   type ClubEvent,
   eventImageSrc,
-  firstStepForKind,
+  firstStepForEvent,
   formatIdr,
   registerCtaCopy,
 } from '~/data/events'
@@ -94,11 +94,13 @@ export function EventDetail({
   const continueStep =
     event.kind === 'flagship' && draft
       ? nextFlagshipStep(draft)
-      : event.kind === 'paid'
-        ? draft?.profileConfirmed
-          ? 'payment'
+      : event.kind === 'paid' && event.hasJersey && draft && !draft.jerseySize
+        ? 'jersey'
+        : event.kind === 'paid'
+          ? draft?.profileConfirmed
+            ? 'payment'
+            : 'profile'
           : 'profile'
-        : 'profile'
   const groupId = registration?.groupId || draft?.groupId || ''
   const groupName = registration?.groupName || draft?.groupName || ''
   const shareUrl =
@@ -240,7 +242,7 @@ export function EventDetail({
                   ? 'payment'
                   : inProgress
                     ? continueStep
-                    : firstStepForKind(event.kind),
+                    : firstStepForEvent(event),
                 groupId: groupId || undefined,
               }}
               to="/events/$slug/register"
@@ -285,7 +287,7 @@ export function EventDetail({
             {canRegister && !confirmed
               ? awaitingPayment
                 ? 'Finish payment to confirm your spot.'
-                : registerCtaCopy(event.kind)
+                : registerCtaCopy(event)
               : confirmed
                 ? event.kind === 'flagship'
                   ? 'Share the invite so teammates can join your group.'

@@ -8,9 +8,9 @@ import {
 import { z } from 'zod'
 import { EventRegisterWizard } from '~/components/event-register-wizard'
 import {
-  firstStepForKind,
+  firstStepForEvent,
   type RegisterStep,
-  stepsForKind,
+  stepsForEvent,
 } from '~/data/events'
 import { getSession } from '~/lib/auth.functions'
 import { getMyProfile } from '~/lib/profile.functions'
@@ -62,11 +62,11 @@ function EventRegisterPage() {
   const navigate = useNavigate()
   const params = Route.useParams()
 
-  const allowed = stepsForKind(event.kind)
+  const allowed = stepsForEvent(event)
   const defaultStep: RegisterStep =
     event.kind === 'flagship' && groupId
       ? 'course'
-      : firstStepForKind(event.kind)
+      : firstStepForEvent(event)
   const step: RegisterStep =
     requestedStep && allowed.includes(requestedStep)
       ? requestedStep

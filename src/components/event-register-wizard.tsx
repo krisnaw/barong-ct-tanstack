@@ -19,7 +19,7 @@ import {
   JERSEY_SIZES,
   type PaymentMethodChoice,
   type RegisterStep,
-  stepsForKind,
+  stepsForEvent,
 } from '~/data/events'
 import { useAccount } from '~/lib/account'
 import {
@@ -106,7 +106,7 @@ export function EventRegisterWizard({
   profile: UserProfileRow & { email: string }
 }) {
   const navigate = useNavigate()
-  const steps = stepsForKind(event.kind)
+  const steps = stepsForEvent(event)
   const [draft, setDraft] = React.useState<RegisterDraft>(emptyDraft)
   const [ready, setReady] = React.useState(false)
 
@@ -258,11 +258,13 @@ export function EventRegisterWizard({
         />
       ) : null}
 
-      {event.kind === 'flagship' && step === 'jersey' ? (
+      {step === 'jersey' ? (
         <JerseyStep
           draft={draft}
           jerseyImage={event.jerseyImage}
-          onBack={() => goTo('course')}
+          onBack={
+            event.kind === 'flagship' ? () => goTo('course') : undefined
+          }
           onContinue={() => goTo('profile')}
           onUpdate={update}
           preferredSize={profile.jerseySize}
@@ -275,7 +277,7 @@ export function EventRegisterWizard({
           confirmLabel={event.kind === 'free' ? 'Join event' : 'Continue'}
           draft={draft}
           onBack={
-            event.kind === 'flagship' ? () => goTo('jersey') : undefined
+            steps.includes('jersey') ? () => goTo('jersey') : undefined
           }
           onContinue={async () => {
             if (event.kind === 'free') {
@@ -576,7 +578,7 @@ function JerseyStep({
 }: {
   draft: RegisterDraft
   onUpdate: (partial: Partial<RegisterDraft>) => void
-  onBack: () => void
+  onBack?: () => void
   onContinue: () => void
   preferredSize?: string
   sizeChartImage?: string
@@ -655,9 +657,13 @@ function JerseyStep({
       </Field>
 
       <div className="flex items-center justify-between gap-3">
-        <Button onClick={onBack} type="button" variant="outline">
-          Back
-        </Button>
+        {onBack ? (
+          <Button onClick={onBack} type="button" variant="outline">
+            Back
+          </Button>
+        ) : (
+          <span />
+        )}
         <Button
           disabled={!draft.jerseySize}
           onClick={onContinue}
@@ -1001,6 +1007,8 @@ function PaymentStep({
             <SummaryRow label="Group" value={draft.groupName || '—'} />
             <SummaryRow label="Jersey" value={draft.jerseySize || '—'} />
           </>
+        ) : event.hasJersey ? (
+          <SummaryRow label="Jersey" value={draft.jerseySize || '—'} />
         ) : null}
         <SummaryRow label="Entry" value={formatIdr(amount)} />
         {serviceFee > 0 ? (
