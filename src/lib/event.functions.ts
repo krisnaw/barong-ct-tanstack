@@ -179,6 +179,7 @@ export const listEvents = createServerFn({ method: 'GET' })
       .object({
         includeDraft: z.boolean().optional(),
         status: eventStatusSchema.optional(),
+        sort: z.enum(['eventDate', 'createdAt']).optional(),
       })
       .optional(),
   )
@@ -192,7 +193,10 @@ export const listEvents = createServerFn({ method: 'GET' })
           orderBy: [asc(eventCategory.sortOrder)],
         },
       },
-      orderBy: [asc(event.eventDate), asc(event.name)],
+      orderBy:
+        data?.sort === 'createdAt'
+          ? [desc(event.createdAt)]
+          : [asc(event.eventDate), asc(event.name)],
     })
 
     return rows

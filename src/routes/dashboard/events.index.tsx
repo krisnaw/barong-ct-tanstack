@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { type ClubEvent, type EventStatus } from '~/data/events'
 import { listEvents, updateEventStatus } from '~/lib/event.functions'
@@ -56,7 +57,8 @@ export const Route = createFileRoute('/dashboard/events/')({
   pendingComponent: DashboardTableSkeleton,
   pendingMs: 150,
   loader: async () =>
-    (await listEvents({ data: { includeDraft: true } })) ?? [],
+    (await listEvents({ data: { includeDraft: true, sort: 'createdAt' } })) ??
+    [],
   head: () => ({
     meta: seo({
       title: 'Events · Dashboard | Barong Cycling Team',
@@ -101,9 +103,12 @@ function DashboardEventsPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               className={cn(buttonVariants({ variant: 'outline' }))}
+              rel="noopener noreferrer"
+              target="_blank"
               to="/events"
             >
               View public
+              <ArrowSquareOutIcon aria-hidden data-icon="inline-end" />
             </Link>
             <Link
               className={cn(buttonVariants())}
