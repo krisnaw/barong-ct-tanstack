@@ -585,31 +585,20 @@ function JerseyStep({
   jerseyImage?: string
 }) {
   const references = [
+    jerseyImage ? { src: jerseyImage, label: 'Jersey' } : null,
     sizeChartImage
       ? { src: sizeChartImage, label: 'Size chart' }
       : null,
-    jerseyImage ? { src: jerseyImage, label: 'Jersey' } : null,
   ].filter((item): item is { src: string; label: string } => item != null)
 
   return (
     <section className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
-          Jersey size
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Race-fit kit is included. If you sit between sizes, take the larger for
-          Bali heat.
-        </p>
-      </div>
+      <h2 className="font-heading text-xl font-semibold tracking-tight">
+        Select Jersey
+      </h2>
 
       {references.length > 0 ? (
-        <div
-          className={cn(
-            'grid gap-4',
-            references.length > 1 && 'sm:grid-cols-2',
-          )}
-        >
+        <div className="grid gap-4">
           {references.map((image) => (
             <figure key={image.label}>
               <img
