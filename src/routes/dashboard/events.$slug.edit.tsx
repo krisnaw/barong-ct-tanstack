@@ -53,7 +53,10 @@ import { Switch } from '~/components/ui/switch'
 import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
-import { EventFeatureImageField } from '~/components/event-feature-image-field'
+import {
+  EventAssetImageField,
+  EventFeatureImageField,
+} from '~/components/event-feature-image-field'
 import { TextEditor } from '~/components/text-editor'
 import {
   type EventKind,
@@ -164,6 +167,10 @@ function DashboardEditEventPage() {
   const [requireJersey, setRequireJersey] = React.useState(
     Boolean(event.hasJersey),
   )
+  const [sizeChartImage, setSizeChartImage] = React.useState(
+    event.sizeChartImage ?? '',
+  )
+  const [jerseyImage, setJerseyImage] = React.useState(event.jerseyImage ?? '')
   const [requireGroup, setRequireGroup] = React.useState(
     Boolean(event.isGroupRide),
   )
@@ -212,6 +219,10 @@ function DashboardEditEventPage() {
             ? format(registrationClosesAt, 'yyyy-MM-dd')
             : undefined,
           hasJersey: requireJersey,
+          sizeChartImage: requireJersey
+            ? sizeChartImage.trim() || undefined
+            : undefined,
+          jerseyImage: requireJersey ? jerseyImage.trim() || undefined : undefined,
           isGroupRide: requireGroup,
           groupCapacity: requireGroup
             ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
@@ -511,6 +522,24 @@ function DashboardEditEventPage() {
                   onCheckedChange={setRequireJersey}
                 />
               </div>
+              {requireJersey ? (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <EventAssetImageField
+                    description="Measurements riders compare before choosing a size."
+                    id="size-chart"
+                    imageUrl={sizeChartImage}
+                    label="Size chart"
+                    onImageUrlChange={setSizeChartImage}
+                  />
+                  <EventAssetImageField
+                    description="Photo of the jersey shown during registration."
+                    id="jersey-image"
+                    imageUrl={jerseyImage}
+                    label="Jersey image"
+                    onImageUrlChange={setJerseyImage}
+                  />
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium">Require group</p>

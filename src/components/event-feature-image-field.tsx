@@ -144,3 +144,119 @@ export function EventFeatureImageField({
     </div>
   )
 }
+
+export function EventAssetImageField({
+  id,
+  label,
+  description,
+  imageUrl,
+  onImageUrlChange,
+}: {
+  id: string
+  label: string
+  description: string
+  imageUrl: string
+  onImageUrlChange: (url: string) => void
+}) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null)
+  const [uploading, setUploading] = React.useState(false)
+
+  async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.add({ type: 'error', title: 'Use a JPG, PNG, or WebP image' })
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.add({ type: 'error', title: 'Image must be 5MB or smaller' })
+      return
+    }
+
+    setUploading(true)
+    try {
+      const data = await readFileAsBase64(file)
+      const uploaded = await uploadCatalogueImage({
+        data: {
+          contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+          data,
+        },
+      })
+      onImageUrlChange(uploaded.url)
+      toast.add({ type: 'success', title: 'Image uploaded' })
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title: 'Could not upload image',
+        description: error instanceof Error ? error.message : 'Try again',
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+        <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
+          {imageUrl ? (
+            <img
+              alt=""
+              className="size-full object-cover"
+              decoding="async"
+              height={80}
+              src={eventImageSrc(imageUrl, 160)}
+              width={80}
+            />
+          ) : (
+            <ImageIcon className="size-6 text-muted-foreground" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            id={id}
+            onChange={(event) => void onFileChange(event)}
+            ref={inputRef}
+            type="file"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {uploading ? (
+                <>
+                  <Spinner /> Uploading…
+                </>
+              ) : imageUrl ? (
+                'Replace'
+              ) : (
+                'Upload'
+              )}
+            </Button>
+            {imageUrl ? (
+              <Button
+                disabled={uploading}
+                onClick={() => onImageUrlChange('')}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <FieldDescription>{description}</FieldDescription>
+    </Field>
+  )
+}

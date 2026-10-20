@@ -51,6 +51,8 @@ const createEventSchema = z.object({
   locationAddress: z.string().optional(),
   registrationClosesAt: z.string().optional(),
   hasJersey: z.boolean().default(false),
+  sizeChartImage: z.string().optional(),
+  jerseyImage: z.string().optional(),
   isGroupRide: z.boolean().default(false),
   groupCapacity: z.number().int().positive().nullable().optional(),
   featureImage: z.string().optional(),
@@ -64,6 +66,11 @@ const updateEventSchema = createEventSchema.extend({
 
 type EventRow = typeof event.$inferSelect
 type CategoryRow = typeof eventCategory.$inferSelect
+
+function storedImageRef(value?: string | null) {
+  const trimmed = value?.trim()
+  return trimmed ? normalizeStoredImageRef(trimmed) : null
+}
 
 function blurbFromDescription(description: string) {
   const trimmed = stripHtml(description)
@@ -128,6 +135,12 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
     capacity: capacity != null ? String(capacity) : undefined,
     groupCapacity: row.groupCapacity ?? undefined,
     hasJersey: row.hasJersey,
+    sizeChartImage: row.sizeChartImage
+      ? normalizeStoredImageRef(row.sizeChartImage)
+      : undefined,
+    jerseyImage: row.jerseyImage
+      ? normalizeStoredImageRef(row.jerseyImage)
+      : undefined,
     courses: ordered.map(mapCourse),
     categoryId: primary?.id,
     categoryName: primary?.name,
@@ -296,6 +309,10 @@ export const createEvent = createServerFn({ method: 'POST' })
       locationAddress: data.locationAddress?.trim() || null,
       registrationClosesAt: data.registrationClosesAt || null,
       hasJersey: data.hasJersey,
+      sizeChartImage: data.hasJersey
+        ? storedImageRef(data.sizeChartImage)
+        : null,
+      jerseyImage: data.hasJersey ? storedImageRef(data.jerseyImage) : null,
       isGroupRide: data.isGroupRide,
       groupCapacity: data.isGroupRide ? (data.groupCapacity ?? null) : null,
     })
@@ -391,6 +408,10 @@ export const updateEvent = createServerFn({ method: 'POST' })
         locationAddress: data.locationAddress?.trim() || null,
         registrationClosesAt: data.registrationClosesAt || null,
         hasJersey: data.hasJersey,
+        sizeChartImage: data.hasJersey
+          ? storedImageRef(data.sizeChartImage)
+          : null,
+        jerseyImage: data.hasJersey ? storedImageRef(data.jerseyImage) : null,
         isGroupRide: data.isGroupRide,
         groupCapacity: data.isGroupRide
           ? (data.groupCapacity ?? null)

@@ -14,6 +14,7 @@ import {
   type ClubEvent,
   type CourseOption,
   eventEntryAmount,
+  eventImageSrc,
   formatIdr,
   JERSEY_SIZES,
   type PaymentMethodChoice,
@@ -260,10 +261,12 @@ export function EventRegisterWizard({
       {event.kind === 'flagship' && step === 'jersey' ? (
         <JerseyStep
           draft={draft}
+          jerseyImage={event.jerseyImage}
           onBack={() => goTo('course')}
           onContinue={() => goTo('profile')}
           onUpdate={update}
           preferredSize={profile.jerseySize}
+          sizeChartImage={event.sizeChartImage}
         />
       ) : null}
 
@@ -568,13 +571,24 @@ function JerseyStep({
   onBack,
   onContinue,
   preferredSize,
+  sizeChartImage,
+  jerseyImage,
 }: {
   draft: RegisterDraft
   onUpdate: (partial: Partial<RegisterDraft>) => void
   onBack: () => void
   onContinue: () => void
   preferredSize?: string
+  sizeChartImage?: string
+  jerseyImage?: string
 }) {
+  const references = [
+    sizeChartImage
+      ? { src: sizeChartImage, label: 'Size chart' }
+      : null,
+    jerseyImage ? { src: jerseyImage, label: 'Jersey' } : null,
+  ].filter((item): item is { src: string; label: string } => item != null)
+
   return (
     <section className="space-y-6">
       <div>
@@ -586,6 +600,29 @@ function JerseyStep({
           Bali heat.
         </p>
       </div>
+
+      {references.length > 0 ? (
+        <div
+          className={cn(
+            'grid gap-4',
+            references.length > 1 && 'sm:grid-cols-2',
+          )}
+        >
+          {references.map((image) => (
+            <figure key={image.label}>
+              <img
+                alt={image.label}
+                className="max-h-80 w-full rounded-lg border border-border bg-muted object-contain"
+                decoding="async"
+                src={eventImageSrc(image.src, 800)}
+              />
+              <figcaption className="mt-2 text-sm text-muted-foreground">
+                {image.label}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : null}
 
       <Field>
         <FieldLabel>Size</FieldLabel>

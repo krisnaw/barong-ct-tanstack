@@ -22,6 +22,8 @@ export const event = sqliteTable(
     hasJersey: integer('has_jersey', { mode: 'boolean' })
       .default(false)
       .notNull(),
+    sizeChartImage: text('size_chart_image'),
+    jerseyImage: text('jersey_image'),
     isGroupRide: integer('is_group_ride', { mode: 'boolean' })
       .default(false)
       .notNull(),
