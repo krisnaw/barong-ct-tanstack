@@ -2,6 +2,14 @@ import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 import { buttonVariants } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import {
   DataTable,
   type DataTableFeatures,
@@ -22,6 +30,16 @@ const participantStatusLabel: Record<string, string> = {
   confirmed: 'Confirmed',
   cancelled: 'Cancelled',
 }
+
+const statusFilterItems = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending_payment', label: 'Pending payment' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+] as const
+
+type StatusFilter = (typeof statusFilterItems)[number]['value']
 
 const columnHelper = createColumnHelper<
   DataTableFeatures,
@@ -133,20 +151,69 @@ export function EventParticipantsTable({
   isFlagship: boolean
   isPaid: boolean
 }) {
+  const statusFilterId = React.useId()
+  const [nameQuery, setNameQuery] = React.useState('')
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all')
   const columns = React.useMemo(
     () => participantColumns({ eventSlug, isFlagship, isPaid }),
     [eventSlug, isFlagship, isPaid],
   )
+  const filteredParticipants = React.useMemo(() => {
+    const query = nameQuery.trim().toLowerCase()
+    return participants.filter((participant) => {
+      const matchesName =
+        query.length === 0 ||
+        participant.userName.toLowerCase().includes(query)
+      const matchesStatus =
+        statusFilter === 'all' || participant.status === statusFilter
+      return matchesName && matchesStatus
+    })
+  }, [participants, nameQuery, statusFilter])
+  const hasFilter = nameQuery.trim().length > 0 || statusFilter !== 'all'
 
   return (
-    <DataTable
-      className="mt-3"
-      columns={columns}
-      data={participants}
-      emptyMessage="No one has registered for this event yet."
-      getRowId={(row) => row.id}
-      tableClassName="min-w-[40rem]"
-    />
+    <div className="mt-3 flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          aria-label="Search by name"
+          className="max-w-sm"
+          onChange={(event) => setNameQuery(event.target.value)}
+          placeholder="Search by name…"
+          value={nameQuery}
+        />
+        <Select
+          items={[...statusFilterItems]}
+          onValueChange={(value) => {
+            if (value == null) return
+            setStatusFilter(value as StatusFilter)
+          }}
+          value={statusFilter}
+        >
+          <SelectTrigger className="min-w-44" id={statusFilterId}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusFilterItems.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <DataTable
+        key={`${nameQuery}\0${statusFilter}`}
+        columns={columns}
+        data={filteredParticipants}
+        emptyMessage={
+          hasFilter
+            ? 'No matching participants.'
+            : 'No one has registered for this event yet.'
+        }
+        getRowId={(row) => row.id}
+        tableClassName="min-w-[40rem]"
+      />
+    </div>
   )
 }
 
