@@ -992,7 +992,7 @@ function PaymentStep({
         />
       ) : null}
 
-      <dl className="divide-y divide-border border border-border text-sm">
+      <dl className="divide-y divide-border overflow-hidden rounded-lg border border-border text-sm">
         <SummaryRow
           label="Rider"
           value={`${draft.firstName} ${draft.lastName}`.trim() || '—'}
@@ -1095,7 +1095,7 @@ function PaymentStep({
             return (
               <button
                 className={cn(
-                  'flex items-start gap-3 border p-4 text-left transition-colors',
+                  'flex items-start gap-3 rounded-lg border p-4 text-left transition-colors',
                   active
                     ? 'border-foreground bg-muted/40'
                     : 'border-border hover:border-foreground/40',
@@ -1202,7 +1202,7 @@ function DonationField({
             onClick={() => selectPreset(0)}
             type="button"
           >
-            No donation
+            No additional donation
           </button>
           {DONATION_PRESETS.map((preset) => (
             <button
