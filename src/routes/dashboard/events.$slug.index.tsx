@@ -19,6 +19,7 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
+import { EventQrDialog } from '~/components/event-qr-dialog'
 import { EventStatusBadge } from '~/components/event-status-badge'
 import {
   TABLE_PAGE_SIZE,
@@ -111,6 +112,7 @@ function DashboardEventDetailPage() {
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
+            <EventQrDialog name={event.name} slug={event.slug} />
             <Link
               className={cn(buttonVariants({ variant: 'outline' }))}
               params={{ slug: event.slug }}
