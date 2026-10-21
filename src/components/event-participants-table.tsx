@@ -26,17 +26,15 @@ const participantStatusStyles: Record<string, string> = {
 
 const participantStatusLabel: Record<string, string> = {
   draft: 'Draft',
-  pending_payment: 'Pending payment',
+  pending_payment: 'Pending',
   confirmed: 'Confirmed',
   cancelled: 'Cancelled',
 }
 
 const statusFilterItems = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'pending_payment', label: 'Pending payment' },
+  { value: 'all', label: 'All' },
+  { value: 'pending_payment', label: 'Pending' },
   { value: 'confirmed', label: 'Confirmed' },
-  { value: 'cancelled', label: 'Cancelled' },
 ] as const
 
 type StatusFilter = (typeof statusFilterItems)[number]['value']
@@ -165,7 +163,10 @@ export function EventParticipantsTable({
         query.length === 0 ||
         participant.userName.toLowerCase().includes(query)
       const matchesStatus =
-        statusFilter === 'all' || participant.status === statusFilter
+        statusFilter === 'all'
+          ? participant.status === 'pending_payment' ||
+            participant.status === 'confirmed'
+          : participant.status === statusFilter
       return matchesName && matchesStatus
     })
   }, [participants, nameQuery, statusFilter])

@@ -56,6 +56,11 @@ function DashboardEventDetailPage() {
   const { event, participants } = Route.useLoaderData()
   const isFlagship = event.kind === 'flagship'
   const isPaid = event.kind === 'paid' || isFlagship
+  const listedParticipants = participants.filter(
+    (participant) =>
+      participant.status === 'pending_payment' ||
+      participant.status === 'confirmed',
+  )
   const confirmedParticipants = participants.filter(isPaidParticipant)
   const paidParticipants = confirmedParticipants.length
   const entryFeeTotal = confirmedParticipants.reduce(
@@ -183,7 +188,7 @@ function DashboardEventDetailPage() {
 
         <section>
           <h2 className="font-heading text-lg font-semibold tracking-tight">
-            Participants ({participants.length})
+            Participants ({listedParticipants.length})
           </h2>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -209,7 +214,7 @@ function DashboardEventDetailPage() {
             eventSlug={event.slug}
             isFlagship={isFlagship}
             isPaid={isPaid}
-            participants={participants}
+            participants={listedParticipants}
           />
         </section>
       </div>
