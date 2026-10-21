@@ -106,6 +106,7 @@ function DashboardCreateEventPage() {
   const [requireGroup, setRequireGroup] = React.useState(false)
   const [groupCapacity, setGroupCapacity] = React.useState('8')
   const [hasCharity, setHasCharity] = React.useState(false)
+  const [charityInfo, setCharityInfo] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [regulation, setRegulation] = React.useState('')
   const [featureImage, setFeatureImage] = React.useState('')
@@ -151,6 +152,7 @@ function DashboardCreateEventPage() {
             ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
             : null,
           hasCharity,
+          charityInfo: hasCharity ? charityInfo.trim() || undefined : undefined,
         },
       })
       void navigate({
@@ -470,6 +472,20 @@ function DashboardCreateEventPage() {
                 onCheckedChange={setHasCharity}
               />
             </div>
+            {hasCharity ? (
+              <Field>
+                <FieldLabel htmlFor="charityInfo">Donation info</FieldLabel>
+                <TextEditor
+                  id="charityInfo"
+                  onChange={setCharityInfo}
+                  placeholder="Who the donation supports."
+                  value={charityInfo}
+                />
+                <FieldDescription>
+                  Shown to riders on the payment step.
+                </FieldDescription>
+              </Field>
+            ) : null}
           </FormSection>
 
           <FormSection

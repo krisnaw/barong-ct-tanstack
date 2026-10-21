@@ -56,6 +56,7 @@ const createEventSchema = z.object({
   isGroupRide: z.boolean().default(false),
   groupCapacity: z.number().int().positive().nullable().optional(),
   hasCharity: z.boolean().default(false),
+  charityInfo: z.string().optional(),
   featureImage: z.string().optional(),
   featureImageAlt: z.string().optional(),
 })
@@ -67,6 +68,13 @@ const updateEventSchema = createEventSchema.extend({
 
 type EventRow = typeof event.$inferSelect
 type CategoryRow = typeof eventCategory.$inferSelect
+
+function storedCharityInfo(hasCharity: boolean, value?: string | null) {
+  if (!hasCharity) return null
+  const trimmed = value?.trim() ?? ''
+  if (!trimmed || !stripHtml(trimmed)) return null
+  return trimmed
+}
 
 function storedImageRef(value?: string | null) {
   const trimmed = value?.trim()
@@ -152,6 +160,7 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
     registrationClosesAt: row.registrationClosesAt ?? undefined,
     isGroupRide: row.isGroupRide,
     hasCharity: row.hasCharity,
+    charityInfo: row.charityInfo?.trim() || undefined,
   }
 }
 
@@ -318,6 +327,7 @@ export const createEvent = createServerFn({ method: 'POST' })
       isGroupRide: data.isGroupRide,
       groupCapacity: data.isGroupRide ? (data.groupCapacity ?? null) : null,
       hasCharity: data.hasCharity,
+      charityInfo: storedCharityInfo(data.hasCharity, data.charityInfo),
     })
 
     if (data.kind === 'free') {
@@ -420,6 +430,7 @@ export const updateEvent = createServerFn({ method: 'POST' })
           ? (data.groupCapacity ?? null)
           : null,
         hasCharity: data.hasCharity,
+        charityInfo: storedCharityInfo(data.hasCharity, data.charityInfo),
         updatedAt: new Date(),
       })
       .where(eq(event.id, data.id))

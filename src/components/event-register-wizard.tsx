@@ -41,6 +41,7 @@ import {
   upsertMyProfile,
 } from '~/lib/profile.functions'
 import { startEventPayment } from '~/lib/payment.functions'
+import { HtmlContent } from '~/components/html-content'
 import { RegisterWizardSkeleton } from '~/components/page-skeletons'
 import { Button, buttonVariants } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
@@ -986,6 +987,7 @@ function PaymentStep({
       {event.hasCharity ? (
         <DonationField
           amount={donation}
+          info={event.charityInfo}
           onChange={(donationAmount) => onUpdate({ donationAmount })}
         />
       ) : null}
@@ -1146,9 +1148,11 @@ const DONATION_PRESETS = [50_000, 100_000, 250_000, 500_000] as const
 
 function DonationField({
   amount,
+  info,
   onChange,
 }: {
   amount: number
+  info?: string
   onChange: (amount: number) => void
 }) {
   const [customInput, setCustomInput] = React.useState(() =>
@@ -1186,9 +1190,12 @@ function DonationField({
         </h3>
       </div>
       <div className="space-y-4 p-4">
-        <p className="text-sm text-sky-900/70">
-          Optional. Added on top of your entry for this charity ride.
-        </p>
+        {info ? (
+          <HtmlContent
+            className="text-sm text-sky-950/80"
+            html={info}
+          />
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <button
             className={choiceClass(amount === 0 && !usingCustom)}

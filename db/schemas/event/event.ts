@@ -30,6 +30,7 @@ export const event = sqliteTable(
     hasCharity: integer('has_charity', { mode: 'boolean' })
       .default(false)
       .notNull(),
+    charityInfo: text('charity_info'),
     groupCapacity: integer('group_capacity'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

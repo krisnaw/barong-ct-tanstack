@@ -1,0 +1,1 @@
+ALTER TABLE `event` ADD `charity_info` text;

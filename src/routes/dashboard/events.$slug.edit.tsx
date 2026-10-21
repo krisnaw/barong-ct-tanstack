@@ -178,6 +178,7 @@ function DashboardEditEventPage() {
     String(event.groupCapacity ?? 8),
   )
   const [hasCharity, setHasCharity] = React.useState(Boolean(event.hasCharity))
+  const [charityInfo, setCharityInfo] = React.useState(event.charityInfo ?? '')
   const [description, setDescription] = React.useState(event.description)
   const [regulation, setRegulation] = React.useState(event.regulation ?? '')
   const [featureImage, setFeatureImage] = React.useState(
@@ -229,6 +230,7 @@ function DashboardEditEventPage() {
             ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
             : null,
           hasCharity,
+          charityInfo: hasCharity ? charityInfo.trim() || undefined : undefined,
         },
       })
       void navigate({
@@ -584,6 +586,20 @@ function DashboardEditEventPage() {
                   onCheckedChange={setHasCharity}
                 />
               </div>
+              {hasCharity ? (
+                <Field>
+                  <FieldLabel htmlFor="charityInfo">Donation info</FieldLabel>
+                  <TextEditor
+                    id="charityInfo"
+                    onChange={setCharityInfo}
+                    placeholder="Who the donation supports."
+                    value={charityInfo}
+                  />
+                  <FieldDescription>
+                    Shown to riders on the payment step.
+                  </FieldDescription>
+                </Field>
+              ) : null}
             </FormSection>
 
             <FormSection
