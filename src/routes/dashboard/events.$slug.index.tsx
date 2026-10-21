@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
+import { CategoryFormDialog } from '~/routes/dashboard/events.$slug.categories'
 import {
   getEventBySlug,
   listEventParticipants,
@@ -151,20 +152,45 @@ function DashboardEventDetailPage() {
             </h2>
             <ul className="mt-3 divide-y divide-border border border-border">
               {event.courses.map((course) => (
-                <li className="px-4 py-3 text-sm" key={course.id}>
-                  <p className="font-medium">
-                    {course.name}
-                    <span className="ml-2 text-muted-foreground">
-                      {course.distance}
-                      {course.elevation ? ` · ${course.elevation}` : ''}
-                      {course.maxParticipants != null
-                        ? ` · ${course.maxParticipants} spots`
-                        : ''}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    {course.description}
-                  </p>
+                <li
+                  className="flex items-start justify-between gap-4 px-4 py-3 text-sm"
+                  key={course.id}
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {course.name}
+                      <span className="ml-2 text-muted-foreground">
+                        {course.distance}
+                        {course.elevation ? ` · ${course.elevation}` : ''}
+                        {course.maxParticipants != null
+                          ? ` · ${course.maxParticipants} spots`
+                          : ''}
+                      </span>
+                    </p>
+                    {course.description.trim() ? (
+                      <p className="mt-1 text-muted-foreground">
+                        {course.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0">
+                    <CategoryFormDialog
+                      category={{
+                        id: course.id,
+                        name: course.name,
+                        description: course.description.trim() || null,
+                        distance:
+                          course.distance === '—' ? null : course.distance,
+                        price: course.price,
+                        serviceFee: course.serviceFee ?? 0,
+                        maxParticipants: course.maxParticipants ?? null,
+                        sortOrder: 0,
+                      }}
+                      eventKind={event.kind}
+                      eventSlug={event.slug}
+                      mode="edit"
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

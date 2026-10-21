@@ -210,7 +210,7 @@ function DashboardEventCategoriesPage() {
   )
 }
 
-function CategoryFormDialog({
+export function CategoryFormDialog({
   mode,
   eventSlug,
   eventKind,
