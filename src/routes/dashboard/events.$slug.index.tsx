@@ -157,10 +157,10 @@ function DashboardEventDetailPage() {
             <h2 className="font-heading text-lg font-semibold tracking-tight">
               Categories
             </h2>
-            <ul className="mt-3 divide-y divide-border border border-border">
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {event.courses.map((course) => (
                 <li
-                  className="flex items-start justify-between gap-4 px-4 py-3 text-sm"
+                  className="flex items-start justify-between gap-4 rounded-lg border border-border px-4 py-3 text-sm"
                   key={course.id}
                 >
                   <div className="min-w-0">
