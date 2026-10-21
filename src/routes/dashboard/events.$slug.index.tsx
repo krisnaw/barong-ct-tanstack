@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
+import { formatIdr } from '~/data/events'
 import { CategoryFormDialog } from '~/routes/dashboard/events.$slug.categories'
 import {
   getEventBySlug,
@@ -71,6 +72,12 @@ function DashboardEventDetailPage() {
   const { event, participants } = Route.useLoaderData()
   const isFlagship = event.kind === 'flagship'
   const isPaid = event.kind === 'paid' || isFlagship
+  const confirmedParticipants = participants.filter(isPaidParticipant)
+  const paidParticipants = confirmedParticipants.length
+  const entryFeeTotal = confirmedParticipants.reduce(
+    (sum, participant) => sum + participant.price,
+    0,
+  )
   const [pageIndex, setPageIndex] = React.useState(0)
   const pageCount = Math.max(1, Math.ceil(participants.length / TABLE_PAGE_SIZE))
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
@@ -142,6 +149,25 @@ function DashboardEventDetailPage() {
             >
               Manage group
             </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="border border-border px-4 py-4">
+            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Paid participants
+            </p>
+            <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
+              {paidParticipants}
+            </p>
+          </div>
+          <div className="border border-border px-4 py-4">
+            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Entry fees
+            </p>
+            <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
+              {formatIdr(entryFeeTotal)}
+            </p>
           </div>
         </div>
 
@@ -259,6 +285,17 @@ function DashboardEventDetailPage() {
   )
 }
 
+function isPaidParticipant(participant: EventParticipantRow) {
+  if (participant.status === 'cancelled' || participant.status === 'draft') {
+    return false
+  }
+  return (
+    participant.status === 'confirmed' ||
+    participant.status === 'completed' ||
+    participant.finalPrice === 0
+  )
+}
+
 function ParticipantRow({
   eventSlug,
   participant,
@@ -270,8 +307,7 @@ function ParticipantRow({
   isFlagship: boolean
   isPaid: boolean
 }) {
-  const paid =
-    participant.status === 'confirmed' || participant.finalPrice === 0
+  const paid = isPaidParticipant(participant)
 
   return (
     <tr className="hover:bg-muted/30">
