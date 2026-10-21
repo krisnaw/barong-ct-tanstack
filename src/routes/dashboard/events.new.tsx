@@ -461,13 +461,13 @@ function DashboardCreateEventPage() {
             ) : null}
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium">Charity donation</p>
+                <p className="text-sm font-medium">Additional donation</p>
                 <p className="text-sm text-muted-foreground">
                   Riders can add an optional donation on the payment step.
                 </p>
               </div>
               <Switch
-                aria-label="Allow charity donation"
+                aria-label="Allow additional donation"
                 checked={hasCharity}
                 onCheckedChange={setHasCharity}
               />

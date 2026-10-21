@@ -1186,7 +1186,7 @@ function DonationField({
           className="font-heading text-sm font-semibold tracking-tight"
           id="charity-donation-heading"
         >
-          Charity donation
+          Additional donation
         </h3>
       </div>
       <div className="space-y-4 p-4">

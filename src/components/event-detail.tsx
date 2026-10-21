@@ -27,7 +27,7 @@ import { Button, buttonVariants } from '~/components/ui/button'
 import { HtmlContent } from '~/components/html-content'
 import { cn } from '~/lib/utils'
 
-type DetailTab = 'description' | 'regulation'
+type DetailTab = 'description' | 'jersey' | 'regulation'
 
 export function EventDetail({
   event,
@@ -44,6 +44,11 @@ export function EventDetail({
   const hasMultipleCategories = courses.length > 1
   const regulation = event.regulation?.trim() ?? ''
   const hasRegulation = Boolean(regulation)
+  const sizeChartImage = event.sizeChartImage?.trim() ?? ''
+  const jerseyImage = event.jerseyImage?.trim() ?? ''
+  const hasJerseyTab = Boolean(
+    event.hasJersey && sizeChartImage && jerseyImage,
+  )
 
   React.useEffect(() => {
     const loaded = loadDraft(event.slug)
@@ -147,6 +152,14 @@ export function EventDetail({
             >
               Description
             </DetailTabButton>
+            {hasJerseyTab ? (
+              <DetailTabButton
+                active={tab === 'jersey'}
+                onClick={() => setTab('jersey')}
+              >
+                Jersey
+              </DetailTabButton>
+            ) : null}
             <DetailTabButton
               active={tab === 'regulation'}
               onClick={() => setTab('regulation')}
@@ -156,14 +169,21 @@ export function EventDetail({
           </div>
 
           <div className="mt-4 max-w-2xl" role="tabpanel">
-            {tab === 'description' ? (
-              <HtmlContent html={event.description} />
-            ) : hasRegulation ? (
-              <HtmlContent html={regulation} />
+            {tab === 'jersey' && hasJerseyTab ? (
+              <JerseyImages
+                jerseyImage={jerseyImage}
+                sizeChartImage={sizeChartImage}
+              />
+            ) : tab === 'regulation' ? (
+              hasRegulation ? (
+                <HtmlContent html={regulation} />
+              ) : (
+                <p className="leading-relaxed text-muted-foreground">
+                  No regulation published for this event yet.
+                </p>
+              )
             ) : (
-              <p className="leading-relaxed text-muted-foreground">
-                No regulation published for this event yet.
-              </p>
+              <HtmlContent html={event.description} />
             )}
           </div>
 
@@ -297,6 +317,37 @@ export function EventDetail({
         </aside>
       </div>
     </article>
+  )
+}
+
+function JerseyImages({
+  jerseyImage,
+  sizeChartImage,
+}: {
+  jerseyImage: string
+  sizeChartImage: string
+}) {
+  const images = [
+    { src: jerseyImage, label: 'Jersey' },
+    { src: sizeChartImage, label: 'Size chart' },
+  ]
+
+  return (
+    <div className="grid gap-4">
+      {images.map((image) => (
+        <figure key={image.label}>
+          <img
+            alt={image.label}
+            className="max-h-80 w-full rounded-lg border border-border bg-muted object-contain"
+            decoding="async"
+            src={eventImageSrc(image.src, 800)}
+          />
+          <figcaption className="mt-2 text-sm text-muted-foreground">
+            {image.label}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
   )
 }
 
