@@ -14,6 +14,7 @@ import {
   DataTable,
   type DataTableFeatures,
 } from '~/components/data-table'
+import { formatIdr } from '~/data/events'
 import type { EventParticipantRow } from '~/lib/event.functions'
 import { cn } from '~/lib/utils'
 
@@ -77,24 +78,12 @@ function participantColumns({
         <span className="text-muted-foreground">{getValue()}</span>
       ),
     }),
-    ...(!isFlagship
-      ? [
-          columnHelper.accessor('userPhone', {
-            header: 'Phone',
-            cell: ({ getValue }) => (
-              <span className="text-muted-foreground">
-                {getValue() ?? '—'}
-              </span>
-            ),
-          }),
-        ]
-      : []),
+    columnHelper.accessor('categoryName', {
+      header: 'Category',
+      cell: ({ getValue }) => getValue() ?? '—',
+    }),
     ...(isFlagship
       ? [
-          columnHelper.accessor('categoryName', {
-            header: 'Category',
-            cell: ({ getValue }) => getValue() ?? '—',
-          }),
           columnHelper.accessor('groupName', {
             header: 'Group',
             cell: ({ getValue }) => getValue() ?? '—',
@@ -108,10 +97,12 @@ function participantColumns({
     ...(isPaid
       ? [
           columnHelper.display({
-            id: 'payment',
-            header: 'Payment',
+            id: 'total',
+            header: 'Total',
             cell: ({ row }) =>
-              isPaidParticipant(row.original) ? 'Paid' : 'Unpaid',
+              formatIdr(
+                row.original.price + row.original.donationAmount,
+              ),
           }),
         ]
       : []),

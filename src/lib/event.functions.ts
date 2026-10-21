@@ -463,6 +463,7 @@ export type EventParticipantRow = {
   jerseySize: string | null
   bibNumber: string | null
   price: number
+  donationAmount: number
   finalPrice: number
   userName: string
   userEmail: string
@@ -500,6 +501,7 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
       jerseySize: item.jerseySize,
       bibNumber: item.bibNumber,
       price: item.price,
+      donationAmount: item.donationAmount,
       finalPrice: item.finalPrice,
       userName: item.user.name,
       userEmail: item.user.email,

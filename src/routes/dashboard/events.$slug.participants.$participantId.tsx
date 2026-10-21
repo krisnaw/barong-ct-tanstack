@@ -163,7 +163,7 @@ function DashboardParticipantDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <ParticipantStatusBadge status={participant.status} />
               {participant.bibNumber ? (
-                <span className="inline-flex items-center border border-border px-2 py-0.5 font-mono text-[0.65rem] font-medium tracking-[0.08em] text-muted-foreground">
+                <span className="inline-flex items-center rounded-lg border border-border px-2 py-0.5 font-mono text-[0.65rem] font-medium tracking-[0.08em] text-muted-foreground">
                   #{participant.bibNumber}
                 </span>
               ) : null}
@@ -588,7 +588,7 @@ function DeleteParticipantCard({
   }
 
   return (
-    <section className="border border-destructive/25 bg-destructive/5 p-5">
+    <section className="rounded-lg border border-destructive/25 bg-destructive/5 p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2 className="font-heading text-base font-semibold tracking-tight text-destructive">
@@ -645,7 +645,7 @@ function ParticipantStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
+        'inline-flex items-center rounded-lg border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
         participantStatusStyles[status] ??
           'border-zinc-200 bg-zinc-100 text-zinc-600',
       )}
@@ -663,7 +663,7 @@ function DetailBlock({
   children: React.ReactNode
 }) {
   return (
-    <section className="border border-border">
+    <section className="overflow-hidden rounded-lg border border-border">
       <h2 className="border-b border-border px-4 py-3 font-heading text-sm font-semibold tracking-tight">
         {title}
       </h2>
