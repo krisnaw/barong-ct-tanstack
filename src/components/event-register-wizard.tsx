@@ -323,6 +323,9 @@ export function EventRegisterWizard({
                 groupName: draft.groupName || undefined,
                 jerseySize: draft.jerseySize || undefined,
                 promoCode: draft.promoCode || undefined,
+                donationAmount: event.hasCharity
+                  ? Math.max(0, Math.round(draft.donationAmount || 0))
+                  : 0,
                 status: 'pending_payment',
               },
             })

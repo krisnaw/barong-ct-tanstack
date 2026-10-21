@@ -528,6 +528,7 @@ export type EventParticipantDetail = {
   currency: string
   promoCode: string | null
   discountAmount: number
+  donationAmount: number
   finalPrice: number
   createdAt: string
   event: {
@@ -615,6 +616,7 @@ export const getEventParticipant = createServerFn({ method: 'GET' })
       currency: row.currency,
       promoCode: row.promoCode,
       discountAmount: row.discountAmount,
+      donationAmount: row.donationAmount,
       finalPrice: row.finalPrice,
       createdAt: row.createdAt.toISOString(),
       event: {
@@ -737,7 +739,10 @@ export const updateEventParticipant = createServerFn({ method: 'POST' })
     const price = categoryChanged && category ? category.price : row.price
     const serviceFee =
       categoryChanged && category ? category.serviceFee : row.serviceFee
-    const finalPrice = Math.max(0, price + serviceFee - row.discountAmount)
+    const finalPrice = Math.max(
+      0,
+      price + serviceFee - row.discountAmount + row.donationAmount,
+    )
     const wasConfirmed = row.status === 'confirmed'
 
     await db
@@ -1353,6 +1358,7 @@ const registerForEventSchema = z.object({
   groupName: z.string().optional(),
   jerseySize: z.string().optional(),
   promoCode: z.string().optional(),
+  donationAmount: z.number().int().nonnegative().optional(),
   status: z.enum(['draft', 'pending_payment', 'confirmed']).default('confirmed'),
 })
 
@@ -1429,7 +1435,13 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       code: data.promoCode ?? '',
       entryPrice: price,
     })
-    const finalPrice = Math.max(0, price + serviceFee - promo.discountAmount)
+    const donationAmount = row.hasCharity
+      ? Math.max(0, data.donationAmount ?? 0)
+      : 0
+    const finalPrice = Math.max(
+      0,
+      price + serviceFee - promo.discountAmount + donationAmount,
+    )
     const existing = await db.query.eventParticipant.findFirst({
       where: and(
         eq(eventParticipant.userId, session.user.id),
@@ -1452,6 +1464,7 @@ export const registerForEvent = createServerFn({ method: 'POST' })
           promoId: promo.promoId,
           promoCode: promo.promoCode,
           discountAmount: promo.discountAmount,
+          donationAmount,
           finalPrice,
           updatedAt: new Date(),
         })
@@ -1481,6 +1494,7 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       promoId: promo.promoId,
       promoCode: promo.promoCode,
       discountAmount: promo.discountAmount,
+      donationAmount,
       finalPrice,
     })
 

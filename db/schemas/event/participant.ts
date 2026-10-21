@@ -30,6 +30,7 @@ export const eventParticipant = sqliteTable(
     promoId: text('promo_id'),
     promoCode: text('promo_code'),
     discountAmount: integer('discount_amount').default(0).notNull(),
+    donationAmount: integer('donation_amount').default(0).notNull(),
     finalPrice: integer('final_price').default(0).notNull(),
     kitCollectedAt: integer('kit_collected_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })

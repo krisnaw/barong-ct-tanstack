@@ -50,6 +50,13 @@
       "when": 1792548619558,
       "tag": "0006_event_charity_info",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792558323840,
+      "tag": "0007_event_participant_donation",
+      "breakpoints": true
     }
   ]
 }

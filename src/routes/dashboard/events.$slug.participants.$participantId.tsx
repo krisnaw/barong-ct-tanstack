@@ -238,6 +238,12 @@ function DashboardParticipantDetailPage() {
                     value={`−${formatIdr(participant.discountAmount)}`}
                   />
                 ) : null}
+                {participant.donationAmount > 0 ? (
+                  <InfoRow
+                    label="Donation"
+                    value={formatIdr(participant.donationAmount)}
+                  />
+                ) : null}
                 <InfoRow
                   label="Total"
                   value={formatIdr(participant.finalPrice)}

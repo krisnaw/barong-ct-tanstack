@@ -1,0 +1,1 @@
+ALTER TABLE `event_participant` ADD `donation_amount` integer DEFAULT 0 NOT NULL;

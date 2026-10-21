@@ -378,6 +378,15 @@ export const startEventPayment = createServerFn({ method: 'POST' })
             },
           ]
         : []),
+      ...(participant.donationAmount > 0
+        ? [
+            {
+              name: 'Additional donation',
+              quantity: 1,
+              price: participant.donationAmount,
+            },
+          ]
+        : []),
     ]
 
     const sessionCheckout = await provider.createCheckout({
