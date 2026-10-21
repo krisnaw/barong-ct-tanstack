@@ -105,6 +105,7 @@ function DashboardCreateEventPage() {
   const [jerseyImage, setJerseyImage] = React.useState('')
   const [requireGroup, setRequireGroup] = React.useState(false)
   const [groupCapacity, setGroupCapacity] = React.useState('8')
+  const [hasCharity, setHasCharity] = React.useState(false)
   const [description, setDescription] = React.useState('')
   const [regulation, setRegulation] = React.useState('')
   const [featureImage, setFeatureImage] = React.useState('')
@@ -149,6 +150,7 @@ function DashboardCreateEventPage() {
           groupCapacity: requireGroup
             ? Number(groupCapacity.replace(/\D/g, '') || 0) || null
             : null,
+          hasCharity,
         },
       })
       void navigate({
@@ -455,6 +457,19 @@ function DashboardCreateEventPage() {
                 </FieldDescription>
               </Field>
             ) : null}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Charity donation</p>
+                <p className="text-sm text-muted-foreground">
+                  Riders can add an optional donation on the payment step.
+                </p>
+              </div>
+              <Switch
+                aria-label="Allow charity donation"
+                checked={hasCharity}
+                onCheckedChange={setHasCharity}
+              />
+            </div>
           </FormSection>
 
           <FormSection

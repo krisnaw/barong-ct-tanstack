@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import {
   CalendarBlankIcon,
   CreditCardIcon,
+  HeartIcon,
   QrCodeIcon,
 } from '@phosphor-icons/react'
 import { format, startOfDay } from 'date-fns'
@@ -907,7 +908,10 @@ function PaymentStep({
       ? (course?.serviceFee ?? 0)
       : (event.serviceFeeAmount ?? 0)
   const discount = Math.max(0, draft.promoDiscount || 0)
-  const total = Math.max(0, amount + serviceFee - discount)
+  const donation = event.hasCharity
+    ? Math.max(0, Math.round(draft.donationAmount || 0))
+    : 0
+  const total = Math.max(0, amount + serviceFee - discount + donation)
   const [promoInput, setPromoInput] = React.useState(draft.promoCode)
   const [promoError, setPromoError] = React.useState('')
   const [applyingPromo, setApplyingPromo] = React.useState(false)
@@ -979,6 +983,13 @@ function PaymentStep({
         </p>
       </div>
 
+      {event.hasCharity ? (
+        <DonationField
+          amount={donation}
+          onChange={(donationAmount) => onUpdate({ donationAmount })}
+        />
+      ) : null}
+
       <dl className="divide-y divide-border border border-border text-sm">
         <SummaryRow
           label="Rider"
@@ -1008,6 +1019,9 @@ function PaymentStep({
             label={`Promo (${draft.promoCode})`}
             value={`−${formatIdr(discount)}`}
           />
+        ) : null}
+        {donation > 0 ? (
+          <SummaryRow label="Donation" value={formatIdr(donation)} />
         ) : null}
         <SummaryRow label="Total" value={formatIdr(total)} />
       </dl>
@@ -1124,6 +1138,97 @@ function PaymentStep({
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+    </section>
+  )
+}
+
+const DONATION_PRESETS = [50_000, 100_000, 250_000, 500_000] as const
+
+function DonationField({
+  amount,
+  onChange,
+}: {
+  amount: number
+  onChange: (amount: number) => void
+}) {
+  const [customInput, setCustomInput] = React.useState(() =>
+    amount > 0 && !DONATION_PRESETS.some((preset) => preset === amount)
+      ? String(amount)
+      : '',
+  )
+  const usingCustom = customInput.length > 0
+
+  function selectPreset(next: number) {
+    setCustomInput('')
+    onChange(next)
+  }
+
+  const choiceClass = (active: boolean) =>
+    cn(
+      'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+      active
+        ? 'border-sky-600 bg-sky-600 text-white'
+        : 'border-sky-200 bg-white text-sky-950 hover:border-sky-400',
+    )
+
+  return (
+    <section
+      aria-labelledby="charity-donation-heading"
+      className="overflow-hidden rounded-lg border border-sky-200 bg-sky-50"
+    >
+      <div className="flex items-center gap-2 bg-sky-600 px-4 py-3 text-white">
+        <HeartIcon aria-hidden className="size-4" weight="fill" />
+        <h3
+          className="font-heading text-sm font-semibold tracking-tight"
+          id="charity-donation-heading"
+        >
+          Charity donation
+        </h3>
+      </div>
+      <div className="space-y-4 p-4">
+        <p className="text-sm text-sky-900/70">
+          Optional. Added on top of your entry for this charity ride.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className={choiceClass(amount === 0 && !usingCustom)}
+            onClick={() => selectPreset(0)}
+            type="button"
+          >
+            No donation
+          </button>
+          {DONATION_PRESETS.map((preset) => (
+            <button
+              className={choiceClass(!usingCustom && amount === preset)}
+              key={preset}
+              onClick={() => selectPreset(preset)}
+              type="button"
+            >
+              {formatIdr(preset)}
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-2">
+          <label
+            className="text-sm font-medium text-sky-950"
+            htmlFor="charity-donation-custom"
+          >
+            Custom amount
+          </label>
+          <Input
+            className="border-sky-200 bg-white"
+            id="charity-donation-custom"
+            inputMode="numeric"
+            onChange={(event) => {
+              const digits = event.target.value.replace(/\D/g, '')
+              setCustomInput(digits)
+              onChange(Number(digits || 0))
+            }}
+            placeholder="Enter amount in IDR"
+            value={customInput}
+          />
+        </div>
+      </div>
     </section>
   )
 }

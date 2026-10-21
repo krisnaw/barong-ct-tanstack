@@ -48,6 +48,7 @@ export type ClubEvent = {
   sizeChartImage?: string
   jerseyImage?: string
   isGroupRide?: boolean
+  hasCharity?: boolean
   courses?: CourseOption[]
   categoryId?: string
   categoryName?: string

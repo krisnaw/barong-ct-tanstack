@@ -25,6 +25,7 @@ export type RegisterDraft = {
   paymentMethod: PaymentMethodChoice | ''
   promoCode: string
   promoDiscount: number
+  donationAmount: number
   profileConfirmed: boolean
   status: 'draft' | 'pending_payment' | 'confirmed'
 }
@@ -49,6 +50,7 @@ export const emptyDraft: RegisterDraft = {
   paymentMethod: '',
   promoCode: '',
   promoDiscount: 0,
+  donationAmount: 0,
   profileConfirmed: false,
   status: 'draft',
 }

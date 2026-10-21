@@ -1,0 +1,1 @@
+ALTER TABLE `event` ADD `has_charity` integer DEFAULT false NOT NULL;

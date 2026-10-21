@@ -55,6 +55,7 @@ const createEventSchema = z.object({
   jerseyImage: z.string().optional(),
   isGroupRide: z.boolean().default(false),
   groupCapacity: z.number().int().positive().nullable().optional(),
+  hasCharity: z.boolean().default(false),
   featureImage: z.string().optional(),
   featureImageAlt: z.string().optional(),
 })
@@ -150,6 +151,7 @@ function mapClubEvent(row: EventRow, categories: CategoryRow[]): ClubEvent {
     timeZone: row.timeZone,
     registrationClosesAt: row.registrationClosesAt ?? undefined,
     isGroupRide: row.isGroupRide,
+    hasCharity: row.hasCharity,
   }
 }
 
@@ -315,6 +317,7 @@ export const createEvent = createServerFn({ method: 'POST' })
       jerseyImage: data.hasJersey ? storedImageRef(data.jerseyImage) : null,
       isGroupRide: data.isGroupRide,
       groupCapacity: data.isGroupRide ? (data.groupCapacity ?? null) : null,
+      hasCharity: data.hasCharity,
     })
 
     if (data.kind === 'free') {
@@ -416,6 +419,7 @@ export const updateEvent = createServerFn({ method: 'POST' })
         groupCapacity: data.isGroupRide
           ? (data.groupCapacity ?? null)
           : null,
+        hasCharity: data.hasCharity,
         updatedAt: new Date(),
       })
       .where(eq(event.id, data.id))

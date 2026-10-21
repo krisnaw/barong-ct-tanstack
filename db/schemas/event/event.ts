@@ -27,6 +27,9 @@ export const event = sqliteTable(
     isGroupRide: integer('is_group_ride', { mode: 'boolean' })
       .default(false)
       .notNull(),
+    hasCharity: integer('has_charity', { mode: 'boolean' })
+      .default(false)
+      .notNull(),
     groupCapacity: integer('group_capacity'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
