@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { type ClubEvent, eventImageSrc } from '~/data/events'
 import { EventStatusBadge } from '~/components/event-status-badge'
+import { StatusBadge } from '~/components/status-badge'
 import { cn } from '~/lib/utils'
 
 export type EventsTab = 'active' | 'past'
@@ -128,6 +129,11 @@ function EventRows({
                   {event.name}
                 </h2>
                 <EventStatusBadge status={event.status} />
+                {event.hasCharity ? (
+                  <StatusBadge className="bg-sky-50 text-sky-800">
+                    Charity
+                  </StatusBadge>
+                ) : null}
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">{event.date}</p>
             </div>
