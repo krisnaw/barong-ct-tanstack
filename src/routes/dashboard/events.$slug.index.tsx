@@ -152,25 +152,6 @@ function DashboardEventDetailPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border border-border px-4 py-4">
-            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-              Paid participants
-            </p>
-            <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
-              {paidParticipants}
-            </p>
-          </div>
-          <div className="border border-border px-4 py-4">
-            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-              Entry fees
-            </p>
-            <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
-              {formatIdr(entryFeeTotal)}
-            </p>
-          </div>
-        </div>
-
         {event.courses?.length ? (
           <section>
             <h2 className="font-heading text-lg font-semibold tracking-tight">
@@ -227,6 +208,25 @@ function DashboardEventDetailPage() {
           <h2 className="font-heading text-lg font-semibold tracking-tight">
             Participants ({participants.length})
           </h2>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border px-4 py-4">
+              <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                Paid participants
+              </p>
+              <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
+                {paidParticipants}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border px-4 py-4">
+              <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                Total transactions
+              </p>
+              <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
+                {formatIdr(entryFeeTotal)}
+              </p>
+            </div>
+          </div>
 
           {participants.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
