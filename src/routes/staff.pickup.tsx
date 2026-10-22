@@ -15,6 +15,7 @@ import {
   orderCustomerName,
   orderItemCount,
   orderPickupPointName,
+  orderStatusLabel,
 } from '~/data/orders'
 import { OrderStatusBadge } from '~/components/order-status-badge'
 import { Button } from '~/components/ui/button'
@@ -70,8 +71,36 @@ import {
 import { listPickupPoints } from '~/lib/pickup-point.functions'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
 import { seo } from '~/utils/seo'
+import { cn } from '~/lib/utils'
 
 const ALL_POINTS = '__all__'
+
+const pickupStatusTabs = [
+  { id: 'all', label: 'All' },
+  { id: 'paid', label: orderStatusLabel('paid') },
+  { id: 'ready', label: orderStatusLabel('ready') },
+] as const
+
+type PickupStatusTab = (typeof pickupStatusTabs)[number]['id']
+
+const emptyStatusCopy: Record<
+  PickupStatusTab,
+  { title: string; description: string }
+> = {
+  all: {
+    title: 'No orders to collect',
+    description: 'Paid pickup orders will show up here.',
+  },
+  paid: {
+    title: 'No paid orders',
+    description:
+      'Paid pickup orders that still need to be marked ready show up here.',
+  },
+  ready: {
+    title: 'Nothing ready to collect',
+    description: 'Orders you mark ready will show up here.',
+  },
+}
 
 export const Route = createFileRoute('/staff/pickup')({
   pendingComponent: DashboardTableSkeleton,
@@ -99,6 +128,7 @@ function StaffPickupPage() {
   const pointId = React.useId()
   const [query, setQuery] = React.useState('')
   const [pointFilter, setPointFilter] = React.useState(ALL_POINTS)
+  const [statusTab, setStatusTab] = React.useState<PickupStatusTab>('all')
   const [detailId, setDetailId] = React.useState<string | null>(null)
   const [confirm, setConfirm] = React.useState<{
     id: string
@@ -114,15 +144,27 @@ function StaffPickupPage() {
     })),
   ]
 
-  const visible = orders.filter((order) => {
+  const matched = orders.filter((order) => {
     if (pointFilter !== ALL_POINTS && order.pickupPointId !== pointFilter) {
       return false
     }
     return matchesStaffPickupQuery(order, query)
   })
+  const statusCounts: Record<PickupStatusTab, number> = {
+    all: matched.length,
+    paid: matched.filter((order) => order.status === 'paid').length,
+    ready: matched.filter((order) => order.status === 'ready').length,
+  }
+  const visible =
+    statusTab === 'all'
+      ? matched
+      : matched.filter((order) => order.status === statusTab)
   const detailOrder = orders.find((order) => order.id === detailId) ?? null
   const confirmTarget = orders.find((order) => order.id === confirm?.id) ?? null
-  const readyCount = visible.filter((order) => order.status === 'ready').length
+  const filtersActive =
+    query.trim().length > 0 ||
+    pointFilter !== ALL_POINTS ||
+    statusTab !== 'all'
 
   async function confirmAction() {
     if (!confirm || saving) return
@@ -215,13 +257,35 @@ function StaffPickupPage() {
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        {visible.length} waiting
-        {readyCount > 0 ? ` · ${readyCount} ready to collect` : null}
-        {orders.length !== visible.length
-          ? ` · ${orders.length} total`
-          : null}
-      </p>
+      <div
+        aria-label="Order status"
+        className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0"
+        role="tablist"
+      >
+        {pickupStatusTabs.map((tab) => {
+          const active = statusTab === tab.id
+          return (
+            <button
+              aria-selected={active}
+              className={cn(
+                '-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors',
+                active
+                  ? 'border-foreground font-medium text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+              key={tab.id}
+              onClick={() => setStatusTab(tab.id)}
+              role="tab"
+              type="button"
+            >
+              {tab.label}
+              <span className="tabular-nums text-xs text-muted-foreground">
+                {statusCounts[tab.id]}
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
       {visible.length === 0 ? (
         <Empty className="border border-dashed border-border">
@@ -229,19 +293,20 @@ function StaffPickupPage() {
             <EmptyMedia variant="icon">
               <PackageIcon />
             </EmptyMedia>
-            <EmptyTitle>No orders to collect</EmptyTitle>
+            <EmptyTitle>{emptyStatusCopy[statusTab].title}</EmptyTitle>
             <EmptyDescription>
               {query || pointFilter !== ALL_POINTS
                 ? 'Try another search or pickup point.'
-                : 'Paid pickup orders will show up here.'}
+                : emptyStatusCopy[statusTab].description}
             </EmptyDescription>
           </EmptyHeader>
-          {(query || pointFilter !== ALL_POINTS) && (
+          {filtersActive && (
             <EmptyContent>
               <Button
                 onClick={() => {
                   setQuery('')
                   setPointFilter(ALL_POINTS)
+                  setStatusTab('all')
                 }}
                 type="button"
                 variant="outline"
