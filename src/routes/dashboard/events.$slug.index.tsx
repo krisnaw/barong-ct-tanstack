@@ -25,6 +25,7 @@ import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 import { EventQrDialog } from '~/components/event-qr-dialog'
 import { EventStatusBadge } from '~/components/event-status-badge'
+import { RegisterEventUserDialog } from '~/components/register-event-user-dialog'
 
 export const Route = createFileRoute('/dashboard/events/$slug/')({
   pendingComponent: DashboardDetailSkeleton,
@@ -191,9 +192,19 @@ function DashboardEventDetailPage() {
         ) : null}
 
         <section>
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            Participants ({listedParticipants.length})
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">
+              Participants ({listedParticipants.length})
+            </h2>
+            <RegisterEventUserDialog
+              courses={event.courses ?? []}
+              eventSlug={event.slug}
+              hasJersey={Boolean(event.hasJersey)}
+              registeredEmails={participants
+                .filter((participant) => participant.status !== 'cancelled')
+                .map((participant) => participant.userEmail)}
+            />
+          </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border px-4 py-4">

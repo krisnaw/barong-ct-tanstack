@@ -13,6 +13,7 @@ import {
   getEventParticipant,
   listEventCategories,
   listEventGroups,
+  resendEventConfirmationEmail,
   updateEventParticipant,
   type EventCategoryRow,
   type EventGroupRow,
@@ -177,11 +178,20 @@ function DashboardParticipantDetailPage() {
               Registered {formatOrderDate(participant.createdAt)}
             </p>
           </div>
-          <EditParticipantDialog
-            categories={categories}
-            groups={groups}
-            participant={participant}
-          />
+          <div className="flex flex-wrap gap-2">
+            {participant.status === 'confirmed' ? (
+              <ResendConfirmationButton
+                email={user.email}
+                eventSlug={event.slug}
+                participantId={participant.id}
+              />
+            ) : null}
+            <EditParticipantDialog
+              categories={categories}
+              groups={groups}
+              participant={participant}
+            />
+          </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
@@ -294,6 +304,58 @@ function DashboardParticipantDetailPage() {
         />
       </div>
     </>
+  )
+}
+
+function ResendConfirmationButton({
+  eventSlug,
+  participantId,
+  email,
+}: {
+  eventSlug: string
+  participantId: string
+  email: string
+}) {
+  const [sending, setSending] = React.useState(false)
+
+  async function resend() {
+    setSending(true)
+    try {
+      await resendEventConfirmationEmail({
+        data: { slug: eventSlug, participantId },
+      })
+      toast.add({
+        type: 'success',
+        title: `Confirmation sent to ${email}`,
+      })
+    } catch (error) {
+      toast.add({
+        type: 'error',
+        title:
+          error instanceof Error
+            ? error.message
+            : 'Could not send confirmation email',
+      })
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <Button
+      disabled={sending}
+      onClick={() => void resend()}
+      type="button"
+      variant="outline"
+    >
+      {sending ? (
+        <>
+          <Spinner /> Sending…
+        </>
+      ) : (
+        'Resend confirmation'
+      )}
+    </Button>
   )
 }
 

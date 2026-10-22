@@ -11,11 +11,13 @@ import {
   eventPromo,
 } from 'db/schemas/event'
 import { payment } from 'db/schemas/order'
+import { user } from 'db/schemas/auth'
 import {
   type ClubEvent,
   type CourseOption,
   type EventKind,
   type EventStatus,
+  JERSEY_SIZES,
   formatIdr,
 } from '~/data/events'
 import { auth } from '~/lib/auth'
@@ -806,6 +808,40 @@ export const deleteEventParticipant = createServerFn({ method: 'POST' })
     return { ok: true as const, eventSlug: eventRow.slug }
   })
 
+export const resendEventConfirmationEmail = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      slug: z.string().min(1),
+      participantId: z.string().min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const eventRow = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!eventRow) {
+      throw new Error('Event not found')
+    }
+
+    const row = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.id, data.participantId),
+        eq(eventParticipant.eventId, eventRow.id),
+      ),
+    })
+    if (!row) {
+      throw new Error('Participant not found')
+    }
+    if (row.status !== 'confirmed') {
+      throw new Error('Confirmation email is only sent for confirmed participants')
+    }
+
+    await sendEventRegisteredEmail(row.id)
+    return { ok: true as const }
+  })
+
 export type EventCategoryRow = {
   id: string
   name: string
@@ -1511,4 +1547,120 @@ export const registerForEvent = createServerFn({ method: 'POST' })
     }
 
     return { id, status: data.status, finalPrice }
+  })
+
+const adminRegisterUserSchema = z.object({
+  slug: z.string().min(1),
+  userId: z.string().min(1),
+  categoryId: z.string().min(1),
+  jerseySize: z.string().optional(),
+})
+
+export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
+  .validator(adminRegisterUserSchema)
+  .handler(async ({ data }) => {
+    await requireAdmin()
+
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+      with: { categories: true },
+    })
+    if (!row) {
+      throw new Error('Event not found')
+    }
+    if (row.status === 'archived') {
+      throw new Error('This event is archived')
+    }
+
+    const account = await db.query.user.findFirst({
+      where: eq(user.id, data.userId),
+    })
+    if (!account) {
+      throw new Error('User not found')
+    }
+    if (account.banned) {
+      throw new Error('This user is banned')
+    }
+
+    const category = row.categories.find((item) => item.id === data.categoryId)
+    if (!category) {
+      throw new Error('Category not found for this event')
+    }
+
+    const jerseySize = data.jerseySize?.trim().toUpperCase() || null
+    if (
+      row.hasJersey &&
+      (!jerseySize || !(JERSEY_SIZES as readonly string[]).includes(jerseySize))
+    ) {
+      throw new Error('Jersey size is required')
+    }
+
+    const existing = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.userId, account.id),
+        eq(eventParticipant.eventId, row.id),
+      ),
+    })
+    if (existing && existing.status !== 'cancelled') {
+      throw new Error('This user is already registered for this event')
+    }
+
+    if (category.maxParticipants != null) {
+      const inCategory = await db.query.eventParticipant.findMany({
+        where: and(
+          eq(eventParticipant.eventId, row.id),
+          eq(eventParticipant.eventCategoryId, category.id),
+        ),
+      })
+      const taken = inCategory.filter(
+        (item) =>
+          item.id !== existing?.id &&
+          (item.status === 'confirmed' || item.status === 'pending_payment'),
+      ).length
+      if (taken >= category.maxParticipants) {
+        throw new Error('This category is full')
+      }
+    }
+
+    const price = category.price
+    const serviceFee = category.serviceFee
+    const finalPrice = price + serviceFee
+    const registration = {
+      eventCategoryId: category.id,
+      eventGroupId: null,
+      jerseySize: row.hasJersey ? jerseySize : null,
+      status: 'confirmed' as const,
+      price,
+      serviceFee,
+      currency: category.currency,
+      promoId: null,
+      promoCode: null,
+      discountAmount: 0,
+      donationAmount: 0,
+      finalPrice,
+      updatedAt: new Date(),
+    }
+
+    const id = existing?.id ?? crypto.randomUUID()
+    if (existing) {
+      await db
+        .update(eventParticipant)
+        .set(registration)
+        .where(eq(eventParticipant.id, existing.id))
+    } else {
+      await db.insert(eventParticipant).values({
+        id,
+        userId: account.id,
+        eventId: row.id,
+        ...registration,
+      })
+    }
+
+    try {
+      await sendEventRegisteredEmail(id)
+    } catch (error) {
+      console.error('Failed to send event registration email', error)
+    }
+
+    return { id, status: 'confirmed' as const }
   })
