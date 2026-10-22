@@ -201,6 +201,11 @@ export function EventParticipantsTable({
       return matchesName && matchesStatus
     })
   }, [participants, nameQuery, statusFilter])
+  const confirmedParticipants = React.useMemo(
+    () =>
+      participants.filter((participant) => participant.status === 'confirmed'),
+    [participants],
+  )
   const hasFilter = nameQuery.trim().length > 0 || statusFilter !== 'all'
 
   return (
@@ -234,9 +239,9 @@ export function EventParticipantsTable({
         </Select>
         <Button
           className="ml-auto"
-          disabled={filteredParticipants.length === 0}
+          disabled={confirmedParticipants.length === 0}
           onClick={() =>
-            downloadParticipantsCsv(eventSlug, filteredParticipants)
+            downloadParticipantsCsv(eventSlug, confirmedParticipants)
           }
           type="button"
           variant="outline"

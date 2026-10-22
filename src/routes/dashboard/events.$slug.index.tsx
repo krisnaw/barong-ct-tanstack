@@ -67,6 +67,10 @@ function DashboardEventDetailPage() {
     (sum, participant) => sum + participant.price,
     0,
   )
+  const donationTotal = confirmedParticipants.reduce(
+    (sum, participant) => sum + participant.donationAmount,
+    0,
+  )
 
   return (
     <>
@@ -208,6 +212,16 @@ function DashboardEventDetailPage() {
                 {formatIdr(entryFeeTotal)}
               </p>
             </div>
+            {event.hasCharity ? (
+              <div className="rounded-lg border border-border px-4 py-4">
+                <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                  Total donations
+                </p>
+                <p className="mt-1 font-heading text-2xl font-semibold tabular-nums tracking-tight">
+                  {formatIdr(donationTotal)}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <EventParticipantsTable
