@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
-import { buttonVariants } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
   Select,
@@ -45,6 +45,38 @@ const columnHelper = createColumnHelper<
   DataTableFeatures,
   EventParticipantRow
 >()
+
+function csvCell(value: string) {
+  if (/[",\n]/.test(value)) return `"${value.replaceAll('"', '""')}"`
+  return value
+}
+
+function participantsCsv(participants: Array<EventParticipantRow>) {
+  const rows = [
+    ['Name', 'Registered at', 'Total'],
+    ...participants.map((participant) => [
+      participant.userName,
+      formatOrderDate(participant.createdAt),
+      formatIdr(participant.price + participant.donationAmount),
+    ]),
+  ]
+  return rows.map((row) => row.map(csvCell).join(',')).join('\n')
+}
+
+function downloadParticipantsCsv(
+  eventSlug: string,
+  participants: Array<EventParticipantRow>,
+) {
+  const blob = new Blob([`\uFEFF${participantsCsv(participants)}`], {
+    type: 'text/csv;charset=utf-8',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${eventSlug.replace(/[^\w.-]+/g, '-')}-participants.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
 export function isPaidParticipant(participant: EventParticipantRow) {
   if (participant.status === 'cancelled' || participant.status === 'draft') {
@@ -200,6 +232,17 @@ export function EventParticipantsTable({
             ))}
           </SelectContent>
         </Select>
+        <Button
+          className="ml-auto"
+          disabled={filteredParticipants.length === 0}
+          onClick={() =>
+            downloadParticipantsCsv(eventSlug, filteredParticipants)
+          }
+          type="button"
+          variant="outline"
+        >
+          Download CSV
+        </Button>
       </div>
       <DataTable
         key={`${nameQuery}\0${statusFilter}`}
