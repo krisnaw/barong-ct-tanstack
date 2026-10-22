@@ -15,6 +15,7 @@ import {
   type DataTableFeatures,
 } from '~/components/data-table'
 import { formatIdr } from '~/data/events'
+import { formatOrderDate } from '~/data/orders'
 import type { EventParticipantRow } from '~/lib/event.functions'
 import { cn } from '~/lib/utils'
 
@@ -68,14 +69,21 @@ function participantColumns({
   return columnHelper.columns([
     columnHelper.accessor('userName', {
       header: 'Name',
-      cell: ({ getValue }) => (
-        <span className="font-medium">{getValue()}</span>
+      cell: ({ row }) => (
+        <span className="min-w-0">
+          <span className="block font-medium">{row.original.userName}</span>
+          <span className="mt-0.5 block truncate text-muted-foreground">
+            {row.original.userEmail}
+          </span>
+        </span>
       ),
     }),
-    columnHelper.accessor('userEmail', {
-      header: 'Email',
+    columnHelper.accessor('createdAt', {
+      header: 'Registered at',
       cell: ({ getValue }) => (
-        <span className="text-muted-foreground">{getValue()}</span>
+        <span className="text-muted-foreground">
+          {formatOrderDate(getValue())}
+        </span>
       ),
     }),
     columnHelper.accessor('categoryName', {

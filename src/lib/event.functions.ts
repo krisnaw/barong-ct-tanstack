@@ -470,6 +470,7 @@ export type EventParticipantRow = {
   userPhone: string | null
   categoryName: string | null
   groupName: string | null
+  createdAt: string
 }
 
 export const listEventParticipants = createServerFn({ method: 'GET' })
@@ -508,6 +509,7 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
       userPhone: item.user.profile?.phone ?? null,
       categoryName: item.category?.name ?? null,
       groupName: item.group?.name ?? null,
+      createdAt: item.createdAt.toISOString(),
     }))
   })
 
