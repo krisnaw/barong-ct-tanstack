@@ -1,0 +1,19 @@
+---
+description: Use rounded corners on bordered cards, panels, and tables
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# Rounded panels
+
+Bordered cards, stat panels, empty states, and tables use `rounded-lg` with the border.
+
+```tsx
+<div className="rounded-lg border border-border px-4 py-4">
+```
+
+```tsx
+<div className="overflow-hidden rounded-lg border border-border">
+```
+
+Do not leave a bordered panel square.
