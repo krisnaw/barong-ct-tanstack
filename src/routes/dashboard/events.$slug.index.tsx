@@ -192,19 +192,9 @@ function DashboardEventDetailPage() {
         ) : null}
 
         <section>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-heading text-lg font-semibold tracking-tight">
-              Participants ({listedParticipants.length})
-            </h2>
-            <RegisterEventUserDialog
-              courses={event.courses ?? []}
-              eventSlug={event.slug}
-              hasJersey={Boolean(event.hasJersey)}
-              registeredEmails={participants
-                .filter((participant) => participant.status !== 'cancelled')
-                .map((participant) => participant.userEmail)}
-            />
-          </div>
+          <h2 className="font-heading text-lg font-semibold tracking-tight">
+            Participants ({listedParticipants.length})
+          </h2>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border px-4 py-4">
@@ -236,6 +226,16 @@ function DashboardEventDetailPage() {
           </div>
 
           <EventParticipantsTable
+            actions={
+              <RegisterEventUserDialog
+                event={event}
+                registrations={participants.map((participant) => ({
+                  email: participant.userEmail,
+                  status: participant.status,
+                  groupName: participant.groupName,
+                }))}
+              />
+            }
             eventSlug={event.slug}
             isFlagship={isFlagship}
             isPaid={isPaid}

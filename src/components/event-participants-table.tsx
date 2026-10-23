@@ -175,11 +175,13 @@ export function EventParticipantsTable({
   participants,
   isFlagship,
   isPaid,
+  actions,
 }: {
   eventSlug: string
   participants: Array<EventParticipantRow>
   isFlagship: boolean
   isPaid: boolean
+  actions?: React.ReactNode
 }) {
   const statusFilterId = React.useId()
   const [nameQuery, setNameQuery] = React.useState('')
@@ -238,17 +240,19 @@ export function EventParticipantsTable({
             ))}
           </SelectContent>
         </Select>
-        <Button
-          className="ml-auto"
-          disabled={confirmedParticipants.length === 0}
-          onClick={() =>
-            downloadParticipantsCsv(eventSlug, confirmedParticipants)
-          }
-          type="button"
-          variant="outline"
-        >
-          Download CSV
-        </Button>
+        <div className="ml-auto flex items-center gap-3">
+          {actions}
+          <Button
+            disabled={confirmedParticipants.length === 0}
+            onClick={() =>
+              downloadParticipantsCsv(eventSlug, confirmedParticipants)
+            }
+            type="button"
+            variant="outline"
+          >
+            Download CSV
+          </Button>
+        </div>
       </div>
       <DataTable
         key={`${nameQuery}\0${statusFilter}`}

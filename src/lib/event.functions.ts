@@ -1553,7 +1553,10 @@ const adminRegisterUserSchema = z.object({
   slug: z.string().min(1),
   userId: z.string().min(1),
   categoryId: z.string().min(1),
+  groupName: z.string().optional(),
   jerseySize: z.string().optional(),
+  promoCode: z.string().optional(),
+  donationAmount: z.number().int().nonnegative().optional(),
 })
 
 export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
@@ -1568,8 +1571,8 @@ export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
     if (!row) {
       throw new Error('Event not found')
     }
-    if (row.status === 'archived') {
-      throw new Error('This event is archived')
+    if (row.status !== 'open') {
+      throw new Error('Registration is not open for this event')
     }
 
     const account = await db.query.user.findFirst({
@@ -1587,9 +1590,10 @@ export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
       throw new Error('Category not found for this event')
     }
 
+    const collectJersey = row.kind === 'flagship' || row.hasJersey
     const jerseySize = data.jerseySize?.trim().toUpperCase() || null
     if (
-      row.hasJersey &&
+      collectJersey &&
       (!jerseySize || !(JERSEY_SIZES as readonly string[]).includes(jerseySize))
     ) {
       throw new Error('Jersey size is required')
@@ -1601,7 +1605,7 @@ export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
         eq(eventParticipant.eventId, row.id),
       ),
     })
-    if (existing && existing.status !== 'cancelled') {
+    if (existing?.status === 'confirmed') {
       throw new Error('This user is already registered for this event')
     }
 
@@ -1622,21 +1626,67 @@ export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
       }
     }
 
+    let groupId: string | null = null
+    if (row.kind === 'flagship') {
+      const groupName = data.groupName?.trim() || ''
+      if (!groupName) {
+        throw new Error('Group name is required')
+      }
+      const named = await db.query.eventGroup.findMany({
+        where: eq(eventGroup.eventId, row.id),
+      })
+      const byName = named.find(
+        (item) => item.name.trim().toLowerCase() === groupName.toLowerCase(),
+      )
+      if (byName && existing?.eventGroupId !== byName.id) {
+        throw new Error(
+          `“${groupName}” already exists. Try adding a number, e.g. ${groupName} 1.`,
+        )
+      }
+      if (byName) {
+        groupId = byName.id
+        await db
+          .update(eventGroup)
+          .set({ eventCategoryId: category.id, updatedAt: new Date() })
+          .where(eq(eventGroup.id, byName.id))
+      } else {
+        groupId = crypto.randomUUID()
+        await db.insert(eventGroup).values({
+          id: groupId,
+          eventId: row.id,
+          eventCategoryId: category.id,
+          name: groupName,
+        })
+      }
+    }
+
     const price = category.price
     const serviceFee = category.serviceFee
-    const finalPrice = price + serviceFee
+    const promo = await resolveEventPromo({
+      eventId: row.id,
+      code: row.kind === 'free' ? '' : (data.promoCode ?? ''),
+      entryPrice: price,
+    })
+    const donationAmount = row.hasCharity
+      ? Math.max(0, data.donationAmount ?? 0)
+      : 0
+    const finalPrice = Math.max(
+      0,
+      price + serviceFee - promo.discountAmount + donationAmount,
+    )
+    const status = row.kind === 'free' ? 'confirmed' : 'pending_payment'
     const registration = {
       eventCategoryId: category.id,
-      eventGroupId: null,
-      jerseySize: row.hasJersey ? jerseySize : null,
-      status: 'confirmed' as const,
+      eventGroupId: groupId,
+      jerseySize: collectJersey ? jerseySize : null,
+      status,
       price,
       serviceFee,
       currency: category.currency,
-      promoId: null,
-      promoCode: null,
-      discountAmount: 0,
-      donationAmount: 0,
+      promoId: promo.promoId,
+      promoCode: promo.promoCode,
+      discountAmount: promo.discountAmount,
+      donationAmount,
       finalPrice,
       updatedAt: new Date(),
     }
@@ -1656,11 +1706,13 @@ export const adminRegisterUserForEvent = createServerFn({ method: 'POST' })
       })
     }
 
-    try {
-      await sendEventRegisteredEmail(id)
-    } catch (error) {
-      console.error('Failed to send event registration email', error)
+    if (status === 'confirmed') {
+      try {
+        await sendEventRegisteredEmail(id)
+      } catch (error) {
+        console.error('Failed to send event registration email', error)
+      }
     }
 
-    return { id, status: 'confirmed' as const }
+    return { id, status, finalPrice }
   })
