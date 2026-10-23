@@ -53,10 +53,11 @@ function csvCell(value: string) {
 
 function participantsCsv(participants: Array<EventParticipantRow>) {
   const rows = [
-    ['Name', 'Registered at', 'Total'],
+    ['Name', 'Registered at', 'Jersey size', 'Total'],
     ...participants.map((participant) => [
       participant.userName,
       formatOrderDate(participant.createdAt),
+      participant.jerseySize ?? '',
       formatIdr(participant.price + participant.donationAmount),
     ]),
   ]
