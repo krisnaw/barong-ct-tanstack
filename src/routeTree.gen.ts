@@ -43,6 +43,7 @@ import { Route as ShopCartRouteImport } from './routes/shop.cart'
 import { Route as ShopCheckoutRouteImport } from './routes/shop.checkout'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffPickupRouteImport } from './routes/staff.pickup'
+import { Route as StaffRpcRouteImport } from './routes/staff.rpc'
 import { Route as AccountOrdersIndexRouteImport } from './routes/account.orders.index'
 import { Route as AccountOrdersIdRouteImport } from './routes/account.orders.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -73,6 +74,8 @@ import { Route as ShopCheckoutIndexRouteImport } from './routes/shop.checkout.in
 import { Route as ShopCheckoutCancelRouteImport } from './routes/shop.checkout.cancel'
 import { Route as ShopCheckoutReturnRouteImport } from './routes/shop.checkout.return'
 import { Route as ShopCheckoutSimulateRouteImport } from './routes/shop.checkout.simulate'
+import { Route as StaffRpcIndexRouteImport } from './routes/staff.rpc.index'
+import { Route as StaffRpcSlugRouteImport } from './routes/staff.rpc.$slug'
 import { Route as ApiFinanceIncomeWebhookRouteImport } from './routes/api/finance.income.webhook'
 import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
 import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard/events.$slug.index'
@@ -253,6 +256,11 @@ const StaffPickupRoute = StaffPickupRouteImport.update({
   path: '/pickup',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffRpcRoute = StaffRpcRouteImport.update({
+  id: '/rpc',
+  path: '/rpc',
+  getParentRoute: () => StaffRoute,
+} as any)
 const AccountOrdersIndexRoute = AccountOrdersIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -407,6 +415,16 @@ const ShopCheckoutSimulateRoute = ShopCheckoutSimulateRouteImport.update({
   path: '/simulate',
   getParentRoute: () => ShopCheckoutRoute,
 } as any)
+const StaffRpcIndexRoute = StaffRpcIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRpcRoute,
+} as any)
+const StaffRpcSlugRoute = StaffRpcSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => StaffRpcRoute,
+} as any)
 const ApiFinanceIncomeWebhookRoute = ApiFinanceIncomeWebhookRouteImport.update({
   id: '/api/finance/income/webhook',
   path: '/api/finance/income/webhook',
@@ -489,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/shop/cart': typeof ShopCartRoute
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/staff/pickup': typeof StaffPickupRoute
+  '/staff/rpc': typeof StaffRpcRouteWithChildren
   '/account/': typeof AccountIndexRoute
   '/bike-rental/': typeof BikeRentalIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -515,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
   '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/staff/rpc/$slug': typeof StaffRpcSlugRoute
   '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
@@ -525,6 +545,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/users/': typeof DashboardUsersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/staff/rpc/': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
@@ -573,6 +594,7 @@ export interface FileRoutesByTo {
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
   '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/staff/rpc/$slug': typeof StaffRpcSlugRoute
   '/account/orders': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue': typeof DashboardCatalogueIndexRoute
   '/dashboard/events': typeof DashboardEventsIndexRoute
@@ -583,6 +605,7 @@ export interface FileRoutesByTo {
   '/dashboard/users': typeof DashboardUsersIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/shop/checkout': typeof ShopCheckoutIndexRoute
+  '/staff/rpc': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
@@ -623,6 +646,7 @@ export interface FileRoutesById {
   '/shop/cart': typeof ShopCartRoute
   '/shop/checkout': typeof ShopCheckoutRouteWithChildren
   '/staff/pickup': typeof StaffPickupRoute
+  '/staff/rpc': typeof StaffRpcRouteWithChildren
   '/account/': typeof AccountIndexRoute
   '/bike-rental/': typeof BikeRentalIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -649,6 +673,7 @@ export interface FileRoutesById {
   '/shop/checkout/cancel': typeof ShopCheckoutCancelRoute
   '/shop/checkout/return': typeof ShopCheckoutReturnRoute
   '/shop/checkout/simulate': typeof ShopCheckoutSimulateRoute
+  '/staff/rpc/$slug': typeof StaffRpcSlugRoute
   '/account/orders/': typeof AccountOrdersIndexRoute
   '/dashboard/catalogue/': typeof DashboardCatalogueIndexRoute
   '/dashboard/events/': typeof DashboardEventsIndexRoute
@@ -659,6 +684,7 @@ export interface FileRoutesById {
   '/dashboard/users/': typeof DashboardUsersIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/shop/checkout/': typeof ShopCheckoutIndexRoute
+  '/staff/rpc/': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
@@ -700,6 +726,7 @@ export interface FileRouteTypes {
     | '/shop/cart'
     | '/shop/checkout'
     | '/staff/pickup'
+    | '/staff/rpc'
     | '/account/'
     | '/bike-rental/'
     | '/dashboard/'
@@ -726,6 +753,7 @@ export interface FileRouteTypes {
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
     | '/shop/checkout/simulate'
+    | '/staff/rpc/$slug'
     | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
@@ -736,6 +764,7 @@ export interface FileRouteTypes {
     | '/dashboard/users/'
     | '/events/$slug/'
     | '/shop/checkout/'
+    | '/staff/rpc/'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
@@ -784,6 +813,7 @@ export interface FileRouteTypes {
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
     | '/shop/checkout/simulate'
+    | '/staff/rpc/$slug'
     | '/account/orders'
     | '/dashboard/catalogue'
     | '/dashboard/events'
@@ -794,6 +824,7 @@ export interface FileRouteTypes {
     | '/dashboard/users'
     | '/events/$slug'
     | '/shop/checkout'
+    | '/staff/rpc'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
@@ -833,6 +864,7 @@ export interface FileRouteTypes {
     | '/shop/cart'
     | '/shop/checkout'
     | '/staff/pickup'
+    | '/staff/rpc'
     | '/account/'
     | '/bike-rental/'
     | '/dashboard/'
@@ -859,6 +891,7 @@ export interface FileRouteTypes {
     | '/shop/checkout/cancel'
     | '/shop/checkout/return'
     | '/shop/checkout/simulate'
+    | '/staff/rpc/$slug'
     | '/account/orders/'
     | '/dashboard/catalogue/'
     | '/dashboard/events/'
@@ -869,6 +902,7 @@ export interface FileRouteTypes {
     | '/dashboard/users/'
     | '/events/$slug/'
     | '/shop/checkout/'
+    | '/staff/rpc/'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
     | '/dashboard/events/$slug/categories'
@@ -1140,6 +1174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffPickupRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/rpc': {
+      id: '/staff/rpc'
+      path: '/rpc'
+      fullPath: '/staff/rpc'
+      preLoaderRoute: typeof StaffRpcRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/account/orders/': {
       id: '/account/orders/'
       path: '/'
@@ -1349,6 +1390,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/shop/checkout/simulate'
       preLoaderRoute: typeof ShopCheckoutSimulateRouteImport
       parentRoute: typeof ShopCheckoutRoute
+    }
+    '/staff/rpc/': {
+      id: '/staff/rpc/'
+      path: '/'
+      fullPath: '/staff/rpc/'
+      preLoaderRoute: typeof StaffRpcIndexRouteImport
+      parentRoute: typeof StaffRpcRoute
+    }
+    '/staff/rpc/$slug': {
+      id: '/staff/rpc/$slug'
+      path: '/$slug'
+      fullPath: '/staff/rpc/$slug'
+      preLoaderRoute: typeof StaffRpcSlugRouteImport
+      parentRoute: typeof StaffRpcRoute
     }
     '/api/finance/income/webhook': {
       id: '/api/finance/income/webhook'
@@ -1688,13 +1743,29 @@ const ShopRouteChildren: ShopRouteChildren = {
 
 const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
 
+interface StaffRpcRouteChildren {
+  StaffRpcSlugRoute: typeof StaffRpcSlugRoute
+  StaffRpcIndexRoute: typeof StaffRpcIndexRoute
+}
+
+const StaffRpcRouteChildren: StaffRpcRouteChildren = {
+  StaffRpcSlugRoute: StaffRpcSlugRoute,
+  StaffRpcIndexRoute: StaffRpcIndexRoute,
+}
+
+const StaffRpcRouteWithChildren = StaffRpcRoute._addFileChildren(
+  StaffRpcRouteChildren,
+)
+
 interface StaffRouteChildren {
   StaffPickupRoute: typeof StaffPickupRoute
+  StaffRpcRoute: typeof StaffRpcRouteWithChildren
   StaffIndexRoute: typeof StaffIndexRoute
 }
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffPickupRoute: StaffPickupRoute,
+  StaffRpcRoute: StaffRpcRouteWithChildren,
   StaffIndexRoute: StaffIndexRoute,
 }
 
