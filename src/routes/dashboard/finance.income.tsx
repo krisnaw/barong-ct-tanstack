@@ -1,19 +1,27 @@
 import * as React from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { CalendarBlankIcon, WalletIcon } from '@phosphor-icons/react'
-import { format } from 'date-fns'
 import {
-  filterIncomeByPeriod,
-  financePeriodOptions,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  subMonths,
+  subWeeks,
+} from 'date-fns'
+import { type DateRange } from 'react-day-picker'
+import {
   formatFinanceDate,
   formatFinanceMoney,
-  formatPeriodLabel,
   incomeSourceFilterOptions,
   incomeSourceLabel,
   incomeSourceOptions,
   todayFinanceDate,
   type FinanceIncomeRow,
-  type FinancePeriod,
   type IncomeSource,
 } from '~/data/finance'
 import {
@@ -77,6 +85,10 @@ import {
   updateFinanceIncome,
 } from '~/lib/finance.functions'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
+import {
+  TABLE_PAGE_SIZE,
+  TablePagination,
+} from '~/components/table-pagination'
 import { seo } from '~/utils/seo'
 
 const NONE_EVENT = '__none__'
@@ -117,6 +129,79 @@ function formFromIncome(income: FinanceIncomeRow): IncomeFormState {
   }
 }
 
+const WEEK_STARTS_ON = 1
+
+function weekRange(date: Date): DateRange {
+  return {
+    from: startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON }),
+    to: startOfDay(endOfWeek(date, { weekStartsOn: WEEK_STARTS_ON })),
+  }
+}
+
+function monthRange(date: Date): DateRange {
+  return {
+    from: startOfMonth(date),
+    to: startOfDay(endOfMonth(date)),
+  }
+}
+
+function thisMonthRange(): DateRange {
+  const today = new Date()
+  return {
+    from: startOfMonth(today),
+    to: startOfDay(today),
+  }
+}
+
+function thisYearRange(): DateRange {
+  const today = new Date()
+  return {
+    from: startOfYear(today),
+    to: startOfDay(endOfYear(today)),
+  }
+}
+
+const RANGE_PRESETS = [
+  { label: 'This week', range: () => weekRange(new Date()) },
+  { label: 'Last week', range: () => weekRange(subWeeks(new Date(), 1)) },
+  { label: 'This month', range: thisMonthRange },
+  { label: 'Last month', range: () => monthRange(subMonths(new Date(), 1)) },
+  { label: 'This year', range: thisYearRange },
+] as const
+
+function sameDay(a: Date, b: Date) {
+  return startOfDay(a).getTime() === startOfDay(b).getTime()
+}
+
+function matchingPreset(range: DateRange | undefined) {
+  if (!range?.from) return undefined
+  const end = range.to ?? range.from
+  return RANGE_PRESETS.find((preset) => {
+    const next = preset.range()
+    return (
+      next.from &&
+      next.to &&
+      sameDay(range.from!, next.from) &&
+      sameDay(end, next.to)
+    )
+  })
+}
+
+function rangeLabel(range: DateRange | undefined) {
+  if (!range?.from) return 'All dates'
+  if (!range.to || range.from.getTime() === range.to.getTime()) {
+    return format(range.from, 'd MMM yyyy')
+  }
+  return `${format(range.from, 'd MMM yyyy')} – ${format(range.to, 'd MMM yyyy')}`
+}
+
+function incomeDateInRange(isoDate: string, range: DateRange | undefined) {
+  if (!range?.from) return true
+  const from = format(range.from, 'yyyy-MM-dd')
+  const to = format(range.to ?? range.from, 'yyyy-MM-dd')
+  return isoDate >= from && isoDate <= to
+}
+
 export const Route = createFileRoute('/dashboard/finance/income')({
   pendingComponent: DashboardTableSkeleton,
   pendingMs: 150,
@@ -139,9 +224,10 @@ export const Route = createFileRoute('/dashboard/finance/income')({
 function DashboardFinanceIncomePage() {
   const { income, events } = Route.useLoaderData()
   const router = useRouter()
-  const periodId = React.useId()
   const sourceFilterId = React.useId()
-  const [period, setPeriod] = React.useState<FinancePeriod>('this_year')
+  const [range, setRange] = React.useState<DateRange | undefined>(thisYearRange)
+  const [month, setMonth] = React.useState<Date>(() => startOfMonth(new Date()))
+  const [rangeOpen, setRangeOpen] = React.useState(false)
   const [sourceFilter, setSourceFilter] =
     React.useState<IncomeSourceFilter>('all')
   const [dialogOpen, setDialogOpen] = React.useState(false)
@@ -150,13 +236,31 @@ function DashboardFinanceIncomePage() {
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<IncomeFormState>(emptyIncomeForm)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
+  const [pageIndex, setPageIndex] = React.useState(0)
 
-  const incomeInPeriod = filterIncomeByPeriod(income, period)
+  const activePreset = matchingPreset(range)
+  const incomeInPeriod = income
+    .filter((row) => incomeDateInRange(row.date, range))
+    .sort((a, b) => b.date.localeCompare(a.date))
   const incomeRows =
     sourceFilter === 'all'
       ? incomeInPeriod
       : incomeInPeriod.filter((row) => row.source === sourceFilter)
   const incomeTotal = incomeRows.reduce((sum, row) => sum + row.amount, 0)
+  const pageCount = Math.max(1, Math.ceil(incomeRows.length / TABLE_PAGE_SIZE))
+  const currentPage = Math.min(pageIndex, pageCount - 1)
+  const pageRows = incomeRows.slice(
+    currentPage * TABLE_PAGE_SIZE,
+    currentPage * TABLE_PAGE_SIZE + TABLE_PAGE_SIZE,
+  )
+
+  React.useEffect(() => {
+    setPageIndex(0)
+  }, [range, sourceFilter])
+
+  React.useEffect(() => {
+    setPageIndex((current) => Math.min(current, pageCount - 1))
+  }, [pageCount])
   const deleteTarget = income.find((row) => row.id === deleteId) ?? null
 
   function openCreate() {
@@ -263,32 +367,72 @@ function DashboardFinanceIncomePage() {
               Income
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {formatPeriodLabel(period)} · enter net amounts (after fees)
+              Enter net amounts (after fees)
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor={periodId}>Period</Label>
-              <Select
-                items={financePeriodOptions}
-                onValueChange={(value) => {
-                  if (value == null) return
-                  setPeriod(value as FinancePeriod)
-                }}
-                value={period}
+            <Popover onOpenChange={setRangeOpen} open={rangeOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    className="justify-start font-normal data-[empty=true]:text-muted-foreground"
+                    data-empty={!range?.from}
+                    type="button"
+                    variant="outline"
+                  />
+                }
               >
-                <SelectTrigger className="min-w-40" id={periodId}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  {financePeriodOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <CalendarBlankIcon weight="bold" />
+                {rangeLabel(range)}
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-0">
+                <div className="flex flex-col sm:flex-row">
+                  <div className="flex gap-1 overflow-x-auto border-b border-border p-2 sm:w-36 sm:flex-col sm:border-r sm:border-b-0">
+                    {RANGE_PRESETS.map((preset) => (
+                      <Button
+                        className="justify-start"
+                        key={preset.label}
+                        onClick={() => {
+                          const next = preset.range()
+                          setRange(next)
+                          if (next.from) setMonth(next.from)
+                          setRangeOpen(false)
+                        }}
+                        size="sm"
+                        type="button"
+                        variant={
+                          activePreset?.label === preset.label
+                            ? 'secondary'
+                            : 'ghost'
+                        }
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Calendar
+                    mode="range"
+                    month={month}
+                    numberOfMonths={2}
+                    onMonthChange={setMonth}
+                    onSelect={setRange}
+                    selected={range}
+                    weekStartsOn={WEEK_STARTS_ON}
+                  />
+                </div>
+                <div className="flex justify-end border-t border-border p-2">
+                  <Button
+                    disabled={!range?.from}
+                    onClick={() => setRange(undefined)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
             <div className="grid gap-1.5">
               <Label htmlFor={sourceFilterId}>Source</Label>
               <Select
@@ -334,7 +478,7 @@ function DashboardFinanceIncomePage() {
               </EmptyMedia>
               <EmptyTitle>No income yet</EmptyTitle>
               <EmptyDescription>
-                Record net amounts for this period after payment gateway fees.
+                Record net amounts for this date range after payment gateway fees.
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
@@ -344,6 +488,7 @@ function DashboardFinanceIncomePage() {
             </EmptyContent>
           </Empty>
         ) : (
+          <>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader className="bg-muted/40">
@@ -357,7 +502,7 @@ function DashboardFinanceIncomePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {incomeRows.map((row) => (
+                {pageRows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="px-4 py-3 text-muted-foreground">
                       {formatFinanceDate(row.date)}
@@ -397,6 +542,12 @@ function DashboardFinanceIncomePage() {
               </TableBody>
             </Table>
           </div>
+          <TablePagination
+            onPageChange={setPageIndex}
+            pageCount={pageCount}
+            pageIndex={currentPage}
+          />
+          </>
         )}
       </div>
 

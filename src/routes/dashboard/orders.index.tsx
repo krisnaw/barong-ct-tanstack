@@ -17,6 +17,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '~/components/ui/breadcrumb'
+import { buttonVariants } from '~/components/ui/button'
 import { Label } from '~/components/ui/label'
 import {
   Select,
@@ -36,6 +37,7 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { DashboardTableSkeleton } from '~/components/page-skeletons'
+import { cn } from '~/lib/utils'
 
 type OrderListFilter = AdminOrderStatus | 'expire_payment' | 'all'
 
@@ -143,21 +145,16 @@ function DashboardOrdersPage() {
                   <TableHead className="px-4 text-right">Items</TableHead>
                   <TableHead className="px-4 text-right">Total</TableHead>
                   <TableHead className="px-4">Status</TableHead>
+                  <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((order) => {
                   const count = orderItemCount(order)
                   return (
-                    <TableRow className="relative" key={order.id}>
+                    <TableRow key={order.id}>
                       <TableCell className="px-4 py-3 font-medium">
-                        <Link
-                          className="after:absolute after:inset-0"
-                          params={{ id: order.id }}
-                          to="/dashboard/orders/$id"
-                        >
-                          {order.id}
-                        </Link>
+                        {order.id}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         {orderCustomerName(order)}
@@ -173,6 +170,19 @@ function DashboardOrdersPage() {
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <OrderStatusBadge status={order.status} />
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <div className="flex justify-end">
+                          <Link
+                            className={cn(
+                              buttonVariants({ variant: 'outline', size: 'sm' }),
+                            )}
+                            params={{ id: order.id }}
+                            to="/dashboard/orders/$id"
+                          >
+                            Detail
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )

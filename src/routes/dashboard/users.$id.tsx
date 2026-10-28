@@ -14,6 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
+import { buttonVariants } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import {
@@ -26,6 +27,7 @@ import {
 } from '~/components/ui/table'
 import { listOrdersByUser } from '~/lib/order.functions'
 import { getUserById, type AdminUserAddress } from '~/lib/user.functions'
+import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
 
@@ -216,21 +218,16 @@ function DashboardUserDetailPage() {
                   <TableHead className="px-4 text-right">Items</TableHead>
                   <TableHead className="px-4 text-right">Total</TableHead>
                   <TableHead className="px-4">Status</TableHead>
+                  <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.map((order) => {
                   const count = orderItemCount(order)
                   return (
-                    <TableRow className="relative" key={order.id}>
+                    <TableRow key={order.id}>
                       <TableCell className="px-4 py-3 font-medium">
-                        <Link
-                          className="after:absolute after:inset-0"
-                          params={{ id: order.id }}
-                          to="/dashboard/orders/$id"
-                        >
-                          {order.id}
-                        </Link>
+                        {order.id}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-muted-foreground">
                         {formatOrderDate(order.placedAt)}
@@ -243,6 +240,19 @@ function DashboardUserDetailPage() {
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <OrderStatusBadge status={order.status} />
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <div className="flex justify-end">
+                          <Link
+                            className={cn(
+                              buttonVariants({ variant: 'outline', size: 'sm' }),
+                            )}
+                            params={{ id: order.id }}
+                            to="/dashboard/orders/$id"
+                          >
+                            Detail
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
