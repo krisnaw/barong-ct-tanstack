@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AccountOrdersPanel } from '~/components/account-page'
+import { AccountOrdersPanel } from '~/components/account/orders-panel'
 import { listMyOrders } from '~/lib/order.functions'
 import { seo } from '~/utils/seo'
 import { AccountOrdersSkeleton } from '~/components/page-skeletons'

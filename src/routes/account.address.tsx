@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AccountAddressPanel } from '~/components/account-page'
+import { AccountAddressPanel } from '~/components/account/address-form'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/account/address')({
