@@ -1,13 +1,18 @@
 import { useMemo, useState } from 'react'
+import { MapPinIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '~/components/ui/button'
 import {
   bikeCategoryLabels,
+  findRentalLocation,
   formatDailyRate,
   rentalBikes,
+  rentalLocationName,
+  rentalLocations,
   type BikeAvailability,
   type BikeCategory,
   type RentalBike,
+  type RentalLocationId,
 } from '~/data/bike-rental'
 import { cn } from '~/lib/utils'
 
@@ -34,28 +39,43 @@ const availabilityStyles: Record<BikeAvailability, string> = {
 
 const steps = [
   {
+    title: 'Choose a location',
+    body: 'Canggu, Denpasar, Ubud, or Buleleng. The list shows bikes stationed there.',
+  },
+  {
     title: 'Pick a bike',
-    body: 'Road, gravel, and one hardtail. Sizes are listed on each bike.',
+    body: 'Road, gravel, or mountain, depending on what is stationed there.',
   },
   {
-    title: 'Choose a date',
-    body: 'Pick the morning you want the bike.',
-  },
-  {
-    title: 'Choose a pickup time',
-    body: 'Collect it before the 6:15 AM roll-out.',
+    title: 'Set the pickup',
+    body: 'Choose a date and a time before the 6:15 AM roll-out.',
   },
 ]
 
-export function BikeRentalPage() {
+export function BikeRentalPage({
+  locationId,
+  onLocationChange,
+}: {
+  locationId?: RentalLocationId
+  onLocationChange: (locationId: RentalLocationId | undefined) => void
+}) {
   const [filter, setFilter] = useState<FleetFilter>('all')
+  const location = findRentalLocation(locationId)
+
+  const atLocation = useMemo(
+    () =>
+      locationId
+        ? rentalBikes.filter((bike) => bike.locations.includes(locationId))
+        : rentalBikes,
+    [locationId],
+  )
 
   const shown = useMemo(
     () =>
       filter === 'all'
-        ? rentalBikes
-        : rentalBikes.filter((bike) => bike.category === filter),
-    [filter],
+        ? atLocation
+        : atLocation.filter((bike) => bike.category === filter),
+    [atLocation, filter],
   )
 
   return (
@@ -68,12 +88,23 @@ export function BikeRentalPage() {
           Club bikes
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Borrow a Barong bike for a guest ride or a few days in Bali. Flat
-          pedals are on the bike. Clipless pedals are available on request.
+          Borrow a Barong bike for a guest ride or a few days in Bali. Choose
+          where you are staying, then pick a bike you can collect there.
         </p>
       </div>
 
-      <ol className="mb-10 grid gap-px border border-border bg-border sm:grid-cols-3">
+      <LocationPicker
+        locationId={locationId}
+        onLocationChange={onLocationChange}
+      />
+
+      {location ? (
+        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          {location.note}
+        </p>
+      ) : null}
+
+      <ol className="mb-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
         {steps.map((step, index) => (
           <li key={step.title} className="bg-background px-4 py-4 sm:px-5">
             <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
@@ -117,14 +148,18 @@ export function BikeRentalPage() {
       </div>
 
       {shown.length === 0 ? (
-        <p className="border-y border-border py-10 text-sm text-muted-foreground">
-          No bikes in this category right now.
+        <p className="rounded-lg border border-border px-4 py-10 text-sm text-muted-foreground">
+          {location
+            ? filter === 'all'
+              ? `No bikes in ${location.name} right now.`
+              : `No ${bikeCategoryLabels[filter].toLowerCase()} bikes in ${location.name} right now.`
+            : 'No bikes in this category right now.'}
         </p>
       ) : (
         <ul className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
           {shown.map((bike) => (
             <li key={bike.id}>
-              <BikeCard bike={bike} />
+              <BikeCard bike={bike} locationId={locationId} />
             </li>
           ))}
         </ul>
@@ -133,13 +168,100 @@ export function BikeRentalPage() {
   )
 }
 
-function BikeCard({ bike }: { bike: RentalBike }) {
+function LocationPicker({
+  locationId,
+  onLocationChange,
+}: {
+  locationId?: RentalLocationId
+  onLocationChange: (locationId: RentalLocationId | undefined) => void
+}) {
+  const options: { id: RentalLocationId | undefined; area: string; name: string }[] =
+    [
+      { id: undefined, area: 'Bali', name: 'All locations' },
+      ...rentalLocations.map((item) => ({
+        id: item.id,
+        area: item.area,
+        name: item.name,
+      })),
+    ]
+
+  return (
+    <div className="mb-4">
+      <h2 className="flex items-center gap-1.5 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+        <MapPinIcon aria-hidden className="size-3.5" weight="bold" />
+        Where are you riding
+      </h2>
+      <div
+        aria-label="Pickup location"
+        className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+      >
+        {options.map((option, index) => {
+          const active = locationId === option.id
+          const optionId = option.id
+          const count =
+            optionId == null
+              ? rentalBikes.length
+              : rentalBikes.filter((bike) => bike.locations.includes(optionId))
+                  .length
+          const lastOnMobile = index === options.length - 1
+          return (
+            <button
+              aria-pressed={active}
+              className={cn(
+                'rounded-lg border px-3 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                lastOnMobile && 'max-sm:col-span-2',
+                active
+                  ? 'border-foreground bg-foreground text-background'
+                  : 'border-border hover:border-foreground/40',
+              )}
+              key={option.name}
+              onClick={() => onLocationChange(option.id)}
+              type="button"
+            >
+              <span
+                className={cn(
+                  'text-[0.65rem] font-medium tracking-[0.16em] uppercase',
+                  active ? 'text-background/70' : 'text-muted-foreground',
+                )}
+              >
+                {option.area}
+              </span>
+              <span className="mt-1 block font-heading text-base font-medium tracking-tight">
+                {option.name}
+              </span>
+              <span
+                className={cn(
+                  'mt-1 block text-xs tabular-nums',
+                  active ? 'text-background/70' : 'text-muted-foreground',
+                )}
+              >
+                {count} {count === 1 ? 'bike' : 'bikes'}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function BikeCard({
+  bike,
+  locationId,
+}: {
+  bike: RentalBike
+  locationId?: RentalLocationId
+}) {
   const booked = bike.availability === 'booked'
+  const pickup = locationId
+    ? rentalLocationName(locationId)
+    : bike.locations.map((id) => rentalLocationName(id)).join(' · ')
 
   return (
     <Link
-      className="flex h-full flex-col border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="flex h-full flex-col overflow-hidden rounded-lg border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       params={{ id: bike.id }}
+      search={{ location: locationId }}
       to="/bike-rental/$id"
     >
       <div className="relative overflow-hidden bg-muted">
@@ -153,7 +275,7 @@ function BikeCard({ bike }: { bike: RentalBike }) {
         />
         <span
           className={cn(
-            'absolute top-3 right-3 border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.12em] uppercase',
+            'absolute top-3 right-3 rounded-md border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.12em] uppercase',
             availabilityStyles[bike.availability],
           )}
         >
@@ -180,6 +302,10 @@ function BikeCard({ bike }: { bike: RentalBike }) {
           <div>
             <dt className="text-xs text-muted-foreground">Wheels</dt>
             <dd className="mt-0.5">{bike.wheels}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-xs text-muted-foreground">Pickup</dt>
+            <dd className="mt-0.5">{pickup}</dd>
           </div>
         </dl>
         <p className="mt-4 text-lg font-medium tracking-tight">

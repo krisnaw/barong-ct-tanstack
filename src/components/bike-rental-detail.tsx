@@ -12,10 +12,13 @@ import {
 } from '~/components/ui/popover'
 import {
   bikeCategoryLabels,
+  findRentalLocation,
   formatDailyRate,
   pickupTimes,
+  rentalLocationName,
   type BikeAvailability,
   type RentalBike,
+  type RentalLocationId,
 } from '~/data/bike-rental'
 import { cn } from '~/lib/utils'
 
@@ -33,27 +36,52 @@ const availabilityStyles: Record<BikeAvailability, string> = {
 
 type RequestForm = {
   date: string
+  locationId: RentalLocationId | ''
   pickupTime: string
   size: string
 }
 
-function emptyForm(bike: RentalBike): RequestForm {
+function emptyForm(
+  bike: RentalBike,
+  preferredLocation?: RentalLocationId,
+): RequestForm {
+  const locationId =
+    preferredLocation && bike.locations.includes(preferredLocation)
+      ? preferredLocation
+      : (bike.locations[0] ?? '')
   return {
     date: '',
+    locationId,
     pickupTime: pickupTimes[0] ?? '',
     size: bike.sizes[0] ?? '',
   }
 }
 
-export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
+export function BikeRentalDetail({
+  bike,
+  locationId,
+}: {
+  bike: RentalBike
+  locationId?: RentalLocationId
+}) {
   const booked = bike.availability === 'booked'
-  const [form, setForm] = useState<RequestForm>(() => emptyForm(bike))
+  const [form, setForm] = useState<RequestForm>(() =>
+    emptyForm(bike, locationId),
+  )
+  const pickupLocations = bike.locations.flatMap((id) => {
+    const location = findRentalLocation(id)
+    return location ? [location] : []
+  })
   const [formError, setFormError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
   const selectedDate = parseRentalDate(form.date)
 
   function submitRequest() {
+    if (!form.locationId) {
+      setFormError('Choose a pickup location.')
+      return
+    }
     if (!form.date) {
       setFormError('Choose a date.')
       return
@@ -70,13 +98,14 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
     <article className="px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
       <Link
         className="text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        search={{ location: locationId }}
         to="/bike-rental"
       >
         Club bikes
       </Link>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
-        <div className="relative h-fit self-start overflow-hidden bg-muted">
+        <div className="relative h-fit self-start overflow-hidden rounded-lg bg-muted">
           <img
             alt={bike.imageAlt}
             className="aspect-[4/3] w-full object-cover"
@@ -87,7 +116,7 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
           />
           <span
             className={cn(
-              'absolute top-3 right-3 border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.12em] uppercase',
+              'absolute top-3 right-3 rounded-md border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.12em] uppercase',
               availabilityStyles[bike.availability],
             )}
           >
@@ -133,7 +162,7 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
                   <button
                     aria-pressed={active}
                     className={cn(
-                      'min-w-14 border px-4 py-3 text-lg font-medium tracking-tight transition-colors',
+                      'min-w-14 rounded-lg border px-4 py-3 text-lg font-medium tracking-tight transition-colors',
                       active
                         ? 'border-foreground bg-foreground text-background'
                         : 'border-border hover:border-foreground/40',
@@ -154,16 +183,20 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
           <ul className="mt-6 space-y-1 text-sm text-muted-foreground">
             <li>Flat pedals are on the bike. Clipless pedals are on request.</li>
             <li>Helmets are not included.</li>
-            <li>Pickup at Denpasar, Canggu, or Ubud.</li>
+            <li>
+              Pickup in{' '}
+              {pickupLocations.map((item) => item.name).join(', ')}.
+            </li>
           </ul>
 
           {submitted ? (
-            <div className="mt-8 border border-border p-4">
+            <div className="mt-8 rounded-lg border border-border p-4">
               <h2 className="font-heading text-lg font-semibold tracking-tight">
                 Request noted
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {bike.name}, size {form.size}. Pickup{' '}
+                {bike.name}, size {form.size}. Collect in{' '}
+                {rentalLocationName(form.locationId)} on{' '}
                 {formatDisplayDate(form.date)} at {formatPickupTime(form.pickupTime)}.
                 A ride captain confirms this once booking is live.
               </p>
@@ -186,6 +219,42 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
                 </p>
               ) : (
                 <FieldGroup className="mt-4">
+                  <fieldset>
+                    <legend className="text-sm font-medium">
+                      Pickup location
+                    </legend>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {pickupLocations.map((item) => {
+                        const active = form.locationId === item.id
+                        return (
+                          <button
+                            aria-pressed={active}
+                            className={cn(
+                              'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                              active
+                                ? 'border-foreground bg-foreground text-background'
+                                : 'border-border hover:border-foreground/40',
+                            )}
+                            key={item.id}
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                locationId: item.id,
+                              }))
+                            }
+                            type="button"
+                          >
+                            {item.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {form.locationId ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {findRentalLocation(form.locationId)?.note}
+                      </p>
+                    ) : null}
+                  </fieldset>
                   <Field>
                     <FieldLabel htmlFor="rental-date">Date</FieldLabel>
                     <Popover onOpenChange={setDateOpen} open={dateOpen}>
@@ -230,7 +299,7 @@ export function BikeRentalDetail({ bike }: { bike: RentalBike }) {
                           <button
                             aria-pressed={active}
                             className={cn(
-                              'border px-3 py-2 text-sm font-medium tabular-nums transition-colors',
+                              'rounded-lg border px-3 py-2 text-sm font-medium tabular-nums transition-colors',
                               active
                                 ? 'border-foreground bg-foreground text-background'
                                 : 'border-border hover:border-foreground/40',
