@@ -1,7 +1,14 @@
-import { useMemo, useState } from 'react'
-import { MapPinIcon } from '@phosphor-icons/react'
+import { useId, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '~/components/ui/button'
+import { Label } from '~/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import {
   bikeCategoryLabels,
   findRentalLocation,
@@ -18,11 +25,17 @@ import { cn } from '~/lib/utils'
 
 type FleetFilter = 'all' | BikeCategory
 
-const filters: { id: FleetFilter; label: string }[] = [
-  { id: 'all', label: 'All bikes' },
-  { id: 'road', label: 'Road' },
-  { id: 'gravel', label: 'Gravel' },
-  { id: 'mountain', label: 'Mountain' },
+const locationFilterItems: { value: 'all' | RentalLocationId; label: string }[] =
+  [
+    { value: 'all', label: 'All locations' },
+    ...rentalLocations.map((item) => ({ value: item.id, label: item.name })),
+  ]
+
+const typeFilterItems: { value: FleetFilter; label: string }[] = [
+  { value: 'all', label: 'All bikes' },
+  { value: 'road', label: 'Road' },
+  { value: 'gravel', label: 'Gravel' },
+  { value: 'mountain', label: 'Mountain' },
 ]
 
 const availabilityLabel: Record<BikeAvailability, string> = {
@@ -45,6 +58,8 @@ export function BikeRentalPage({
   onLocationChange: (locationId: RentalLocationId | undefined) => void
 }) {
   const [filter, setFilter] = useState<FleetFilter>('all')
+  const locationFilterId = useId()
+  const typeFilterId = useId()
   const location = findRentalLocation(locationId)
 
   const atLocation = useMemo(
@@ -79,48 +94,61 @@ export function BikeRentalPage({
       </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div
-          aria-label="Pickup location"
-          className="flex flex-wrap items-center gap-2"
-        >
-          <span className="mr-1 flex items-center gap-1.5 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
-            <MapPinIcon aria-hidden className="size-3.5" weight="bold" />
-            Location
-          </span>
-          <FilterChip
-            active={locationId == null}
-            label="All"
-            onClick={() => onLocationChange(undefined)}
-          />
-          {rentalLocations.map((item) => (
-            <FilterChip
-              active={locationId === item.id}
-              key={item.id}
-              label={item.name}
-              onClick={() => onLocationChange(item.id)}
-            />
-          ))}
+        <div className="flex items-center gap-2">
+          <Label htmlFor={locationFilterId}>Location</Label>
+          <Select
+            items={locationFilterItems}
+            onValueChange={(value) => {
+              if (value == null || value === 'all') {
+                onLocationChange(undefined)
+                return
+              }
+              const next = rentalLocations.find((item) => item.id === value)
+              if (next) onLocationChange(next.id)
+            }}
+            value={locationId ?? 'all'}
+          >
+            <SelectTrigger className="min-w-40" id={locationFilterId}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              {locationFilterItems.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div aria-label="Bike type" className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
-            Type
-          </span>
-          {filters.map((item) => (
-            <FilterChip
-              active={filter === item.id}
-              key={item.id}
-              label={item.id === 'all' ? 'All' : item.label}
-              onClick={() => setFilter(item.id)}
-            />
-          ))}
+        <div className="flex items-center gap-2">
+          <Label htmlFor={typeFilterId}>Type</Label>
+          <Select
+            items={typeFilterItems}
+            onValueChange={(value) => {
+              if (
+                value === 'all' ||
+                value === 'road' ||
+                value === 'gravel' ||
+                value === 'mountain'
+              ) {
+                setFilter(value)
+              }
+            }}
+            value={filter}
+          >
+            <SelectTrigger className="min-w-32" id={typeFilterId}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              {typeFilterItems.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      {location ? (
-        <p className="-mt-2 mb-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {location.note}
-        </p>
-      ) : null}
 
       {shown.length === 0 ? (
         <p className="rounded-lg border border-border px-4 py-10 text-sm text-muted-foreground">
@@ -140,32 +168,6 @@ export function BikeRentalPage({
         </ul>
       )}
     </section>
-  )
-}
-
-function FilterChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      aria-pressed={active}
-      className={cn(
-        'rounded-lg border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-        active
-          ? 'border-foreground bg-foreground font-medium text-background'
-          : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
   )
 }
 
