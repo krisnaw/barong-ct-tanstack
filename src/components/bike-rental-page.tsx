@@ -37,21 +37,6 @@ const availabilityStyles: Record<BikeAvailability, string> = {
   booked: 'border-zinc-200 bg-zinc-100 text-zinc-600',
 }
 
-const steps = [
-  {
-    title: 'Choose a location',
-    body: 'Canggu, Denpasar, Ubud, or Buleleng. The list shows bikes stationed there.',
-  },
-  {
-    title: 'Pick a bike',
-    body: 'Road, gravel, or mountain, depending on what is stationed there.',
-  },
-  {
-    title: 'Set the pickup',
-    body: 'Choose a date and a time before the 6:15 AM roll-out.',
-  },
-]
-
 export function BikeRentalPage({
   locationId,
   onLocationChange,
@@ -93,59 +78,49 @@ export function BikeRentalPage({
         </p>
       </div>
 
-      <LocationPicker
-        locationId={locationId}
-        onLocationChange={onLocationChange}
-      />
+      <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div
+          aria-label="Pickup location"
+          className="flex flex-wrap items-center gap-2"
+        >
+          <span className="mr-1 flex items-center gap-1.5 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+            <MapPinIcon aria-hidden className="size-3.5" weight="bold" />
+            Location
+          </span>
+          <FilterChip
+            active={locationId == null}
+            label="All"
+            onClick={() => onLocationChange(undefined)}
+          />
+          {rentalLocations.map((item) => (
+            <FilterChip
+              active={locationId === item.id}
+              key={item.id}
+              label={item.name}
+              onClick={() => onLocationChange(item.id)}
+            />
+          ))}
+        </div>
+        <div aria-label="Bike type" className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+            Type
+          </span>
+          {filters.map((item) => (
+            <FilterChip
+              active={filter === item.id}
+              key={item.id}
+              label={item.id === 'all' ? 'All' : item.label}
+              onClick={() => setFilter(item.id)}
+            />
+          ))}
+        </div>
+      </div>
 
       {location ? (
-        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        <p className="-mt-2 mb-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           {location.note}
         </p>
       ) : null}
-
-      <ol className="mb-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
-        {steps.map((step, index) => (
-          <li key={step.title} className="bg-background px-4 py-4 sm:px-5">
-            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-              0{index + 1}
-            </p>
-            <h2 className="mt-2 font-heading text-base font-medium tracking-tight">
-              {step.title}
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              {step.body}
-            </p>
-          </li>
-        ))}
-      </ol>
-
-      <div
-        aria-label="Bike type"
-        className="mb-6 flex gap-1 border-b border-border"
-        role="tablist"
-      >
-        {filters.map((item) => {
-          const active = filter === item.id
-          return (
-            <button
-              aria-selected={active}
-              className={cn(
-                '-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors',
-                active
-                  ? 'border-foreground font-medium text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-              key={item.id}
-              onClick={() => setFilter(item.id)}
-              role="tab"
-              type="button"
-            >
-              {item.label}
-            </button>
-          )
-        })}
-      </div>
 
       {shown.length === 0 ? (
         <p className="rounded-lg border border-border px-4 py-10 text-sm text-muted-foreground">
@@ -168,80 +143,29 @@ export function BikeRentalPage({
   )
 }
 
-function LocationPicker({
-  locationId,
-  onLocationChange,
+function FilterChip({
+  active,
+  label,
+  onClick,
 }: {
-  locationId?: RentalLocationId
-  onLocationChange: (locationId: RentalLocationId | undefined) => void
+  active: boolean
+  label: string
+  onClick: () => void
 }) {
-  const options: { id: RentalLocationId | undefined; area: string; name: string }[] =
-    [
-      { id: undefined, area: 'Bali', name: 'All locations' },
-      ...rentalLocations.map((item) => ({
-        id: item.id,
-        area: item.area,
-        name: item.name,
-      })),
-    ]
-
   return (
-    <div className="mb-4">
-      <h2 className="flex items-center gap-1.5 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-        <MapPinIcon aria-hidden className="size-3.5" weight="bold" />
-        Where are you riding
-      </h2>
-      <div
-        aria-label="Pickup location"
-        className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
-      >
-        {options.map((option, index) => {
-          const active = locationId === option.id
-          const optionId = option.id
-          const count =
-            optionId == null
-              ? rentalBikes.length
-              : rentalBikes.filter((bike) => bike.locations.includes(optionId))
-                  .length
-          const lastOnMobile = index === options.length - 1
-          return (
-            <button
-              aria-pressed={active}
-              className={cn(
-                'rounded-lg border px-3 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                lastOnMobile && 'max-sm:col-span-2',
-                active
-                  ? 'border-foreground bg-foreground text-background'
-                  : 'border-border hover:border-foreground/40',
-              )}
-              key={option.name}
-              onClick={() => onLocationChange(option.id)}
-              type="button"
-            >
-              <span
-                className={cn(
-                  'text-[0.65rem] font-medium tracking-[0.16em] uppercase',
-                  active ? 'text-background/70' : 'text-muted-foreground',
-                )}
-              >
-                {option.area}
-              </span>
-              <span className="mt-1 block font-heading text-base font-medium tracking-tight">
-                {option.name}
-              </span>
-              <span
-                className={cn(
-                  'mt-1 block text-xs tabular-nums',
-                  active ? 'text-background/70' : 'text-muted-foreground',
-                )}
-              >
-                {count} {count === 1 ? 'bike' : 'bikes'}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <button
+      aria-pressed={active}
+      className={cn(
+        'rounded-lg border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+        active
+          ? 'border-foreground bg-foreground font-medium text-background'
+          : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   )
 }
 
