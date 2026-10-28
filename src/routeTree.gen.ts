@@ -26,6 +26,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as BikeRentalIndexRouteImport } from './routes/bike-rental.index'
 import { Route as BikeRentalIdRouteImport } from './routes/bike-rental.$id'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardBikeRentalRouteImport } from './routes/dashboard/bike-rental'
 import { Route as DashboardCatalogueRouteImport } from './routes/dashboard/catalogue'
 import { Route as DashboardEventsRouteImport } from './routes/dashboard/events'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
@@ -169,6 +170,11 @@ const BikeRentalIdRoute = BikeRentalIdRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardBikeRentalRoute = DashboardBikeRentalRouteImport.update({
+  id: '/bike-rental',
+  path: '/bike-rental',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardCatalogueRoute = DashboardCatalogueRouteImport.update({
@@ -493,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/bike-rental/$id': typeof BikeRentalIdRoute
+  '/dashboard/bike-rental': typeof DashboardBikeRentalRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
@@ -564,6 +571,7 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/bike-rental/$id': typeof BikeRentalIdRoute
+  '/dashboard/bike-rental': typeof DashboardBikeRentalRoute
   '/dashboard/promos': typeof DashboardPromosRoute
   '/recaps/$slug': typeof RecapsSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -632,6 +640,7 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/bike-rental/$id': typeof BikeRentalIdRoute
+  '/dashboard/bike-rental': typeof DashboardBikeRentalRoute
   '/dashboard/catalogue': typeof DashboardCatalogueRouteWithChildren
   '/dashboard/events': typeof DashboardEventsRouteWithChildren
   '/dashboard/finance': typeof DashboardFinanceRouteWithChildren
@@ -712,6 +721,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/bike-rental/$id'
+    | '/dashboard/bike-rental'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/finance'
@@ -783,6 +793,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/bike-rental/$id'
+    | '/dashboard/bike-rental'
     | '/dashboard/promos'
     | '/recaps/$slug'
     | '/shop/$slug'
@@ -850,6 +861,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/signup'
     | '/bike-rental/$id'
+    | '/dashboard/bike-rental'
     | '/dashboard/catalogue'
     | '/dashboard/events'
     | '/dashboard/finance'
@@ -1053,6 +1065,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/bike-rental': {
+      id: '/dashboard/bike-rental'
+      path: '/bike-rental'
+      fullPath: '/dashboard/bike-rental'
+      preLoaderRoute: typeof DashboardBikeRentalRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/catalogue': {
@@ -1599,6 +1618,7 @@ const DashboardUsersRouteWithChildren = DashboardUsersRoute._addFileChildren(
 )
 
 interface DashboardRouteRouteChildren {
+  DashboardBikeRentalRoute: typeof DashboardBikeRentalRoute
   DashboardCatalogueRoute: typeof DashboardCatalogueRouteWithChildren
   DashboardEventsRoute: typeof DashboardEventsRouteWithChildren
   DashboardFinanceRoute: typeof DashboardFinanceRouteWithChildren
@@ -1611,6 +1631,7 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardBikeRentalRoute: DashboardBikeRentalRoute,
   DashboardCatalogueRoute: DashboardCatalogueRouteWithChildren,
   DashboardEventsRoute: DashboardEventsRouteWithChildren,
   DashboardFinanceRoute: DashboardFinanceRouteWithChildren,

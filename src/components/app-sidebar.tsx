@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
+  BicycleIcon,
   CalendarBlankIcon,
   SquaresFourIcon,
   StorefrontIcon,
@@ -38,6 +39,11 @@ const data = {
       title: 'Events',
       url: '/dashboard/events',
       icon: <CalendarBlankIcon />,
+    },
+    {
+      title: 'Bike rental',
+      url: '/dashboard/bike-rental',
+      icon: <BicycleIcon />,
     },
     {
       title: 'Shop',
