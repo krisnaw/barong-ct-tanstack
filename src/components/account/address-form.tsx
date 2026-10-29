@@ -1,7 +1,5 @@
 import * as React from 'react'
 import { AddressFields, SaveBar } from '~/components/account/fields'
-import { toast } from '~/components/ui/toast'
-import { upsertMyShippingAddress } from '~/lib/shipping-address.functions'
 import type { AccountShippingAddress } from '~/lib/account'
 
 function blankAddress(): AccountShippingAddress {
@@ -19,8 +17,10 @@ function blankAddress(): AccountShippingAddress {
 
 export function AccountAddressPanel({
   address,
+  onSave,
 }: {
   address: AccountShippingAddress | null
+  onSave: (draft: AccountShippingAddress) => Promise<void>
 }) {
   const [draft, setDraft] = React.useState<AccountShippingAddress>(
     () => address ?? blankAddress(),
@@ -40,21 +40,7 @@ export function AccountAddressPanel({
     setError('')
     setPending(true)
     try {
-      const saved = await upsertMyShippingAddress({
-        data: {
-          id: draft.id || undefined,
-          address: draft.address,
-          apartment: draft.apartment,
-          city: draft.city,
-          province: draft.province,
-          postal: draft.postal,
-        },
-      })
-      setDraft(saved)
-      toast.add({
-        type: 'success',
-        title: 'Shipping address saved',
-      })
+      await onSave(draft)
     } catch {
       setError('Could not save shipping address')
     } finally {

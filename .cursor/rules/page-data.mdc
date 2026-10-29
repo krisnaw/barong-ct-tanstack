@@ -1,0 +1,37 @@
+---
+description: Each page loads with a route loader and mutates with createServerFn
+globs: src/routes/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Page data
+
+Each page loads its own data in the route `loader`. Do not fetch that page's data in a shared client effect or context.
+
+Mutations go through a `createServerFn` server function. After a successful mutation, `router.invalidate()` so the loader is the source of the next render.
+
+```tsx
+export const Route = createFileRoute('/account/address')({
+  loader: async () => {
+    const addresses = await getMyShippingAddresses()
+    return addresses[0] ?? null
+  },
+  component: AccountAddressPage,
+})
+
+function AccountAddressPage() {
+  const address = Route.useLoaderData()
+  const router = useRouter()
+
+  return (
+    <AccountAddressPanel
+      address={address}
+      key={address ? JSON.stringify(address) : 'empty'}
+      onSave={async (draft) => {
+        await upsertMyShippingAddress({ data: draft })
+        await router.invalidate()
+      }}
+    />
+  )
+}
+```

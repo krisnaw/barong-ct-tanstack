@@ -1,6 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { AccountAddressPanel } from '~/components/account/address-form'
-import { getMyShippingAddresses } from '~/lib/shipping-address.functions'
+import { toast } from '~/components/ui/toast'
+import {
+  getMyShippingAddresses,
+  upsertMyShippingAddress,
+} from '~/lib/shipping-address.functions'
 import { seo } from '~/utils/seo'
 
 export const Route = createFileRoute('/account/address')({
@@ -19,5 +23,29 @@ export const Route = createFileRoute('/account/address')({
 
 function AccountAddressPage() {
   const address = Route.useLoaderData()
-  return <AccountAddressPanel address={address} />
+  const router = useRouter()
+
+  return (
+    <AccountAddressPanel
+      address={address}
+      key={address ? JSON.stringify(address) : 'empty'}
+      onSave={async (draft) => {
+        await upsertMyShippingAddress({
+          data: {
+            id: draft.id || undefined,
+            address: draft.address,
+            apartment: draft.apartment,
+            city: draft.city,
+            province: draft.province,
+            postal: draft.postal,
+          },
+        })
+        toast.add({
+          type: 'success',
+          title: 'Shipping address saved',
+        })
+        await router.invalidate()
+      }}
+    />
+  )
 }
