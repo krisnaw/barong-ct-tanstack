@@ -213,13 +213,51 @@ export function formatPaymentLabel(order: ShopOrder) {
   return [provider, payment.method].filter(Boolean).join(' · ')
 }
 
+const SHOP_TIME_ZONE = 'Asia/Makassar'
+/** Asia/Makassar is UTC+8 year-round. */
+const SHOP_UTC_OFFSET_HOURS = 8
+
 export function formatOrderDate(iso: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    timeZone: 'Asia/Makassar',
+    timeZone: SHOP_TIME_ZONE,
   }).format(new Date(iso))
+}
+
+/** Monday 00:00 through the following Monday 00:00 in Asia/Makassar. `end` is exclusive. */
+export function shopWeekBounds(now: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SHOP_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value)
+  const year = value('year')
+  const month = value('month')
+  const day = value('day')
+  const daysFromMonday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7
+  const start = new Date(
+    Date.UTC(year, month - 1, day - daysFromMonday, -SHOP_UTC_OFFSET_HOURS),
+  )
+  const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
+  return { start, end }
+}
+
+export function orderPlacedThisWeek(iso: string, now: Date = new Date()) {
+  const time = new Date(iso).getTime()
+  if (Number.isNaN(time)) return false
+  const { start, end } = shopWeekBounds(now)
+  return time >= start.getTime() && time < end.getTime()
+}
+
+export function formatShopWeekLabel(now: Date = new Date()) {
+  const { start, end } = shopWeekBounds(now)
+  const last = new Date(end.getTime() - 1)
+  return `${formatOrderDate(start.toISOString())} – ${formatOrderDate(last.toISOString())}`
 }
 
 export function formatInvoiceDateTime(iso: string) {
@@ -230,13 +268,13 @@ export function formatInvoiceDateTime(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-    timeZone: 'Asia/Makassar',
+    timeZone: SHOP_TIME_ZONE,
   }).format(new Date(iso))
 }
 
 export function formatInvoiceNumber(iso: string) {
   const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Makassar',
+    timeZone: SHOP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
