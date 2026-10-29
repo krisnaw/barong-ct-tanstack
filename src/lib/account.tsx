@@ -6,7 +6,6 @@ import {
   upsertMyProfile,
 } from '~/lib/profile.functions'
 import { type ShippingAddressRow } from '~/lib/shipping-address.functions'
-import { removeAvatar, uploadAvatar } from '~/lib/avatar.functions'
 
 export type AccountShippingAddress = ShippingAddressRow
 
@@ -59,8 +58,6 @@ type AccountContextValue = {
   ready: boolean
   signOut: () => void
   updateProfile: (patch: Partial<AccountProfile>) => Promise<void>
-  uploadAvatarImage: (file: File) => Promise<string>
-  clearAvatarImage: () => Promise<void>
 }
 
 const AccountContext = React.createContext<AccountContextValue | null>(null)
@@ -110,6 +107,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession()
   const [profile, setProfile] = React.useState<AccountProfile | null>(null)
   const [profileReady, setProfileReady] = React.useState(false)
+  const loadedFor = React.useRef<string | null>(null)
   const user = session?.user
   const userId = user?.id
 
@@ -117,12 +115,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false
 
     if (!userId) {
+      loadedFor.current = null
       setProfile(null)
       setProfileReady(!isPending)
       return
     }
 
-    setProfileReady(false)
+    if (loadedFor.current !== userId) setProfileReady(false)
     void getMyProfile()
       .then((row) => {
         if (cancelled) return
@@ -147,10 +146,12 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           province: row.province,
           postal: row.postal,
         })
+        loadedFor.current = userId
         setProfileReady(true)
       })
       .catch(() => {
         if (cancelled) return
+        loadedFor.current = userId
         setProfile({
           ...emptyProfile(user?.email ?? ''),
           avatarUrl: user?.image ?? '',
@@ -161,7 +162,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [userId, user?.email, user?.image, isPending])
+  }, [userId, user?.name, user?.email, user?.image, isPending])
 
   const signOut = React.useCallback(() => {
     void authClient.signOut().then(() => {
@@ -201,32 +202,6 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     [user],
   )
 
-  const uploadAvatarImage = React.useCallback(
-    async (file: File) => {
-      if (!user) throw new Error('Unauthorized')
-      const data = await readFileAsBase64(file)
-      const result = await uploadAvatar({
-        data: {
-          contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
-          data,
-        },
-      })
-      setProfile((prev) =>
-        prev ? { ...prev, avatarUrl: result.image } : prev,
-      )
-      await authClient.getSession()
-      return result.image
-    },
-    [user],
-  )
-
-  const clearAvatarImage = React.useCallback(async () => {
-    if (!user) return
-    await removeAvatar()
-    setProfile((prev) => (prev ? { ...prev, avatarUrl: '' } : prev))
-    await authClient.getSession()
-  }, [user])
-
   const value = React.useMemo(
     () => ({
       profile,
@@ -234,19 +209,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       ready: !isPending && profileReady,
       signOut,
       updateProfile,
-      uploadAvatarImage,
-      clearAvatarImage,
     }),
-    [
-      profile,
-      user,
-      isPending,
-      profileReady,
-      signOut,
-      updateProfile,
-      uploadAvatarImage,
-      clearAvatarImage,
-    ],
+    [profile, user, isPending, profileReady, signOut, updateProfile],
   )
 
   return (
@@ -260,20 +224,4 @@ export function useAccount() {
     throw new Error('useAccount must be used within AccountProvider')
   }
   return ctx
-}
-
-function readFileAsBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(new Error('Could not read image'))
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result !== 'string') {
-        reject(new Error('Could not read image'))
-        return
-      }
-      resolve(result)
-    }
-    reader.readAsDataURL(file)
-  })
 }

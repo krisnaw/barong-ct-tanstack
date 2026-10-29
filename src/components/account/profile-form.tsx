@@ -5,11 +5,9 @@ import {
   ACCOUNT_BLOOD_TYPES,
   ACCOUNT_GENDERS,
   accountInitials,
-  useAccount,
   type AccountProfile,
 } from '~/lib/account'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
 import { cn } from '~/lib/utils'
 import {
@@ -72,17 +70,22 @@ function profileFormReducer(
   }
 }
 
-export function AccountProfilePanel() {
-  const { profile, updateProfile, uploadAvatarImage, clearAvatarImage } =
-    useAccount()
+export function AccountProfilePanel({
+  profile,
+  onSave,
+  onUploadAvatar,
+  onClearAvatar,
+}: {
+  profile: AccountProfile
+  onSave: (draft: AccountProfile) => Promise<void>
+  onUploadAvatar: (file: File) => Promise<void>
+  onClearAvatar: () => Promise<void>
+}) {
   const [form, dispatch] = React.useReducer(
     profileFormReducer,
     initialProfileForm,
   )
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-
-  if (!profile) return null
-
   const draft = { ...profile, ...form.edits }
 
   function setField<K extends keyof ProfileEdits>(
@@ -108,7 +111,7 @@ export function AccountProfilePanel() {
 
     dispatch({ type: 'avatar-start' })
     try {
-      await uploadAvatarImage(file)
+      await onUploadAvatar(file)
       dispatch({ type: 'avatar-settled' })
     } catch {
       dispatch({ type: 'fail', error: 'Could not upload avatar.' })
@@ -118,7 +121,7 @@ export function AccountProfilePanel() {
   async function clearAvatar() {
     dispatch({ type: 'avatar-start' })
     try {
-      await clearAvatarImage()
+      await onClearAvatar()
       dispatch({ type: 'avatar-settled' })
     } catch {
       dispatch({ type: 'fail', error: 'Could not remove avatar.' })
@@ -129,29 +132,8 @@ export function AccountProfilePanel() {
     event.preventDefault()
     dispatch({ type: 'submit' })
     try {
-      await updateProfile({
-        firstName: draft.firstName,
-        lastName: draft.lastName,
-        phone: draft.phone,
-        gender: draft.gender,
-        bloodType: draft.bloodType,
-        dateOfBirth: draft.dateOfBirth,
-        nationality: draft.nationality,
-        idNumber: draft.idNumber,
-        emergencyContactName: draft.emergencyContactName,
-        emergencyContactPhone: draft.emergencyContactPhone,
-        jerseySize: draft.jerseySize,
-        address: draft.address,
-        apartment: draft.apartment,
-        city: draft.city,
-        province: draft.province,
-        postal: draft.postal,
-      })
+      await onSave(draft)
       dispatch({ type: 'saved' })
-      toast.add({
-        type: 'success',
-        title: 'Profile saved',
-      })
     } catch {
       dispatch({ type: 'fail', error: 'Could not save profile' })
     }

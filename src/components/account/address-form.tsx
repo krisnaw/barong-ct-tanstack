@@ -54,7 +54,6 @@ export function AccountAddressPanel({
         Shipping address
       </h2>
       <AddressFields
-        allowEmptyProvince
         idPrefix="shipping"
         onChange={(key, value) => setField(key, value)}
         value={draft}

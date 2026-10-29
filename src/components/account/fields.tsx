@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
-import { ACCOUNT_PROVINCES } from '~/lib/account'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import {
@@ -49,12 +48,10 @@ export function AddressFields({
   value,
   onChange,
   idPrefix,
-  allowEmptyProvince = false,
 }: {
   value: AddressValues
   onChange: (key: keyof AddressValues, next: string) => void
   idPrefix: string
-  allowEmptyProvince?: boolean
 }) {
   return (
     <div className="mt-5 grid gap-3">
@@ -80,16 +77,11 @@ export function AddressFields({
           onChange={(next) => onChange('city', next)}
           value={value.city}
         />
-        <AccountSelect
-          allowEmpty={allowEmptyProvince}
+        <AccountField
+          autoComplete="address-level1"
           id={`${idPrefix}-province`}
           label="Province"
           onChange={(next) => onChange('province', next)}
-          options={ACCOUNT_PROVINCES.map((option) => ({
-            value: option,
-            label: option,
-          }))}
-          placeholder="Province"
           value={value.province}
         />
         <AccountField
