@@ -49,10 +49,12 @@ export function AddressFields({
   value,
   onChange,
   idPrefix,
+  allowEmptyProvince = false,
 }: {
   value: AddressValues
   onChange: (key: keyof AddressValues, next: string) => void
   idPrefix: string
+  allowEmptyProvince?: boolean
 }) {
   return (
     <div className="mt-5 grid gap-3">
@@ -79,6 +81,7 @@ export function AddressFields({
           value={value.city}
         />
         <AccountSelect
+          allowEmpty={allowEmptyProvince}
           id={`${idPrefix}-province`}
           label="Province"
           onChange={(next) => onChange('province', next)}
@@ -86,6 +89,7 @@ export function AddressFields({
             value: option,
             label: option,
           }))}
+          placeholder="Province"
           value={value.province}
         />
         <AccountField

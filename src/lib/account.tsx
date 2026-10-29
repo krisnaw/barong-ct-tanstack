@@ -71,19 +71,6 @@ type AccountContextValue = {
   clearAvatarImage: () => Promise<void>
 }
 
-export function emptyShippingAddress(): AccountShippingAddress {
-  return {
-    id: '',
-    label: 'Home',
-    address: '',
-    apartment: '',
-    city: '',
-    province: 'Bali',
-    postal: '',
-    isDefault: true,
-  }
-}
-
 const AccountContext = React.createContext<AccountContextValue | null>(null)
 
 function emptyProfile(email = ''): AccountProfile {

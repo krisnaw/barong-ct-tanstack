@@ -1,23 +1,32 @@
 import * as React from 'react'
 import { AddressFields, SaveBar } from '~/components/account/fields'
 import { toast } from '~/components/ui/toast'
-import {
-  emptyShippingAddress,
-  useAccount,
-  type AccountShippingAddress,
-} from '~/lib/account'
+import { upsertMyShippingAddress } from '~/lib/shipping-address.functions'
+import type { AccountShippingAddress } from '~/lib/account'
 
-export function AccountAddressPanel() {
-  const { shippingAddress, updateShippingAddress } = useAccount()
+function blankAddress(): AccountShippingAddress {
+  return {
+    id: '',
+    label: 'Home',
+    address: '',
+    apartment: '',
+    city: '',
+    province: '',
+    postal: '',
+    isDefault: true,
+  }
+}
+
+export function AccountAddressPanel({
+  address,
+}: {
+  address: AccountShippingAddress | null
+}) {
   const [draft, setDraft] = React.useState<AccountShippingAddress>(
-    () => shippingAddress ?? emptyShippingAddress(),
+    () => address ?? blankAddress(),
   )
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState('')
-
-  React.useEffect(() => {
-    setDraft(shippingAddress ?? emptyShippingAddress())
-  }, [shippingAddress])
 
   function setField<K extends keyof AccountShippingAddress>(
     key: K,
@@ -31,14 +40,17 @@ export function AccountAddressPanel() {
     setError('')
     setPending(true)
     try {
-      await updateShippingAddress({
-        id: draft.id,
-        address: draft.address,
-        apartment: draft.apartment,
-        city: draft.city,
-        province: draft.province,
-        postal: draft.postal,
+      const saved = await upsertMyShippingAddress({
+        data: {
+          id: draft.id || undefined,
+          address: draft.address,
+          apartment: draft.apartment,
+          city: draft.city,
+          province: draft.province,
+          postal: draft.postal,
+        },
       })
+      setDraft(saved)
       toast.add({
         type: 'success',
         title: 'Shipping address saved',
@@ -56,6 +68,7 @@ export function AccountAddressPanel() {
         Shipping address
       </h2>
       <AddressFields
+        allowEmptyProvince
         idPrefix="shipping"
         onChange={(key, value) => setField(key, value)}
         value={draft}
