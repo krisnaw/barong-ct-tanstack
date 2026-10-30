@@ -270,7 +270,7 @@ export function EventParticipantsTable({
   )
 }
 
-function ParticipantStatusBadge({ status }: { status: string }) {
+export function ParticipantStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(

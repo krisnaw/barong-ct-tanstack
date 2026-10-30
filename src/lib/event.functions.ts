@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { asc, desc, eq, and } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, lt } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from 'db'
 import {
@@ -24,6 +24,7 @@ import { auth } from '~/lib/auth'
 import { hasAdminRole } from '~/lib/auth.functions'
 import { normalizeStoredImageRef } from '~/lib/catalogue-image'
 import { sendEventRegisteredEmail } from '~/lib/email/event-registered'
+import { shopWeekBounds } from '~/data/orders'
 import { formatEventDateLabel } from '~/lib/event-datetime'
 import { stripHtml } from '~/lib/rich-html'
 
@@ -514,6 +515,52 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
       createdAt: item.createdAt.toISOString(),
     }))
   })
+
+export type WeekRegistration = {
+  id: string
+  status: string
+  userName: string
+  eventName: string
+  eventSlug: string
+  categoryName: string | null
+  createdAt: string
+}
+
+/** Pending and confirmed registrations placed this week, across every event. */
+export const listRegistrationsThisWeek = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    await requireAdmin()
+    const { start, end } = shopWeekBounds()
+    const rows = await db.query.eventParticipant.findMany({
+      where: and(
+        gte(eventParticipant.createdAt, start),
+        lt(eventParticipant.createdAt, end),
+        inArray(eventParticipant.status, ['pending_payment', 'confirmed']),
+      ),
+      with: {
+        user: true,
+        category: true,
+        event: true,
+      },
+      orderBy: [desc(eventParticipant.createdAt)],
+    })
+
+    return rows.flatMap((item): WeekRegistration[] => {
+      if (!item.event || !item.user) return []
+      return [
+        {
+          id: item.id,
+          status: item.status,
+          userName: item.user.name,
+          eventName: item.event.name,
+          eventSlug: item.event.slug,
+          categoryName: item.category?.name ?? null,
+          createdAt: item.createdAt.toISOString(),
+        },
+      ]
+    })
+  },
+)
 
 const participantStatusSchema = z.enum([
   'draft',
