@@ -6,6 +6,7 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
+import { ParticipantStatusBadge } from '~/components/event-participants-table'
 import { formatIdr, JERSEY_SIZES } from '~/data/events'
 import { formatOrderDate } from '~/data/orders'
 import {
@@ -56,23 +57,8 @@ import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
 import { toast } from '~/components/ui/toast'
 import { Spinner } from '~/components/ui/spinner'
-import { cn } from '~/lib/utils'
 import { seo } from '~/utils/seo'
 import { DashboardDetailSkeleton } from '~/components/page-skeletons'
-
-const participantStatusStyles: Record<string, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  pending_payment: 'border-amber-200 bg-amber-50 text-amber-800',
-  confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  cancelled: 'border-rose-200 bg-rose-50 text-rose-800',
-}
-
-const participantStatusLabel: Record<string, string> = {
-  draft: 'Draft',
-  pending_payment: 'Pending payment',
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-}
 
 const participantStatuses = [
   { value: 'draft', label: 'Draft' },
@@ -700,20 +686,6 @@ function DeleteParticipantCard({
         </Dialog>
       </div>
     </section>
-  )
-}
-
-function ParticipantStatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-lg border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-        participantStatusStyles[status] ??
-          'border-zinc-200 bg-zinc-100 text-zinc-600',
-      )}
-    >
-      {participantStatusLabel[status] ?? status.replaceAll('_', ' ')}
-    </span>
   )
 }
 

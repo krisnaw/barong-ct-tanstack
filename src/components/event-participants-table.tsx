@@ -14,16 +14,17 @@ import {
   DataTable,
   type DataTableFeatures,
 } from '~/components/data-table'
+import { StatusBadge } from '~/components/status-badge'
 import { formatIdr } from '~/data/events'
 import { formatOrderDate } from '~/data/orders'
 import type { EventParticipantRow } from '~/lib/event.functions'
 import { cn } from '~/lib/utils'
 
 const participantStatusStyles: Record<string, string> = {
-  draft: 'border-sky-200 bg-sky-50 text-sky-800',
-  pending_payment: 'border-amber-200 bg-amber-50 text-amber-800',
-  confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  cancelled: 'border-rose-200 bg-rose-50 text-rose-800',
+  draft: 'bg-sky-50 text-sky-800',
+  pending_payment: 'bg-amber-50 text-amber-800',
+  confirmed: 'bg-emerald-50 text-emerald-800',
+  cancelled: 'bg-rose-50 text-rose-800',
 }
 
 const participantStatusLabel: Record<string, string> = {
@@ -272,14 +273,12 @@ export function EventParticipantsTable({
 
 export function ParticipantStatusBadge({ status }: { status: string }) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center border px-2 py-0.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase',
-        participantStatusStyles[status] ??
-          'border-zinc-200 bg-zinc-100 text-zinc-600',
-      )}
+    <StatusBadge
+      className={
+        participantStatusStyles[status] ?? 'bg-zinc-100 text-zinc-600'
+      }
     >
       {participantStatusLabel[status] ?? status.replaceAll('_', ' ')}
-    </span>
+    </StatusBadge>
   )
 }
