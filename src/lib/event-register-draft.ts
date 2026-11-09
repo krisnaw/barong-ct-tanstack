@@ -194,7 +194,7 @@ export function applyProfileToDraft(
 ): RegisterDraft {
   return {
     ...draft,
-    firstName: profile.firstName,
+    firstName: profile.firstName.trim() || draft.firstName,
     lastName: profile.lastName,
     email: profile.email,
     phone: profile.phone,

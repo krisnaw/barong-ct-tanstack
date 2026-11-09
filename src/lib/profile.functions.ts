@@ -80,12 +80,11 @@ function mapRow(
   if (!row) {
     return {
       ...emptyProfile(),
-      firstName: split.firstName,
       lastName: split.lastName,
     }
   }
   return {
-    firstName: row.firstName?.trim() || split.firstName,
+    firstName: row.firstName?.trim() || '',
     lastName: row.lastName?.trim() || split.lastName,
     phone: row.phone ?? '',
     gender: row.gender ?? '',
