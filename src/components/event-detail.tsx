@@ -96,6 +96,7 @@ export function EventDetail({
   const inProgress = Boolean(
     !confirmed && !awaitingPayment && draft && hasRegisterProgress(draft),
   )
+  const collectsJersey = event.kind === 'flagship' || Boolean(event.hasJersey)
   const continueStep =
     event.kind === 'flagship' && draft
       ? nextFlagshipStep(draft)
@@ -106,6 +107,8 @@ export function EventDetail({
             ? 'payment'
             : 'profile'
           : 'profile'
+  const resumePaymentStep =
+    collectsJersey && !registration?.jerseySize ? 'jersey' : 'payment'
   const groupId = registration?.groupId || draft?.groupId || ''
   const groupName = registration?.groupName || draft?.groupName || ''
   const shareUrl =
@@ -259,7 +262,7 @@ export function EventDetail({
               params={{ slug: event.slug }}
               search={{
                 step: awaitingPayment
-                  ? 'payment'
+                  ? resumePaymentStep
                   : inProgress
                     ? continueStep
                     : firstStepForEvent(event),

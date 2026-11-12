@@ -212,6 +212,47 @@ export function invitePath(slug: string, groupId: string) {
   return `/events/${slug}/register?step=course&groupId=${encodeURIComponent(groupId)}`
 }
 
+export type SavedEventRegistration = {
+  categoryId: string | null
+  groupId: string | null
+  groupName: string | null
+  jerseySize: string | null
+  promoCode: string | null
+  discountAmount: number
+  donationAmount: number
+}
+
+/** Fill a blank resume from the registration already stored for this event. */
+export function applyRegistrationToDraft(
+  draft: RegisterDraft,
+  registration: SavedEventRegistration | null | undefined,
+): RegisterDraft {
+  if (!registration) return draft
+  const fresh = draft.status === 'draft' && !hasRegisterProgress(draft)
+  const promoCode =
+    draft.promoCode || (fresh ? registration.promoCode || '' : '')
+  return {
+    ...draft,
+    courseId: draft.courseId || registration.categoryId || '',
+    groupId: draft.groupId || registration.groupId || '',
+    groupName: draft.groupName || registration.groupName || '',
+    jerseySize:
+      draft.jerseySize || registration.jerseySize?.trim().toUpperCase() || '',
+    promoCode,
+    promoDiscount: draft.promoCode
+      ? draft.promoDiscount
+      : fresh
+        ? registration.discountAmount
+        : draft.promoDiscount,
+    donationAmount:
+      draft.donationAmount > 0
+        ? draft.donationAmount
+        : fresh
+          ? registration.donationAmount
+          : draft.donationAmount,
+  }
+}
+
 export function nextFlagshipStep(draft: RegisterDraft): RegisterStep {
   if (!draft.groupId) return 'group'
   if (!draft.courseId) return 'course'

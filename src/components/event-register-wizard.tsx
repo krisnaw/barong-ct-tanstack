@@ -25,6 +25,7 @@ import {
 import { useAccount } from '~/lib/account'
 import {
   applyProfileToDraft,
+  applyRegistrationToDraft,
   emptyDraft,
   findGroup,
   groupNameTaken,
@@ -35,7 +36,11 @@ import {
   saveCreatedGroup,
   saveDraft,
 } from '~/lib/event-register-draft'
-import { registerForEvent, validateEventPromo } from '~/lib/event.functions'
+import {
+  type MyEventRegistration,
+  registerForEvent,
+  validateEventPromo,
+} from '~/lib/event.functions'
 import {
   type UserProfileRow,
   upsertMyProfile,
@@ -101,33 +106,60 @@ export function EventRegisterWizard({
   step,
   groupId,
   profile,
+  registration,
 }: {
   event: ClubEvent
   step: RegisterStep
   groupId?: string
   profile: UserProfileRow & { email: string }
+  registration: MyEventRegistration | null
 }) {
   const navigate = useNavigate()
   const steps = stepsForEvent(event)
   const [draft, setDraft] = React.useState<RegisterDraft>(emptyDraft)
   const [ready, setReady] = React.useState(false)
 
+  const collectsJersey = event.kind === 'flagship' || Boolean(event.hasJersey)
+
   React.useEffect(() => {
     const loaded = loadDraft(event.slug)
+    const resumed = applyRegistrationToDraft(loaded, registration)
     const invited = groupId ? findGroup(event.slug, groupId) : undefined
     const withGroup = invited
       ? {
-          ...loaded,
+          ...resumed,
           groupId: invited.id,
           groupName: invited.name,
-          courseId: invited.courseId,
+          courseId: invited.courseId || resumed.courseId,
         }
-      : loaded
+      : resumed
     const next = applyProfileToDraft(withGroup, profile)
-    if (invited) saveDraft(event.slug, next)
+    if (invited || next.jerseySize !== loaded.jerseySize) saveDraft(event.slug, next)
     setDraft(next)
     setReady(true)
-  }, [event.slug, groupId, profile])
+  }, [event.slug, groupId, profile, registration])
+
+  React.useEffect(() => {
+    if (!ready || step !== 'payment' || !collectsJersey || draft.jerseySize) return
+    void navigate({
+      to: '/events/$slug/register',
+      params: { slug: event.slug },
+      search: {
+        step: 'jersey',
+        groupId: groupId || draft.groupId || undefined,
+      },
+      replace: true,
+    })
+  }, [
+    collectsJersey,
+    draft.groupId,
+    draft.jerseySize,
+    event.slug,
+    groupId,
+    navigate,
+    ready,
+    step,
+  ])
 
   function update(partial: Partial<RegisterDraft>) {
     setDraft((current) => {
@@ -191,7 +223,7 @@ export function EventRegisterWizard({
     step,
   ])
 
-  if (!ready) {
+  if (!ready || (step === 'payment' && collectsJersey && !draft.jerseySize)) {
     return <RegisterWizardSkeleton />
   }
 
@@ -318,7 +350,7 @@ export function EventRegisterWizard({
             const registered = await registerForEvent({
               data: {
                 eventSlug: event.slug,
-                categoryId: draft.courseId || event.courses?.[0]?.id,
+                categoryId: draft.courseId || undefined,
                 groupId: draft.groupId || undefined,
                 groupName: draft.groupName || undefined,
                 jerseySize: draft.jerseySize || undefined,

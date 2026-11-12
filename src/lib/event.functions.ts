@@ -255,6 +255,11 @@ export type MyEventRegistration = {
   status: string
   groupId: string | null
   groupName: string | null
+  categoryId: string | null
+  jerseySize: string | null
+  promoCode: string | null
+  discountAmount: number
+  donationAmount: number
 }
 
 export const getMyEventRegistration = createServerFn({ method: 'GET' })
@@ -285,6 +290,11 @@ export const getMyEventRegistration = createServerFn({ method: 'GET' })
       status: participant.status,
       groupId: participant.eventGroupId,
       groupName: participant.group?.name ?? null,
+      categoryId: participant.eventCategoryId,
+      jerseySize: participant.jerseySize,
+      promoCode: participant.promoCode,
+      discountAmount: participant.discountAmount,
+      donationAmount: participant.donationAmount,
     }
     return result
   })
@@ -1468,10 +1478,21 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       throw new Error('Registration is not open for this event')
     }
 
+    const existing = await db.query.eventParticipant.findFirst({
+      where: and(
+        eq(eventParticipant.userId, session.user.id),
+        eq(eventParticipant.eventId, row.id),
+      ),
+    })
+
     const category =
       (data.categoryId
         ? row.categories.find((item) => item.id === data.categoryId)
-        : undefined) ?? row.categories[0]
+        : undefined) ??
+      (existing?.eventCategoryId
+        ? row.categories.find((item) => item.id === existing.eventCategoryId)
+        : undefined) ??
+      row.categories[0]
     if (!category) {
       throw new Error('Event has no category')
     }
@@ -1515,6 +1536,15 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       }
     }
 
+    if (!groupId && !groupName && existing?.eventGroupId) {
+      groupId = existing.eventGroupId
+    }
+
+    const jerseySize =
+      data.jerseySize === undefined
+        ? (existing?.jerseySize ?? null)
+        : data.jerseySize.trim().toUpperCase() || null
+
     const price = category.price
     const serviceFee = category.serviceFee
     const promo = await resolveEventPromo({
@@ -1529,12 +1559,6 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       0,
       price + serviceFee - promo.discountAmount + donationAmount,
     )
-    const existing = await db.query.eventParticipant.findFirst({
-      where: and(
-        eq(eventParticipant.userId, session.user.id),
-        eq(eventParticipant.eventId, row.id),
-      ),
-    })
 
     if (existing) {
       const wasConfirmed = existing.status === 'confirmed'
@@ -1543,7 +1567,7 @@ export const registerForEvent = createServerFn({ method: 'POST' })
         .set({
           eventCategoryId: category.id,
           eventGroupId: groupId,
-          jerseySize: data.jerseySize?.trim() || null,
+          jerseySize,
           status: data.status,
           price,
           serviceFee,
@@ -1573,7 +1597,7 @@ export const registerForEvent = createServerFn({ method: 'POST' })
       eventId: row.id,
       eventCategoryId: category.id,
       eventGroupId: groupId,
-      jerseySize: data.jerseySize?.trim() || null,
+      jerseySize,
       status: data.status,
       price,
       serviceFee,
