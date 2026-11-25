@@ -123,11 +123,9 @@ function StaffRpcDeskPage() {
 
   function downloadCsv() {
     const rows = [
-      ['Bib', 'Name', 'Category', 'Jersey', 'Collected'],
+      ['Name', 'Jersey', 'Collected'],
       ...visible.map((participant) => [
-        participant.bibNumber ?? '',
         participant.name,
-        participant.categoryName ?? '',
         participant.jerseySize ?? '',
         participant.kitCollectedAt
           ? formatRpcCollectedAt(participant.kitCollectedAt, desk.event.timeZone)
@@ -322,14 +320,8 @@ function StaffRpcDeskPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-medium">{participant.name}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      Bib {participant.bibNumber ?? '—'}
-                      <span className="text-border"> · </span>
-                      {participant.categoryName ?? '—'}
-                      <span className="text-border"> · </span>
-                      <span className="uppercase">
-                        {participant.jerseySize ?? '—'}
-                      </span>
+                    <p className="mt-0.5 text-sm text-muted-foreground uppercase">
+                      {participant.jerseySize ?? '—'}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground tabular-nums">
                       {participant.kitCollectedAt
@@ -360,9 +352,7 @@ function StaffRpcDeskPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16 pl-4">Bib</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead className="pl-4">Name</TableHead>
                 <TableHead>Jersey</TableHead>
                 <TableHead>Collected</TableHead>
                 <TableHead className="pr-4 text-right">Action</TableHead>
@@ -374,14 +364,8 @@ function StaffRpcDeskPage() {
                 const pending = pendingId === participant.id
                 return (
                   <TableRow key={participant.id}>
-                    <TableCell className="pl-4 font-medium tabular-nums">
-                      {participant.bibNumber ?? '—'}
-                    </TableCell>
-                    <TableCell className="max-w-40 whitespace-normal">
+                    <TableCell className="max-w-40 pl-4 font-medium whitespace-normal">
                       {participant.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {participant.categoryName ?? '—'}
                     </TableCell>
                     <TableCell className="uppercase text-muted-foreground">
                       {participant.jerseySize ?? '—'}
