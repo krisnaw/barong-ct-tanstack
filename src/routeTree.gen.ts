@@ -80,6 +80,7 @@ import { Route as StaffRpcSlugRouteImport } from './routes/staff.rpc.$slug'
 import { Route as ApiFinanceIncomeWebhookRouteImport } from './routes/api/finance.income.webhook'
 import { Route as ApiPaymentsWebhookProviderRouteImport } from './routes/api/payments.webhook.$provider'
 import { Route as DashboardEventsSlugIndexRouteImport } from './routes/dashboard/events.$slug.index'
+import { Route as DashboardEventsSlugCancelledRouteImport } from './routes/dashboard/events.$slug.cancelled'
 import { Route as DashboardEventsSlugCategoriesRouteImport } from './routes/dashboard/events.$slug.categories'
 import { Route as DashboardEventsSlugEditRouteImport } from './routes/dashboard/events.$slug.edit'
 import { Route as DashboardEventsSlugGroupsRouteImport } from './routes/dashboard/events.$slug.groups'
@@ -448,6 +449,12 @@ const DashboardEventsSlugIndexRoute =
     path: '/',
     getParentRoute: () => DashboardEventsSlugRoute,
   } as any)
+const DashboardEventsSlugCancelledRoute =
+  DashboardEventsSlugCancelledRouteImport.update({
+    id: '/cancelled',
+    path: '/cancelled',
+    getParentRoute: () => DashboardEventsSlugRoute,
+  } as any)
 const DashboardEventsSlugCategoriesRoute =
   DashboardEventsSlugCategoriesRouteImport.update({
     id: '/categories',
@@ -555,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/staff/rpc/': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/cancelled': typeof DashboardEventsSlugCancelledRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
@@ -616,6 +624,7 @@ export interface FileRoutesByTo {
   '/staff/rpc': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/cancelled': typeof DashboardEventsSlugCancelledRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
@@ -696,6 +705,7 @@ export interface FileRoutesById {
   '/staff/rpc/': typeof StaffRpcIndexRoute
   '/api/finance/income/webhook': typeof ApiFinanceIncomeWebhookRoute
   '/api/payments/webhook/$provider': typeof ApiPaymentsWebhookProviderRoute
+  '/dashboard/events/$slug/cancelled': typeof DashboardEventsSlugCancelledRoute
   '/dashboard/events/$slug/categories': typeof DashboardEventsSlugCategoriesRoute
   '/dashboard/events/$slug/edit': typeof DashboardEventsSlugEditRoute
   '/dashboard/events/$slug/groups': typeof DashboardEventsSlugGroupsRoute
@@ -777,6 +787,7 @@ export interface FileRouteTypes {
     | '/staff/rpc/'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/cancelled'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
@@ -838,6 +849,7 @@ export interface FileRouteTypes {
     | '/staff/rpc'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/cancelled'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
@@ -917,6 +929,7 @@ export interface FileRouteTypes {
     | '/staff/rpc/'
     | '/api/finance/income/webhook'
     | '/api/payments/webhook/$provider'
+    | '/dashboard/events/$slug/cancelled'
     | '/dashboard/events/$slug/categories'
     | '/dashboard/events/$slug/edit'
     | '/dashboard/events/$slug/groups'
@@ -1445,6 +1458,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEventsSlugIndexRouteImport
       parentRoute: typeof DashboardEventsSlugRoute
     }
+    '/dashboard/events/$slug/cancelled': {
+      id: '/dashboard/events/$slug/cancelled'
+      path: '/cancelled'
+      fullPath: '/dashboard/events/$slug/cancelled'
+      preLoaderRoute: typeof DashboardEventsSlugCancelledRouteImport
+      parentRoute: typeof DashboardEventsSlugRoute
+    }
     '/dashboard/events/$slug/categories': {
       id: '/dashboard/events/$slug/categories'
       path: '/categories'
@@ -1506,6 +1526,7 @@ const DashboardCatalogueRouteWithChildren =
   DashboardCatalogueRoute._addFileChildren(DashboardCatalogueRouteChildren)
 
 interface DashboardEventsSlugRouteChildren {
+  DashboardEventsSlugCancelledRoute: typeof DashboardEventsSlugCancelledRoute
   DashboardEventsSlugCategoriesRoute: typeof DashboardEventsSlugCategoriesRoute
   DashboardEventsSlugEditRoute: typeof DashboardEventsSlugEditRoute
   DashboardEventsSlugGroupsRoute: typeof DashboardEventsSlugGroupsRoute
@@ -1515,6 +1536,7 @@ interface DashboardEventsSlugRouteChildren {
 }
 
 const DashboardEventsSlugRouteChildren: DashboardEventsSlugRouteChildren = {
+  DashboardEventsSlugCancelledRoute: DashboardEventsSlugCancelledRoute,
   DashboardEventsSlugCategoriesRoute: DashboardEventsSlugCategoriesRoute,
   DashboardEventsSlugEditRoute: DashboardEventsSlugEditRoute,
   DashboardEventsSlugGroupsRoute: DashboardEventsSlugGroupsRoute,

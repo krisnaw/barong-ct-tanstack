@@ -62,6 +62,9 @@ function DashboardEventDetailPage() {
       participant.status === 'pending_payment' ||
       participant.status === 'confirmed',
   )
+  const cancelledCount = participants.filter(
+    (participant) => participant.status === 'cancelled',
+  ).length
   const confirmedParticipants = participants.filter(isPaidParticipant)
   const paidParticipants = confirmedParticipants.length
   const entryFeeTotal = confirmedParticipants.reduce(
@@ -135,6 +138,14 @@ function DashboardEventDetailPage() {
               to="/dashboard/events/$slug/groups"
             >
               Manage group
+            </Link>
+            <Link
+              className={cn(buttonVariants({ variant: 'outline' }))}
+              params={{ slug: event.slug }}
+              to="/dashboard/events/$slug/cancelled"
+            >
+              Cancelled
+              {cancelledCount > 0 ? ` (${cancelledCount})` : ''}
             </Link>
           </div>
         </div>

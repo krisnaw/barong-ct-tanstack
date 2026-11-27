@@ -526,6 +526,78 @@ export const listEventParticipants = createServerFn({ method: 'GET' })
     }))
   })
 
+export type CancelledEventParticipantRow = {
+  id: string
+  userName: string
+  userEmail: string
+  categoryName: string | null
+  groupName: string | null
+  jerseySize: string | null
+  price: number
+  donationAmount: number
+  createdAt: string
+  updatedAt: string
+  paymentStatus: string | null
+}
+
+/** Registrations cancelled after an expired payment, or set to cancelled by an admin. */
+export const listCancelledEventParticipants = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireAdmin()
+    const row = await db.query.event.findFirst({
+      where: eq(event.slug, data.slug),
+    })
+    if (!row) return [] as CancelledEventParticipantRow[]
+
+    const participants = await db.query.eventParticipant.findMany({
+      where: and(
+        eq(eventParticipant.eventId, row.id),
+        eq(eventParticipant.status, 'cancelled'),
+      ),
+      with: {
+        user: true,
+        category: true,
+        group: true,
+      },
+      orderBy: [desc(eventParticipant.updatedAt)],
+    })
+
+    const ids = participants.map((item) => item.id)
+    const payments =
+      ids.length === 0
+        ? []
+        : await db.query.payment.findMany({
+            where: inArray(payment.participantId, ids),
+            orderBy: [desc(payment.createdAt)],
+          })
+    const latestPayment = new Map<string, (typeof payments)[number]>()
+    for (const paymentRow of payments) {
+      if (!paymentRow.participantId) continue
+      if (latestPayment.has(paymentRow.participantId)) continue
+      latestPayment.set(paymentRow.participantId, paymentRow)
+    }
+
+    return participants.flatMap((item): CancelledEventParticipantRow[] => {
+      if (!item.user) return []
+      return [
+        {
+          id: item.id,
+          userName: item.user.name,
+          userEmail: item.user.email,
+          categoryName: item.category?.name ?? null,
+          groupName: item.group?.name ?? null,
+          jerseySize: item.jerseySize,
+          price: item.price,
+          donationAmount: item.donationAmount,
+          createdAt: item.createdAt.toISOString(),
+          updatedAt: item.updatedAt.toISOString(),
+          paymentStatus: latestPayment.get(item.id)?.status ?? null,
+        },
+      ]
+    })
+  })
+
 export type WeekRegistration = {
   id: string
   status: string
