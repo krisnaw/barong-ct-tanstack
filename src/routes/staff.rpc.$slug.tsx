@@ -123,9 +123,10 @@ function StaffRpcDeskPage() {
 
   function downloadCsv() {
     const rows = [
-      ['Name', 'Jersey', 'Collected'],
+      ['Name', 'Email', 'Jersey', 'Collected'],
       ...visible.map((participant) => [
         participant.name,
+        participant.email,
         participant.jerseySize ?? '',
         participant.kitCollectedAt
           ? formatRpcCollectedAt(participant.kitCollectedAt, desk.event.timeZone)
@@ -230,7 +231,7 @@ function StaffRpcDeskPage() {
               className="pl-8"
               id={searchId}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Name or bib"
+              placeholder="Name, email, or bib"
               value={query}
             />
           </div>
@@ -287,7 +288,7 @@ function StaffRpcDeskPage() {
             </EmptyTitle>
             <EmptyDescription>
               {query.trim()
-                ? 'Try another name or bib number.'
+                ? 'Try another name, email, or bib number.'
                 : emptyCopy[tab].description}
             </EmptyDescription>
           </EmptyHeader>
@@ -320,6 +321,9 @@ function StaffRpcDeskPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-medium">{participant.name}</p>
+                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                      {participant.email}
+                    </p>
                     <p className="mt-0.5 text-sm text-muted-foreground uppercase">
                       {participant.jerseySize ?? '—'}
                     </p>
@@ -364,8 +368,11 @@ function StaffRpcDeskPage() {
                 const pending = pendingId === participant.id
                 return (
                   <TableRow key={participant.id}>
-                    <TableCell className="max-w-40 pl-4 font-medium whitespace-normal">
-                      {participant.name}
+                    <TableCell className="max-w-56 pl-4 whitespace-normal">
+                      <p className="font-medium">{participant.name}</p>
+                      <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                        {participant.email}
+                      </p>
                     </TableCell>
                     <TableCell className="uppercase text-muted-foreground">
                       {participant.jerseySize ?? '—'}

@@ -98,6 +98,7 @@ export const getStaffRpcDesk = createServerFn({ method: 'GET' })
         jerseySize: eventParticipant.jerseySize,
         kitCollectedAt: eventParticipant.kitCollectedAt,
         name: user.name,
+        email: user.email,
         categoryName: eventCategory.name,
       })
       .from(eventParticipant)
@@ -125,6 +126,7 @@ export const getStaffRpcDesk = createServerFn({ method: 'GET' })
       participants: rows.map((row) => ({
         id: row.id,
         name: row.name,
+        email: row.email,
         bibNumber: row.bibNumber,
         jerseySize: row.jerseySize,
         categoryName: row.categoryName,

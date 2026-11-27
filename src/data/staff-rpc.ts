@@ -3,6 +3,7 @@ import { eventTimeZoneToIana } from '~/lib/event-datetime'
 export type StaffRpcParticipant = {
   id: string
   name: string
+  email: string
   bibNumber: string | null
   jerseySize: string | null
   categoryName: string | null
@@ -13,7 +14,11 @@ export function matchesRpcQuery(participant: StaffRpcParticipant, query: string)
   const q = query.trim().toLowerCase()
   if (!q) return true
   const bib = participant.bibNumber?.toLowerCase() ?? ''
-  return participant.name.toLowerCase().includes(q) || bib.includes(q)
+  return (
+    participant.name.toLowerCase().includes(q) ||
+    participant.email.toLowerCase().includes(q) ||
+    bib.includes(q)
+  )
 }
 
 export type RpcCategoryStat = {
